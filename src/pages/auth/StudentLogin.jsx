@@ -24,7 +24,7 @@ export default function StudentLogin() {
     try {
       await signIn(email.trim(), password);
       toast('Logged in successfully');
-      navigate('/student/tasks');
+      navigate('/student/dashboard');
     } catch (err) {
       const msg = err?.message || 'Login failed';
       if (msg.includes('Invalid login credentials')) {

@@ -12,14 +12,14 @@ export default function Login() {
   const navigate = useNavigate();
 
   if (session) {
-    return <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/tasks'} replace />;
+    return <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />;
   }
 
   const handleLogin = (email) => {
     const user = data.users.find(u => u.email === email);
     if (!user) return;
     login(user.role, user);
-    navigate(user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/tasks');
+    navigate(user.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard');
   };
 
   return (

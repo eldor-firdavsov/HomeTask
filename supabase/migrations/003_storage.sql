@@ -38,10 +38,18 @@ CREATE POLICY "Students can read assigned task attachments"
   ON storage.objects FOR SELECT
   USING (
     bucket_id = 'task-attachments'
-    AND EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.teacher_id::text = (storage.foldername(name))[1]
+    AND (
+      EXISTS (
+        SELECT 1 FROM profiles
+        WHERE profiles.id = auth.uid()
+        AND profiles.teacher_id::text = (storage.foldername(name))[1]
+      )
+      OR
+      EXISTS (
+        SELECT 1 FROM assignments
+        WHERE assignments.student_id = auth.uid()
+        AND assignments.teacher_id::text = (storage.foldername(name))[1]
+      )
     )
   );
 

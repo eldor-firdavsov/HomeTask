@@ -1,18 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, Edit3, Send, Trash2, Copy, Users, Clock, CheckCircle2,
   AlertCircle, FileText, Check, ChevronRight, Calendar, UserCheck,
-  Search, X, Link as LinkIcon, Image as ImageIcon, ExternalLink, Download, Plus
+  Search, X, Link as LinkIcon, Image as ImageIcon, ExternalLink, Download, Plus, Loader2
 } from 'lucide-react';
 import {
   TypeChip, StatusBadge, formatDate, formatDateTime,
   isOverdue, gradeColor, uid,
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
-import { updateTaskTemplate, duplicateTaskTemplate, deleteTaskTemplate } from '../../lib/supabase/tasks.js';
+import { updateTaskTemplate, duplicateTaskTemplate, deleteTaskTemplate, getTaskAttachments } from '../../lib/supabase/tasks.js';
 import { createAssignments } from '../../lib/supabase/assignments.js';
+import { getSignedUrl } from '../../lib/supabase/storage.js';
 
 const TASK_TYPES = ['WRITING','READING','VOCABULARY','GRAMMAR','LISTENING','SPEAKING','KEYWORD','SUMMARY','OTHER'];
 const SUB_TYPES = ['Text','Image','File','Audio'];
@@ -361,10 +362,57 @@ export default function TaskDetail() {
   const [showEdit, setShowEdit] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
   const [zoomImage, setZoomImage] = useState(null);
+  const [templateAttachments, setTemplateAttachments] = useState([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentStatusFilter, setStudentStatusFilter] = useState('all');
 
   const template = useMemo(() => {
     return (data.templates || []).find(t => t.id === templateId);
   }, [data.templates, templateId]);
+
+  useEffect(() => {
+    if (!templateId) return;
+    let isMounted = true;
+    setLoadingAttachments(true);
+    getTaskAttachments(templateId)
+      .then(async (atts) => {
+        const withUrls = await Promise.all((atts || []).map(async (att) => {
+          const type = (att.attachment_type || 'file').toUpperCase();
+          let dataUrl = att.url || null;
+          if (att.storage_path) {
+            try {
+              dataUrl = await getSignedUrl('task-attachments', att.storage_path);
+            } catch (err) {
+              console.warn('Teacher task attachment URL error:', err);
+            }
+          }
+          return {
+            id: att.id,
+            type,
+            name: att.file_name,
+            title: att.file_name,
+            size: att.file_size ? formatFileSize(att.file_size) : '',
+            storagePath: att.storage_path,
+            url: att.url || dataUrl,
+            dataUrl,
+            mimeType: att.mime_type,
+          };
+        }));
+        if (isMounted) setTemplateAttachments(withUrls);
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (isMounted) setLoadingAttachments(false);
+      });
+
+    return () => { isMounted = false; };
+  }, [templateId]);
+
+  const allAttachments = useMemo(() => {
+    if (templateAttachments.length > 0) return templateAttachments;
+    return template?.attachments || [];
+  }, [templateAttachments, template?.attachments]);
 
   const students = useMemo(() => {
     return (data.users || []).filter(u => u.role === 'STUDENT');
@@ -384,6 +432,37 @@ export default function TaskDetail() {
     const overdue = assignments.filter(a => isOverdue(a)).length;
     return { total, pending, inProgress, review, done, overdue };
   }, [assignments]);
+
+  const filteredAssignments = useMemo(() => {
+    let list = assignments;
+    if (studentSearch.trim()) {
+      const q = studentSearch.toLowerCase();
+      list = list.filter(a => {
+        const student = (data.users || []).find(u => u.id === a.studentId);
+        return (
+          (student?.firstName && student.firstName.toLowerCase().includes(q)) ||
+          (student?.lastName && student.lastName.toLowerCase().includes(q)) ||
+          (student?.email && student.email.toLowerCase().includes(q))
+        );
+      });
+    }
+    if (studentStatusFilter !== 'all') {
+      if (studentStatusFilter === 'overdue') {
+        list = list.filter(isOverdue);
+      } else if (studentStatusFilter === 'review') {
+        list = list.filter(a => ['SUBMITTED', 'UNDER_REVIEW'].includes(a.status));
+      } else if (studentStatusFilter === 'pending') {
+        list = list.filter(a => a.status === 'PENDING');
+      } else if (studentStatusFilter === 'in_progress') {
+        list = list.filter(a => a.status === 'IN_PROGRESS');
+      } else if (studentStatusFilter === 'revision') {
+        list = list.filter(a => a.status === 'NEEDS_REVISION');
+      } else if (studentStatusFilter === 'done') {
+        list = list.filter(a => a.status === 'DONE');
+      }
+    }
+    return list;
+  }, [assignments, studentSearch, studentStatusFilter, data.users]);
 
   if (!template) {
     return (
@@ -438,7 +517,7 @@ export default function TaskDetail() {
         type: template.type,
         instructions: template.instructions,
         submissionTypes: template.submissionTypes || ['Text'],
-        attachments: template.attachments || [],
+        attachments: allAttachments,
         deadline,
       }));
 
@@ -648,14 +727,22 @@ export default function TaskDetail() {
           {template.instructions || 'No instructions provided.'}
         </div>
 
+        {/* Loading indicator for materials & attachments */}
+        {loadingAttachments && (
+          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--txt-secondary)', fontSize: 13 }}>
+            <Loader2 size={16} className="animate-spin" />
+            <span>Loading materials &amp; attached resources…</span>
+          </div>
+        )}
+
         {/* Display Materials & Attachments if any */}
-        {template.attachments && template.attachments.length > 0 && (
+        {!loadingAttachments && allAttachments && allAttachments.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--txt-secondary)', margin: '0 0 12px' }}>
-              Materials &amp; Attached Resources ({template.attachments.length})
+              Materials &amp; Attached Resources ({allAttachments.length})
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-              {template.attachments.map(att => (
+              {allAttachments.map(att => (
                 <div
                   key={att.id}
                   style={{
@@ -764,10 +851,10 @@ export default function TaskDetail() {
       </div>
 
       {/* Assigned Students Section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: 19, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-            Assigned Students
+            Assigned Students ({assignments.length})
           </h2>
           <p style={{ fontSize: 12.5, color: 'var(--txt-secondary)', margin: '2px 0 0' }}>
             Students working on this task and their current progress
@@ -781,6 +868,55 @@ export default function TaskDetail() {
           + Assign to More Students
         </button>
       </div>
+
+      {assignments.length > 0 && (
+        <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div className="g-tabs" style={{ gap: 4 }}>
+              {[
+                { id: 'all', label: `All (${assignments.length})` },
+                { id: 'pending', label: `Pending (${stats.pending})` },
+                { id: 'in_progress', label: `In Progress (${stats.inProgress})` },
+                { id: 'review', label: `Review (${stats.review})` },
+                { id: 'done', label: `Done (${stats.done})` },
+                ...(stats.overdue > 0 ? [{ id: 'overdue', label: `Overdue (${stats.overdue})` }] : []),
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  className={`g-tab${studentStatusFilter === tab.id ? ' active' : ''}`}
+                  onClick={() => setStudentStatusFilter(tab.id)}
+                  style={{ fontSize: 12, padding: '5px 10px' }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div className="g-search-wrap" style={{ minWidth: 180 }}>
+                <span className="g-search-icon"><Search size={13} /></span>
+                <input
+                  className="g-search"
+                  placeholder="Filter students…"
+                  value={studentSearch}
+                  onChange={e => setStudentSearch(e.target.value)}
+                  style={{ padding: '5px 8px 5px 28px', fontSize: 12 }}
+                />
+              </div>
+
+              {(studentSearch || studentStatusFilter !== 'all') && (
+                <button
+                  onClick={() => { setStudentSearch(''); setStudentStatusFilter('all'); }}
+                  className="g-btn g-btn-ghost"
+                  style={{ fontSize: 11.5, padding: '4px 8px', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', gap: 3 }}
+                >
+                  <X size={12} /> Reset
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {assignments.length === 0 ? (
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
@@ -797,9 +933,24 @@ export default function TaskDetail() {
             </button>
           </div>
         </div>
+      ) : filteredAssignments.length === 0 ? (
+        <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', padding: '36px 20px', textAlign: 'center' }}>
+          <div className="g-empty" style={{ padding: '24px 20px' }}>
+            <div className="g-empty-icon"><Users size={20} strokeWidth={1.8} /></div>
+            <h4>No students match this filter</h4>
+            <p>Try clearing your student search or selecting a different status tab.</p>
+            <button
+              onClick={() => { setStudentSearch(''); setStudentStatusFilter('all'); }}
+              className="g-btn g-btn-secondary"
+              style={{ marginTop: 6 }}
+            >
+              Reset filters
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
-          {assignments.map((assignment, i) => {
+          {filteredAssignments.map((assignment, i) => {
             const student = data.users.find(u => u.id === assignment.studentId);
             const submission = data.submissions.find(s => s.assignedTaskId === assignment.id);
             const overdue = isOverdue(assignment);
@@ -890,7 +1041,7 @@ export default function TaskDetail() {
       {/* Edit Modal */}
       {showEdit && (
         <EditTaskModal
-          template={template}
+          template={{ ...template, attachments: allAttachments }}
           onClose={() => setShowEdit(false)}
           onSave={handleSaveTemplate}
         />
@@ -899,7 +1050,7 @@ export default function TaskDetail() {
       {/* Assign Modal */}
       {showAssign && (
         <AssignStudentsModal
-          template={template}
+          template={{ ...template, attachments: allAttachments }}
           students={students}
           existingAssignments={assignments}
           onClose={() => setShowAssign(false)}

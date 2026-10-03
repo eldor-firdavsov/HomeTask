@@ -10,6 +10,8 @@ import CreateTask from './pages/teacher/CreateTask';
 import StudentDetail from './pages/teacher/StudentDetail';
 import SubmissionReview from './pages/teacher/SubmissionReview';
 import TaskDetail from './pages/teacher/TaskDetail';
+import TeacherSettings from './pages/teacher/Settings';
+import StudentDashboard from './pages/student/Dashboard';
 import StudentTasks from './pages/student/Tasks';
 import StudentTaskDetail from './pages/student/TaskDetail';
 
@@ -48,7 +50,7 @@ function TeacherRoute({ children }) {
   const { session, loading } = useData();
   if (loading) return <LoadingScreen />;
   if (!session) return <Navigate to="/teacher/login" replace />;
-  if (session.role !== 'TEACHER') return <Navigate to="/student/tasks" replace />;
+  if (session.role !== 'TEACHER') return <Navigate to="/student/dashboard" replace />;
   return children;
 }
 
@@ -73,12 +75,12 @@ function AppRoutes() {
         session?.role === 'TEACHER'
           ? <Navigate to="/teacher/dashboard" replace />
           : session?.role === 'STUDENT'
-            ? <Navigate to="/student/tasks" replace />
+            ? <Navigate to="/student/dashboard" replace />
             : <TeacherLogin />
       } />
       <Route path="/student/login" element={
         session?.role === 'STUDENT'
-          ? <Navigate to="/student/tasks" replace />
+          ? <Navigate to="/student/dashboard" replace />
           : session?.role === 'TEACHER'
             ? <Navigate to="/teacher/dashboard" replace />
             : <StudentLogin />
@@ -109,8 +111,14 @@ function AppRoutes() {
         <Route path="teacher/submissions/:submissionId" element={
           <TeacherRoute><SubmissionReview /></TeacherRoute>
         } />
+        <Route path="teacher/settings" element={
+          <TeacherRoute><TeacherSettings /></TeacherRoute>
+        } />
 
         {/* Student routes */}
+        <Route path="student/dashboard" element={
+          <StudentRoute><StudentDashboard /></StudentRoute>
+        } />
         <Route path="student/tasks" element={
           <StudentRoute><StudentTasks /></StudentRoute>
         } />
@@ -122,12 +130,12 @@ function AppRoutes() {
       {/* Root redirects */}
       <Route path="/" element={
         session
-          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/tasks'} replace />
+          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
           : <Navigate to="/teacher/login" replace />
       } />
       <Route path="*" element={
         session
-          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/tasks'} replace />
+          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
           : <Navigate to="/teacher/login" replace />
       } />
     </Routes>

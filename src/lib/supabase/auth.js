@@ -51,13 +51,68 @@ export async function resetPassword(email) {
 
 // ── Update password ──────────────────────────────────────
 export async function updatePassword(newPassword) {
-  const { error } = await supabase.auth.updateUser({
+  const { data, error } = await supabase.auth.updateUser({
     password: newPassword,
   });
   if (error) throw error;
+  return data;
+}
+
+// ── Update email ─────────────────────────────────────────
+export async function updateEmail(newEmail) {
+  const { data, error } = await supabase.auth.updateUser({
+    email: newEmail,
+  });
+  if (error) throw error;
+
+  // Also update public.profiles
+  if (data?.user?.id) {
+    try {
+      await supabase
+        .from('profiles')
+        .update({
+          email: newEmail,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', data.user.id);
+    } catch (profErr) {
+      console.warn('Could not update profile email directly:', profErr);
+    }
+  }
+
+  return data;
+}
+
+// ── Update profile details ───────────────────────────────
+export async function updateProfile(userId, updates) {
+  const payload = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('id', userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// ── Verify current password ──────────────────────────────
+export async function verifyPassword(email, password) {
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) {
+    throw new Error('Current password does not match.');
+  }
+  return true;
 }
 
 // ── Subscribe to auth state changes ──────────────────────
 export function onAuthStateChange(callback) {
   return supabase.auth.onAuthStateChange(callback);
 }
+

@@ -1,34 +1,101 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck } from 'lucide-react';
-import { TypeChip, formatDate, uid } from '../../utils/helpers.jsx';
+import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck, X } from 'lucide-react';
+import { TypeChip, formatDate } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/tasks.js';
 
-const TYPES = ['All','Vocabulary','Writing','Reading','Listening','Speaking','Grammar','Keyword','Summary','Other'];
+const TYPES = ['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
+const STATUS_TABS = [
+  { id: 'all', label: 'All Tasks' },
+  { id: 'assigned', label: 'Assigned' },
+  { id: 'unassigned', label: 'Unassigned / Drafts' },
+];
 
 export default function TaskLibrary() {
   const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
-  const [search,            setSearch]            = useState('');
-  const [activeType,        setActiveType]        = useState('All');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('All Types');
+  const [sortBy, setSortBy] = useState('newest');
   const [assigningTemplate, setAssigningTemplate] = useState(null);
 
+  // Template assignment counts map
+  const assignmentCountMap = useMemo(() => {
+    const map = {};
+    (data.assignments || []).forEach(a => {
+      if (a.templateId) {
+        map[a.templateId] = (map[a.templateId] || 0) + 1;
+      }
+    });
+    return map;
+  }, [data.assignments]);
+
+  // Overall counts for tabs
+  const tabCounts = useMemo(() => {
+    const templates = data.templates || [];
+    let assigned = 0;
+    let unassigned = 0;
+    templates.forEach(t => {
+      if (assignmentCountMap[t.id] > 0) assigned++;
+      else unassigned++;
+    });
+    return { all: templates.length, assigned, unassigned };
+  }, [data.templates, assignmentCountMap]);
+
+  // Filter & sort logic
   const filtered = useMemo(() => {
     let list = [...(data.templates || [])];
-    if (search) {
+
+    // Search query
+    if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(t =>
         t.title.toLowerCase().includes(q) ||
         (t.instructions || '').toLowerCase().includes(q)
       );
     }
-    if (activeType !== 'All') {
-      list = list.filter(t => t.type?.toUpperCase() === activeType.toUpperCase());
+
+    // Status filter
+    if (statusFilter === 'assigned') {
+      list = list.filter(t => (assignmentCountMap[t.id] || 0) > 0);
+    } else if (statusFilter === 'unassigned') {
+      list = list.filter(t => !assignmentCountMap[t.id]);
     }
-    return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  }, [data.templates, search, activeType]);
+
+    // Type filter
+    if (typeFilter !== 'All Types') {
+      list = list.filter(t => t.type?.toUpperCase() === typeFilter.toUpperCase());
+    }
+
+    // Sorting
+    return list.sort((a, b) => {
+      if (sortBy === 'newest') {
+        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      }
+      if (sortBy === 'oldest') {
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      }
+      if (sortBy === 'most_assigned') {
+        return (assignmentCountMap[b.id] || 0) - (assignmentCountMap[a.id] || 0);
+      }
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+  }, [data.templates, search, statusFilter, typeFilter, sortBy, assignmentCountMap]);
+
+  const hasActiveFilters = search || statusFilter !== 'all' || typeFilter !== 'All Types' || sortBy !== 'newest';
+
+  const resetFilters = () => {
+    setSearch('');
+    setStatusFilter('all');
+    setTypeFilter('All Types');
+    setSortBy('newest');
+  };
 
   const handleDelete = async (tplId) => {
     const inUse = data.assignments.some(a => a.templateId === tplId);
@@ -72,56 +139,149 @@ export default function TaskLibrary() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>Tasks</h1>
-          <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>Reusable task templates for your students</p>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+            Task Library
+          </h1>
+          <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
+            Reusable task templates and curriculum assignments for your students
+          </p>
         </div>
-        <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">+ New task</Link>
+        <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
+          + New task
+        </Link>
       </div>
 
-      {/* Toolbar — glass container */}
+      {/* Filter Toolbar — Glass container */}
       <div
         className="glass-2"
-        style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}
+        style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 16 }}
       >
-        <div className="g-search-wrap">
-          <span className="g-search-icon"><Search size={13} /></span>
-          <input
-            className="g-search"
-            placeholder="Search tasks…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {/* Top Filter Controls: Status Tabs & Search */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 14 }}>
+          {/* Status Tabs with counts */}
+          <div className="g-tabs" style={{ gap: 4 }}>
+            {STATUS_TABS.map(tab => {
+              const count = tabCounts[tab.id] ?? 0;
+              return (
+                <button
+                  key={tab.id}
+                  className={`g-tab${statusFilter === tab.id ? ' active' : ''}`}
+                  onClick={() => setStatusFilter(tab.id)}
+                  style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <span>{tab.label}</span>
+                  <span style={{
+                    fontSize: 10.5,
+                    padding: '1px 6px',
+                    borderRadius: 99,
+                    background: statusFilter === tab.id ? 'var(--accent)' : 'rgba(0,0,0,0.06)',
+                    color: statusFilter === tab.id ? '#fff' : 'var(--txt-secondary)',
+                    fontWeight: 600,
+                  }}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Search Box */}
+          <div className="g-search-wrap" style={{ minWidth: 220 }}>
+            <span className="g-search-icon"><Search size={13} /></span>
+            <input
+              className="g-search"
+              placeholder="Search tasks…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="g-tabs" style={{ flex: 1 }}>
-          {TYPES.map(t => (
-            <button
-              key={t}
-              className={`g-tab${activeType === t ? ' active' : ''}`}
-              onClick={() => setActiveType(t)}
-              style={{ padding: '6px 11px', fontSize: 12 }}
+
+        {/* Secondary Filter Controls: Type Dropdown, Sort Dropdown, Clear button */}
+        <div style={{
+          display: 'flex',
+          gap: 12,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          borderTop: '1px solid rgba(255,255,255,0.40)',
+          paddingTop: 12,
+        }}>
+          {/* Task Type Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
+            <select
+              value={typeFilter}
+              onChange={e => setTypeFilter(e.target.value)}
+              className="g-select"
+              style={{ fontSize: 12.5, padding: '5px 10px' }}
             >
-              {t}
-            </button>
-          ))}
+              {TYPES.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort By Filter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="g-select"
+              style={{ fontSize: 12.5, padding: '5px 10px' }}
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="most_assigned">Most Assigned Students</option>
+              <option value="title">Title (A-Z)</option>
+            </select>
+          </div>
+
+          {/* Result Count and Reset Button */}
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11.5, color: 'var(--txt-tertiary)' }}>
+              Showing {filtered.length} of {(data.templates || []).length} templates
+            </span>
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                className="g-btn g-btn-ghost"
+                style={{ fontSize: 11.5, padding: '4px 8px', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <X size={12} />
+                Reset filters
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
-          <div className="g-empty">
+          <div className="g-empty" style={{ padding: '48px 20px' }}>
             <div className="g-empty-icon"><BookOpen size={20} strokeWidth={1.8} /></div>
-            <h3>{search || activeType !== 'All' ? 'No matching tasks' : 'No tasks yet'}</h3>
-            <p>{search || activeType !== 'All' ? 'Try adjusting your search or filter.' : 'Create your first reusable task template.'}</p>
-            {!search && activeType === 'All' && (
-              <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">+ New task</Link>
+            <h3>{hasActiveFilters ? 'No matching tasks found' : 'No tasks yet'}</h3>
+            <p>
+              {hasActiveFilters
+                ? 'Try adjusting your search query, status tab, or subject type filter.'
+                : 'Create your first reusable task template.'}
+            </p>
+            {hasActiveFilters ? (
+              <button onClick={resetFilters} className="g-btn g-btn-secondary" style={{ marginTop: 8 }}>
+                Clear filters
+              </button>
+            ) : (
+              <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ marginTop: 8 }}>
+                + New task
+              </Link>
             )}
           </div>
         </div>
       ) : (
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
           {filtered.map((tpl, i) => {
-            const assignedCount = data.assignments.filter(a => a.templateId === tpl.id).length;
+            const assignedCount = assignmentCountMap[tpl.id] || 0;
             return (
               <div
                 key={tpl.id}
@@ -132,7 +292,7 @@ export default function TaskLibrary() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                     <Link
                       to={`/teacher/tasks/${tpl.id}`}
                       style={{
@@ -145,6 +305,15 @@ export default function TaskLibrary() {
                       {tpl.title}
                     </Link>
                     <TypeChip type={tpl.type} />
+                    {assignedCount > 0 ? (
+                      <span className="g-badge g-badge-progress" style={{ fontSize: 10 }}>
+                        {assignedCount} active
+                      </span>
+                    ) : (
+                      <span className="g-chip" style={{ fontSize: 10, opacity: 0.7 }}>
+                        Draft
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--txt-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 500 }}>
                     {(tpl.instructions || '').slice(0, 100)}{tpl.instructions?.length > 100 ? '…' : ''}

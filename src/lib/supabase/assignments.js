@@ -62,6 +62,30 @@ export async function createAssignments(assignments) {
     .insert(dbRows)
     .select();
   if (error) throw error;
+
+  // If attachments are provided with the assignments, copy them to assignment_attachments
+  for (let i = 0; i < (data || []).length; i++) {
+    const created = data[i];
+    const original = assignments[i];
+    if (original?.attachments && Array.isArray(original.attachments) && original.attachments.length > 0) {
+      for (const att of original.attachments) {
+        try {
+          await supabase.from('assignment_attachments').insert({
+            assignment_id: created.id,
+            file_name: att.fileName || att.name || att.title || 'Attachment',
+            storage_path: att.storagePath || att.storage_path || '',
+            mime_type: att.mimeType || att.mime_type || null,
+            file_size: att.fileSize || att.file_size || null,
+            attachment_type: (att.type || att.attachment_type || 'file').toLowerCase(),
+            url: att.url || null,
+          });
+        } catch (attErr) {
+          console.warn('Could not copy assignment attachment:', attErr);
+        }
+      }
+    }
+  }
+
   return (data || []).map(transformAssignment);
 }
 

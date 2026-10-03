@@ -274,6 +274,22 @@ export const DataProvider = ({ children }) => {
     }
   }, [profile, loadData]);
 
+  // ── Refresh user profile & session helper ──
+  const refreshProfile = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const prof = await getProfile(user.id);
+        if (prof) {
+          setProfile(prof);
+          await loadData(prof);
+        }
+      }
+    } catch (err) {
+      console.error('Refresh profile error:', err);
+    }
+  }, [loadData]);
+
   // ── Login / Logout ─────────────────────────
   const login = (role, user) => {
     // This is now handled by onAuthStateChange
@@ -311,6 +327,7 @@ export const DataProvider = ({ children }) => {
       loading,
       profile,
       refreshData,
+      refreshProfile,
       handleError,
       supabaseSession: session,
     }}>

@@ -262,6 +262,7 @@ export default function CreateTask() {
         type: tpl.type,
         instructions: tpl.instructions,
         submissionTypes: tpl.submissionTypes,
+        attachments,
         deadline,
       }));
 

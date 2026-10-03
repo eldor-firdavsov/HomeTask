@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings } from 'lucide-react';
 
 export default function Layout() {
   const { session, logout, loading } = useData();
@@ -131,9 +131,13 @@ export default function Layout() {
                   {navItem('/teacher/dashboard', LayoutDashboard, 'Dashboard')}
                   {navItem('/teacher/tasks',     BookOpen,        'Task Library')}
                   {navItem('/teacher/tasks/new', Plus,            'Create New Task')}
+                  {navItem('/teacher/settings',  Settings,        'Settings')}
                 </>
               ) : (
-                navItem('/student/tasks', ClipboardList, 'My Assigned Tasks')
+                <>
+                  {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
+                  {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+                </>
               )}
             </div>
 
@@ -196,9 +200,13 @@ export default function Layout() {
               {navItem('/teacher/dashboard', LayoutDashboard, 'Dashboard')}
               {navItem('/teacher/tasks',     BookOpen,        'Tasks')}
               {navItem('/teacher/tasks/new', Plus,            'Add Task')}
+              {navItem('/teacher/settings',  Settings,        'Settings')}
             </>
           ) : (
-            navItem('/student/tasks', ClipboardList, 'My Tasks')
+            <>
+              {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
+              {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+            </>
           )}
         </nav>
 
@@ -290,6 +298,14 @@ export default function Layout() {
           </>
         ) : (
           <>
+            <Link
+              to="/student/dashboard"
+              className={`g-mobile-nav-btn${location.pathname === '/student/dashboard' ? ' active' : ''}`}
+            >
+              <LayoutDashboard size={20} />
+              <span>Dashboard</span>
+            </Link>
+
             <Link
               to="/student/tasks"
               className={`g-mobile-nav-btn${location.pathname.startsWith('/student/tasks') ? ' active' : ''}`}

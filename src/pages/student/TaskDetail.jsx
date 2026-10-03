@@ -4,11 +4,12 @@ import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Clock, Send,
   Link as LinkIcon, FileText, Image as ImageIcon, ExternalLink, Download, X,
-  Paperclip, Upload, Trash2
+  Paperclip, Upload, Trash2, Loader2
 } from 'lucide-react';
 import { TypeChip, StatusBadge, formatDateTime, isOverdue } from '../../utils/helpers.jsx';
 import { createSubmission, addSubmissionAttachment, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
-import { updateAssignmentStatus } from '../../lib/supabase/assignments.js';
+import { updateAssignmentStatus, getAssignmentAttachments } from '../../lib/supabase/assignments.js';
+import { getTaskAttachments } from '../../lib/supabase/tasks.js';
 import { uploadSubmissionFile, getSignedUrl, validateFile, formatFileSize } from '../../lib/supabase/storage.js';
 
 export default function StudentTaskDetail() {
@@ -31,7 +32,110 @@ export default function StudentTaskDetail() {
   const [content, setContent] = useState(submission?.content || '');
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [savedAttachments, setSavedAttachments] = useState([]);
+  const [taskAttachments, setTaskAttachments] = useState([]);
+  const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Load reference materials & task attachments provided by teacher
+  useEffect(() => {
+    if (!assignment) return;
+    let isMounted = true;
+
+    async function loadAttachments() {
+      setLoadingAttachments(true);
+      try {
+        const rawAtts = [];
+
+        // 1. Check template attachments
+        if (assignment.templateId) {
+          try {
+            const tplAtts = await getTaskAttachments(assignment.templateId);
+            if (tplAtts && tplAtts.length > 0) {
+              rawAtts.push(...tplAtts);
+            }
+          } catch (tplErr) {
+            console.warn('Could not fetch template attachments:', tplErr);
+          }
+        }
+
+        // 2. Check assignment-specific attachments
+        if (assignment.id) {
+          try {
+            const assignAtts = await getAssignmentAttachments(assignment.id);
+            if (assignAtts && assignAtts.length > 0) {
+              rawAtts.push(...assignAtts);
+            }
+          } catch (assignErr) {
+            console.warn('Could not fetch assignment attachments:', assignErr);
+          }
+        }
+
+        // 3. Fallback: attachments array directly on assignment object
+        if (Array.isArray(assignment.attachments) && assignment.attachments.length > 0) {
+          rawAtts.push(...assignment.attachments);
+        }
+
+        // Deduplicate attachments
+        const seen = new Set();
+        const unique = [];
+        for (const item of rawAtts) {
+          const key = item.id || item.storage_path || item.storagePath || item.url || item.name;
+          if (key && !seen.has(key)) {
+            seen.add(key);
+            unique.push(item);
+          }
+        }
+
+        // Resolve URLs for files and images
+        const resolved = await Promise.all(unique.map(async (att) => {
+          const rawType = (att.attachment_type || att.type || 'file').toUpperCase();
+          const name = att.file_name || att.name || (rawType === 'LINK' ? (att.title || att.url) : 'Attachment');
+          const size = att.file_size ? formatFileSize(att.file_size) : (att.size || '');
+          const storagePath = att.storage_path || att.storagePath;
+
+          let dataUrl = att.dataUrl || att.downloadUrl || null;
+
+          if (!dataUrl && storagePath) {
+            try {
+              dataUrl = await getSignedUrl('task-attachments', storagePath);
+            } catch (err) {
+              try {
+                dataUrl = await getSignedUrl('submission-files', storagePath);
+              } catch (err2) {
+                console.warn('Error creating signed url for task attachment:', storagePath, err);
+              }
+            }
+          }
+
+          return {
+            id: att.id || Math.random().toString(),
+            type: rawType,
+            name,
+            title: att.title || name,
+            url: att.url || dataUrl,
+            dataUrl: dataUrl || att.url,
+            size,
+            storagePath,
+            mimeType: att.mime_type || att.mimeType,
+          };
+        }));
+
+        if (isMounted) {
+          setTaskAttachments(resolved);
+        }
+      } catch (err) {
+        console.error('Failed to load task attachments:', err);
+      } finally {
+        if (isMounted) setLoadingAttachments(false);
+      }
+    }
+
+    loadAttachments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [assignment?.id, assignment?.templateId]);
 
   // Load attachments of the previous submission if any
   useEffect(() => {
@@ -260,100 +364,138 @@ export default function StudentTaskDetail() {
         </p>
       </div>
 
+      {/* Loading indicator for materials & attachments */}
+      {loadingAttachments && (
+        <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--txt-secondary)', fontSize: 13 }}>
+          <Loader2 size={16} className="animate-spin" />
+          <span>Loading reference materials &amp; attachments…</span>
+        </div>
+      )}
+
       {/* Materials & Attachments provided by Teacher */}
-      {assignment.attachments && assignment.attachments.length > 0 && (
+      {!loadingAttachments && taskAttachments && taskAttachments.length > 0 && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 14 }}>
-            Reference Materials &amp; Attachments
+            Reference Materials &amp; Attachments ({taskAttachments.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {assignment.attachments.map(att => (
-              <div
-                key={att.id}
-                style={{
-                  background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
-                  borderRadius: 'var(--r-md)', padding: '14px 16px',
-                  display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
-                }}
-              >
-                {att.type === 'IMAGE' ? (
-                  <div style={{ width: '100%', marginBottom: 4 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt-primary)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <ImageIcon size={16} color="var(--accent-text)" />
-                      {att.name || 'Task Image'}
-                    </div>
-                    <img
-                      src={att.dataUrl}
-                      alt={att.name || 'Task Material'}
-                      onClick={() => setZoomImage(att.dataUrl)}
-                      style={{
-                        maxWidth: '100%', maxHeight: 340, borderRadius: 10,
-                        border: '1px solid rgba(0,0,0,0.10)', cursor: 'pointer',
-                        boxShadow: '0 4px 14px rgba(0,0,0,0.06)'
-                      }}
-                      title="Click to zoom image"
-                    />
-                  </div>
-                ) : att.type === 'FILE' ? (
-                  <>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 10,
-                      background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--accent-text)', flexShrink: 0
-                    }}>
-                      <FileText size={20} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--txt-primary)' }}>
-                        {att.name}
+            {taskAttachments.map(att => {
+              const isImg = att.type === 'IMAGE' || att.mimeType?.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(att.name || '');
+              const isLnk = att.type === 'LINK';
+
+              return (
+                <div
+                  key={att.id}
+                  style={{
+                    background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
+                    borderRadius: 'var(--r-md)', padding: '14px 16px',
+                    display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+                  }}
+                >
+                  {isImg ? (
+                    <div style={{ width: '100%', marginBottom: 4 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <ImageIcon size={16} color="var(--accent-text)" />
+                          {att.name || 'Task Image'}
+                          {att.size && <span style={{ fontSize: 11, color: 'var(--txt-secondary)', fontWeight: 400 }}>({att.size})</span>}
+                        </div>
+                        {att.dataUrl && (
+                          <a
+                            href={att.dataUrl}
+                            download={att.name || 'image'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="g-btn g-btn-secondary"
+                            style={{ padding: '5px 12px', fontSize: 11.5, textDecoration: 'none' }}
+                          >
+                            <Download size={12} style={{ marginRight: 4 }} /> Download
+                          </a>
+                        )}
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 2 }}>
-                        Document {att.size ? `· ${att.size}` : ''}
-                      </div>
+                      {att.dataUrl ? (
+                        <img
+                          src={att.dataUrl}
+                          alt={att.name || 'Task Material'}
+                          onClick={() => setZoomImage(att.dataUrl)}
+                          style={{
+                            maxWidth: '100%', maxHeight: 340, borderRadius: 10,
+                            border: '1px solid rgba(0,0,0,0.10)', cursor: 'pointer',
+                            boxShadow: '0 4px 14px rgba(0,0,0,0.06)', objectFit: 'contain'
+                          }}
+                          title="Click to zoom image"
+                        />
+                      ) : (
+                        <div style={{ fontSize: 12, color: 'var(--txt-tertiary)', fontStyle: 'italic' }}>
+                          Image preview unavailable
+                        </div>
+                      )}
                     </div>
-                    {att.dataUrl && (
+                  ) : !isLnk ? (
+                    <>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: 10,
+                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'var(--accent-text)', flexShrink: 0
+                      }}>
+                        <FileText size={20} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--txt-primary)' }}>
+                          {att.name}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 2 }}>
+                          Document {att.size ? `· ${att.size}` : ''}
+                        </div>
+                      </div>
+                      {att.dataUrl ? (
+                        <a
+                          href={att.dataUrl}
+                          download={att.name}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="g-btn g-btn-secondary"
+                          style={{ padding: '7px 14px', fontSize: 12, textDecoration: 'none' }}
+                        >
+                          <Download size={13} style={{ marginRight: 5 }} /> Download
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>File attached</span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: 10,
+                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: 'var(--accent-text)', flexShrink: 0
+                      }}>
+                        <LinkIcon size={20} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 160 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--txt-primary)' }}>
+                          {att.title || att.url}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {att.url}
+                        </div>
+                      </div>
                       <a
-                        href={att.dataUrl}
-                        download={att.name}
+                        href={att.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="g-btn g-btn-secondary"
-                        style={{ padding: '7px 14px', fontSize: 12 }}
+                        style={{ padding: '7px 14px', fontSize: 12, textDecoration: 'none' }}
                       >
-                        <Download size={13} style={{ marginRight: 5 }} /> Download
+                        <ExternalLink size={13} style={{ marginRight: 5 }} /> Open Link
                       </a>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      width: 40, height: 40, borderRadius: 10,
-                      background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--accent-text)', flexShrink: 0
-                    }}>
-                      <LinkIcon size={20} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 160 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--txt-primary)' }}>
-                        {att.title || att.url}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {att.url}
-                      </div>
-                    </div>
-                    <a
-                      href={att.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="g-btn g-btn-secondary"
-                      style={{ padding: '7px 14px', fontSize: 12 }}
-                    >
-                      <ExternalLink size={13} style={{ marginRight: 5 }} /> Open Link
-                    </a>
-                  </>
-                )}
-              </div>
-            ))}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

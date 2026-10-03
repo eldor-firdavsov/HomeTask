@@ -62,6 +62,10 @@ export async function uploadFile(bucket, path, file) {
 
 // ── Get a signed URL for a private file ──────────────────
 export async function getSignedUrl(bucket, path, expiresIn = 3600) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
   const { data, error } = await supabase.storage
     .from(bucket)
     .createSignedUrl(path, expiresIn);

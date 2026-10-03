@@ -9,7 +9,7 @@ export default function DemoSelection() {
 
   const handleSelect = (r) => {
     setRole(r);
-    navigate(r === 'teacher' ? '/teacher/dashboard' : '/student/tasks');
+    navigate(r === 'teacher' ? '/teacher/dashboard' : '/student/dashboard');
   };
 
   return (

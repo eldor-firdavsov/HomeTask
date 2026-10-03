@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus, UserCheck, Copy, Check, RefreshCw } from 'lucide-react';
+import { Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus, UserCheck, Copy, Check, RefreshCw, X } from 'lucide-react';
 import {
   calcAverageGrade, gradeColor, studentTaskCounts,
   StatusBadge, formatDateTime, formatDate, TypeChip, uid,
@@ -393,9 +393,19 @@ export default function Dashboard() {
   const [search,            setSearch]            = useState('');
   const [tab,               setTab]               = useState('students');
   const [showAdd,           setShowAdd]           = useState(false);
-  const [assigningTemplate, setAssigningTemplate] = useState(null);
+  const [taskStatusFilter,  setTaskStatusFilter]  = useState('all');
+  const [taskTypeFilter,    setTaskTypeFilter]    = useState('All Types');
+  const [taskSortBy,        setTaskSortBy]        = useState('newest');
 
   const students = useMemo(() => data.users.filter(u => u.role === 'STUDENT'), [data.users]);
+
+  const assignmentCountMap = useMemo(() => {
+    const map = {};
+    (data.assignments || []).forEach(a => {
+      if (a.templateId) map[a.templateId] = (map[a.templateId] || 0) + 1;
+    });
+    return map;
+  }, [data.assignments]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -409,15 +419,30 @@ export default function Dashboard() {
   }, [students, search]);
 
   const filteredTasks = useMemo(() => {
-    const list = [...(data.templates || [])];
-    const q = search.toLowerCase();
-    return q
-      ? list.filter(t =>
-          t.title.toLowerCase().includes(q) ||
-          (t.instructions || '').toLowerCase().includes(q)
-        )
-      : list;
-  }, [data.templates, search]);
+    let list = [...(data.templates || [])];
+    const q = search.toLowerCase().trim();
+    if (q) {
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(q) ||
+        (t.instructions || '').toLowerCase().includes(q)
+      );
+    }
+    if (taskStatusFilter === 'assigned') {
+      list = list.filter(t => (assignmentCountMap[t.id] || 0) > 0);
+    } else if (taskStatusFilter === 'unassigned') {
+      list = list.filter(t => !assignmentCountMap[t.id]);
+    }
+    if (taskTypeFilter !== 'All Types') {
+      list = list.filter(t => t.type?.toUpperCase() === taskTypeFilter.toUpperCase());
+    }
+    return list.sort((a, b) => {
+      if (taskSortBy === 'newest') return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+      if (taskSortBy === 'oldest') return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      if (taskSortBy === 'most_assigned') return (assignmentCountMap[b.id] || 0) - (assignmentCountMap[a.id] || 0);
+      if (taskSortBy === 'title') return a.title.localeCompare(b.title);
+      return 0;
+    });
+  }, [data.templates, search, taskStatusFilter, taskTypeFilter, taskSortBy, assignmentCountMap]);
 
   return (
     <div className="g-page">
@@ -498,24 +523,100 @@ export default function Dashboard() {
 
       {tab === 'tasks' && (
         <>
-          {/* Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22, flexWrap: 'wrap', gap: 12 }}>
-            <div className="g-search-wrap">
-              <span className="g-search-icon"><Search size={13} /></span>
-              <input
-                className="g-search"
-                placeholder="Search tasks…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+          {/* Controls toolbar */}
+          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '14px 18px', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
+              <div className="g-tabs" style={{ gap: 4 }}>
+                {[
+                  { id: 'all', label: `All Tasks (${(data.templates || []).length})` },
+                  { id: 'assigned', label: `Assigned (${(data.templates || []).filter(t => (assignmentCountMap[t.id] || 0) > 0).length})` },
+                  { id: 'unassigned', label: `Unassigned (${(data.templates || []).filter(t => !assignmentCountMap[t.id]).length})` },
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    className={`g-tab${taskStatusFilter === item.id ? ' active' : ''}`}
+                    onClick={() => setTaskStatusFilter(item.id)}
+                    style={{ fontSize: 12, padding: '5px 11px' }}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Link to="/teacher/tasks" className="g-btn g-btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }}>
+                  Task Library <ChevronRight size={13} />
+                </Link>
+                <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}>
+                  <Plus size={14} /> New task
+                </Link>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <Link to="/teacher/tasks" className="g-btn g-btn-secondary">
-                View all <ChevronRight size={13} />
-              </Link>
-              <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
-                <Plus size={14} /> New task
-              </Link>
+
+            {/* Filter inputs row */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              borderTop: '1px solid rgba(255,255,255,0.40)',
+              paddingTop: 10,
+            }}>
+              <div className="g-search-wrap" style={{ minWidth: 200, flex: 1, maxWidth: 320 }}>
+                <span className="g-search-icon"><Search size={13} /></span>
+                <input
+                  className="g-search"
+                  placeholder="Search tasks…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ padding: '6px 10px 6px 30px', fontSize: 12 }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
+                <select
+                  value={taskTypeFilter}
+                  onChange={e => setTaskTypeFilter(e.target.value)}
+                  className="g-select"
+                  style={{ fontSize: 11.5, padding: '4px 8px' }}
+                >
+                  {['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'].map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
+                <select
+                  value={taskSortBy}
+                  onChange={e => setTaskSortBy(e.target.value)}
+                  className="g-select"
+                  style={{ fontSize: 11.5, padding: '4px 8px' }}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="most_assigned">Most Assigned</option>
+                  <option value="title">Title (A-Z)</option>
+                </select>
+              </div>
+
+              {(search || taskStatusFilter !== 'all' || taskTypeFilter !== 'All Types' || taskSortBy !== 'newest') && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setTaskStatusFilter('all');
+                    setTaskTypeFilter('All Types');
+                    setTaskSortBy('newest');
+                  }}
+                  className="g-btn g-btn-ghost"
+                  style={{ fontSize: 11, padding: '4px 8px', color: 'var(--accent-text)', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 3 }}
+                >
+                  <X size={12} />
+                  Reset
+                </button>
+              )}
             </div>
           </div>
 
