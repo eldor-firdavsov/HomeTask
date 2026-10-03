@@ -103,10 +103,10 @@ function getTimeUrgency(assignment) {
   if (overdue) {
     const diffHours = Math.abs(Math.round(diffMs / (1000 * 60 * 60)));
     if (diffHours < 24) {
-      return { text: `Overdue by ${diffHours}h`, isOverdue: true, critical: true };
+      return { text: `Late by ${diffHours}h`, isOverdue: true, critical: true };
     }
     const diffDays = Math.abs(Math.round(diffMs / (1000 * 60 * 60 * 24)));
-    return { text: `Overdue by ${diffDays}d`, isOverdue: true, critical: true };
+    return { text: `Late by ${diffDays}d`, isOverdue: true, critical: true };
   }
 
   const diffHours = Math.round(diffMs / (1000 * 60 * 60));
@@ -206,7 +206,7 @@ function FocusTimer({ tasks }) {
             <Target size={15} />
           </div>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt-primary)' }}>Focus Sprint</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt-primary)' }}>Study Timer</div>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)' }}>25-min study block</div>
           </div>
         </div>
@@ -232,7 +232,7 @@ function FocusTimer({ tasks }) {
             {timeFormatted}
           </div>
           <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 2 }}>
-            {isRunning ? 'Locked in · Keep focus' : 'Ready to start'}
+            {isRunning ? 'Locked in · Studying' : 'Ready to start'}
           </div>
         </div>
 
@@ -241,7 +241,7 @@ function FocusTimer({ tasks }) {
             onClick={toggleTimer}
             className={`g-btn ${isRunning ? 'g-btn-secondary' : 'g-btn-primary'}`}
             style={{ padding: '8px 14px', fontSize: 12.5 }}
-            title={isRunning ? 'Pause' : 'Start Focus'}
+            title={isRunning ? 'Pause' : 'Start Study Timer'}
           >
             {isRunning ? <Pause size={14} /> : <Play size={14} />}
             {isRunning ? 'Pause' : 'Start'}
@@ -265,7 +265,7 @@ function FocusTimer({ tasks }) {
       {/* Select task to focus on */}
       {tasks.length > 0 && (
         <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)' }}>
-          Focusing on:{' '}
+          Studying:{' '}
           <select
             value={activeTaskId}
             onChange={e => setSelectedTaskId(e.target.value)}
@@ -291,7 +291,7 @@ function FocusTimer({ tasks }) {
               to={`/student/pomodoro?taskId=${selectedTask.id}`}
               style={{ marginLeft: 8, color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 600, fontSize: 11.5 }}
             >
-              Launch Dark Mode ⏱
+              Open Fullscreen Timer ⏱
             </Link>
           )}
         </div>
@@ -452,12 +452,12 @@ export default function StudentDashboard() {
 
   // Motivational cheer based on completion
   const motivationalMessage = useMemo(() => {
-    if (totalTasks === 0) return "No tasks assigned yet. Check back soon or enjoy your day!";
-    if (progressPercent === 100) return "🎉 100% Complete! You've crushed all your tasks! Extraordinary effort!";
+    if (totalTasks === 0) return "No homework assigned yet. Check back soon or enjoy your day!";
+    if (progressPercent === 100) return "🎉 100% Complete! You've crushed all your homework! Great work!";
     if (progressPercent >= 75) return "🔥 You're on fire! Just the final stretch left—finish strong!";
     if (progressPercent >= 50) return "⚡ Over halfway through! Maintain this brilliant momentum!";
-    if (urgentCount > 0) return `⏰ You have ${urgentCount} high-priority ${urgentCount === 1 ? 'task' : 'tasks'} waiting. Jump in and knock it out!`;
-    return "✨ Ready to make today count? Pick your first assignment below and get started!";
+    if (urgentCount > 0) return `⏰ You have ${urgentCount} urgent homework ${urgentCount === 1 ? 'assignment' : 'assignments'} waiting. Jump in and knock it out!`;
+    return "✨ Ready to make today count? Pick your first homework assignment below and get started!";
   }, [totalTasks, progressPercent, urgentCount]);
 
   return (
@@ -485,7 +485,7 @@ export default function StudentDashboard() {
             marginBottom: 8,
           }}>
             <Sparkles size={12} />
-            <span>Student Dashboard · {todayStr}</span>
+            <span>Today's Plan · {todayStr}</span>
           </div>
           <h1 style={{
             fontSize: 28,
@@ -508,7 +508,7 @@ export default function StudentDashboard() {
           style={{ padding: '9px 16px', gap: 8, borderRadius: 'var(--r-md)' }}
         >
           <BookOpen size={15} />
-          View All Tasks ({totalTasks})
+          View All Homework ({totalTasks})
         </Link>
       </div>
 
@@ -617,7 +617,7 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt-primary)' }}>Daily Progress</div>
-                  <div style={{ fontSize: 11, color: 'var(--txt-secondary)' }}>Overall task completion</div>
+                  <div style={{ fontSize: 11, color: 'var(--txt-secondary)' }}>Overall homework completed</div>
                 </div>
               </div>
               <div style={{ fontSize: 20, fontWeight: 800, color: progressPercent === 100 ? '#059669' : 'var(--accent-text)' }}>
@@ -658,7 +658,7 @@ export default function StudentDashboard() {
             paddingTop: 10,
           }}>
             <span>
-              <strong>{doneCount}</strong> of <strong>{totalTasks}</strong> tasks completed
+              <strong>{doneCount}</strong> of <strong>{totalTasks}</strong> completed
             </span>
             {avgGrade != null ? (
               <span style={{ fontWeight: 600, color: gradeColor(avgGrade) }}>
@@ -681,7 +681,7 @@ export default function StudentDashboard() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: urgentCount > 0 ? '#b91c1c' : 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Do Now
+              Due Soon / Late
             </span>
             <AlertTriangle size={15} style={{ color: urgentCount > 0 ? '#ef4444' : 'var(--txt-tertiary)' }} />
           </div>
@@ -689,7 +689,7 @@ export default function StudentDashboard() {
             {urgentCount}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--txt-secondary)' }}>
-            {urgentCount === 0 ? 'All caught up' : 'Needs action today'}
+            {urgentCount === 0 ? 'All caught up' : 'Needs attention'}
           </div>
         </div>
 
@@ -705,7 +705,7 @@ export default function StudentDashboard() {
             {inProgressTasks.length}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--txt-secondary)' }}>
-            Started assignments
+            Currently working on
           </div>
         </div>
 
@@ -713,7 +713,7 @@ export default function StudentDashboard() {
         <div className="glass-card" style={{ padding: '14px 18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--clr-submitted-txt)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Under Review
+              Checking
             </span>
             <BookOpen size={15} style={{ color: 'var(--clr-submitted-txt)' }} />
           </div>
@@ -721,7 +721,7 @@ export default function StudentDashboard() {
             {myAssignments.filter(a => a.status === 'SUBMITTED' || a.status === 'UNDER_REVIEW').length}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--txt-secondary)' }}>
-            Awaiting teacher
+            Waiting for teacher
           </div>
         </div>
 
@@ -737,7 +737,7 @@ export default function StudentDashboard() {
             {doneCount}
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--txt-secondary)' }}>
-            {avgGrade != null ? `Avg score: ${avgGrade}/100` : 'Finished tasks'}
+            {avgGrade != null ? `Avg score: ${avgGrade}/100` : 'Finished homework'}
           </div>
         </div>
       </div>
@@ -755,16 +755,16 @@ export default function StudentDashboard() {
               <AlertTriangle size={14} />
             </div>
             <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-              What Has To Be Done Now
+              Homework Due Soon
             </h2>
             {urgentCount > 0 && (
               <span className="g-badge g-badge-overdue" style={{ fontSize: 10.5 }}>
-                {urgentCount} urgent
+                {urgentCount} needs attention
               </span>
             )}
           </div>
           <span style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
-            Immediate priorities & deadlines
+            Assignments with upcoming due dates
           </span>
         </div>
 
@@ -788,10 +788,10 @@ export default function StudentDashboard() {
               <Check size={20} strokeWidth={2.5} />
             </div>
             <div style={{ fontSize: 15, fontWeight: 700, color: '#065f46' }}>
-              No Urgent Tasks Right Now!
+              No Urgent Homework Right Now!
             </div>
             <div style={{ fontSize: 12.5, color: '#047857', maxWidth: 420 }}>
-              You don't have any overdue tasks, items needing urgent revision, or deadlines closing in today. Great job staying ahead of schedule!
+              You don't have any late homework, assignments needing changes, or due dates closing in today. Great job staying ahead of schedule!
             </div>
           </div>
         ) : (
@@ -825,9 +825,9 @@ export default function StudentDashboard() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <TypeChip type={task.type} />
                         {isRevision ? (
-                          <span className="g-badge g-badge-revision" style={{ fontSize: 10 }}>Needs Revision</span>
+                          <span className="g-badge g-badge-revision" style={{ fontSize: 10 }}>Needs Changes</span>
                         ) : overdueA ? (
-                          <span className="g-badge g-badge-overdue" style={{ fontSize: 10 }}>Overdue</span>
+                          <span className="g-badge g-badge-overdue" style={{ fontSize: 10 }}>Late</span>
                         ) : (
                           <span className="g-badge g-badge-progress" style={{ fontSize: 10 }}>Due Today</span>
                         )}
@@ -899,7 +899,7 @@ export default function StudentDashboard() {
                             : 'var(--accent)',
                       }}
                     >
-                      {isRevision ? 'Revise Task' : task.status === 'IN_PROGRESS' ? 'Resume Task' : 'Start Task'}
+                      {isRevision ? 'Fix Homework' : task.status === 'IN_PROGRESS' ? 'Continue Homework' : 'Start Homework'}
                       <ArrowRight size={13} />
                     </Link>
                   </div>
@@ -920,7 +920,7 @@ export default function StudentDashboard() {
                 What To Do Today
               </h2>
               <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '2px 0 0' }}>
-                Your study plan and assigned assignments
+                Your study plan and assigned homework
               </p>
             </div>
 
@@ -945,7 +945,7 @@ export default function StudentDashboard() {
                   { id: 'all', label: `All (${myAssignments.length})` },
                   { id: 'urgent', label: `Do Now (${urgentCount})` },
                   { id: 'in_progress', label: `In Progress (${inProgressTasks.length})` },
-                  { id: 'done', label: `Done (${doneCount})` },
+                  { id: 'done', label: `Completed (${doneCount})` },
                 ].map(tab => (
                   <button
                     key={tab.id}
@@ -984,7 +984,7 @@ export default function StudentDashboard() {
               paddingTop: 8,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)' }}>Subject:</span>
                 <select
                   value={typeFilter}
                   onChange={e => setTypeFilter(e.target.value)}
@@ -1008,12 +1008,12 @@ export default function StudentDashboard() {
                   <option value="all">Anytime</option>
                   <option value="today">Due Today</option>
                   <option value="this_week">Due This Week</option>
-                  <option value="overdue">Overdue Only</option>
+                  <option value="overdue">Late Only</option>
                 </select>
               </div>
 
               <span style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginLeft: 'auto' }}>
-                {displayTasks.length} {displayTasks.length === 1 ? 'task' : 'tasks'} found
+                {displayTasks.length} {displayTasks.length === 1 ? 'homework' : 'homeworks'} found
               </span>
             </div>
           </div>
@@ -1025,10 +1025,10 @@ export default function StudentDashboard() {
                 <CheckCircle2 size={32} style={{ margin: '0 auto', opacity: 0.6 }} />
               </div>
               <h4 style={{ fontSize: 15, fontWeight: 600, color: 'var(--txt-primary)', margin: '0 0 4px' }}>
-                No tasks match this filter
+                No homework matches this filter
               </h4>
               <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: 0 }}>
-                {searchQuery ? 'Try clearing your search query.' : 'You have no tasks in this view.'}
+                {searchQuery ? 'Try clearing your search query.' : 'You have no homework in this view.'}
               </p>
             </div>
           ) : (
@@ -1086,7 +1086,7 @@ export default function StudentDashboard() {
                           {urgency ? (
                             <span>{urgency.text}</span>
                           ) : (
-                            <span>No deadline set</span>
+                            <span>No due date set</span>
                           )}
                           {typeof task.grade === 'number' && (
                             <span style={{ fontWeight: 700, color: '#059669' }}>· Grade: {task.grade}/100</span>

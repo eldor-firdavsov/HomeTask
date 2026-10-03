@@ -143,7 +143,7 @@ function EditTaskModal({ template, onClose, onSave }) {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-            Edit Task Details
+            Edit Homework Details
           </h2>
           <button onClick={onClose} className="g-btn g-btn-ghost" style={{ padding: '6px 8px' }}>
             <X size={16} />
@@ -152,7 +152,7 @@ function EditTaskModal({ template, onClose, onSave }) {
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Task Title</label>
+            <label style={labelStyle}>Homework Title</label>
             <input
               style={inputStyle}
               value={title}
@@ -164,7 +164,7 @@ function EditTaskModal({ template, onClose, onSave }) {
           </div>
 
           <div style={{ marginBottom: 16 }}>
-            <label style={labelStyle}>Task Type</label>
+            <label style={labelStyle}>Subject / Topic</label>
             <select
               style={inputStyle}
               value={type}
@@ -197,7 +197,7 @@ function EditTaskModal({ template, onClose, onSave }) {
             background: 'rgba(255,255,255,0.30)', border: '1px solid rgba(255,255,255,0.50)',
             borderRadius: 'var(--r-md)', padding: '14px 16px', marginBottom: 18
           }}>
-            <label style={{ ...labelStyle, marginBottom: 6 }}>Task Materials &amp; Resources (Link, File, or Image)</label>
+            <label style={{ ...labelStyle, marginBottom: 6 }}>Study Materials &amp; Links (Link, File, or Image)</label>
 
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[
@@ -309,7 +309,7 @@ function EditTaskModal({ template, onClose, onSave }) {
           </div>
 
           <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Allowed Submission Types</label>
+            <label style={labelStyle}>How students can submit</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {SUB_TYPES.map(st => {
                 const active = subTypes.includes(st);
@@ -588,7 +588,7 @@ export default function TaskDetail() {
         onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
       >
-        <ArrowLeft size={14} /> Back to Tasks
+        <ArrowLeft size={14} /> Back to Homework
       </Link>
 
       {/* Main Task Header Glass Panel */}
@@ -615,20 +615,20 @@ export default function TaskDetail() {
               className="g-btn g-btn-primary"
               style={{ padding: '9px 16px', fontSize: 13 }}
             >
-              <UserCheck size={15} /> Assign to Students
+              <UserCheck size={15} /> Give to Students
             </button>
             <button
               onClick={() => setShowEdit(true)}
               className="g-btn g-btn-secondary"
               style={{ padding: '9px 14px', fontSize: 13 }}
             >
-              <Edit3 size={15} /> Edit Task
+              <Edit3 size={15} /> Edit Homework
             </button>
             <button
               onClick={handleDuplicate}
               className="g-btn g-btn-ghost"
               style={{ padding: '9px 11px' }}
-              title="Duplicate Task"
+              title="Make a copy"
             >
               <Copy size={14} />
             </button>
@@ -636,7 +636,7 @@ export default function TaskDetail() {
               onClick={handleDelete}
               className="g-btn g-btn-ghost"
               style={{ padding: '9px 11px', color: 'var(--clr-overdue-txt)' }}
-              title="Delete Task"
+              title="Delete homework"
             >
               <Trash2 size={14} />
             </button>
@@ -657,7 +657,7 @@ export default function TaskDetail() {
             borderRadius: 'var(--r-md)', padding: '12px 14px',
           }}>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-              Assigned
+              Given To
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt-primary)' }}>
               {stats.total}
@@ -668,7 +668,7 @@ export default function TaskDetail() {
             borderRadius: 'var(--r-md)', padding: '12px 14px',
           }}>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-              Pending
+              To Do
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt-secondary)' }}>
               {stats.pending}
@@ -679,7 +679,7 @@ export default function TaskDetail() {
             borderRadius: 'var(--r-md)', padding: '12px 14px',
           }}>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-              In Review
+              Checking
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-submitted-txt)' }}>
               {stats.review}
@@ -690,7 +690,7 @@ export default function TaskDetail() {
             borderRadius: 'var(--r-md)', padding: '12px 14px',
           }}>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-              Done
+              Completed
             </div>
             <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-done-txt)' }}>
               {stats.done}
@@ -702,7 +702,7 @@ export default function TaskDetail() {
               borderRadius: 'var(--r-md)', padding: '12px 14px',
             }}>
               <div style={{ fontSize: 11, color: 'var(--clr-overdue-txt)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-                Overdue
+                Late
               </div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-overdue-txt)' }}>
                 {stats.overdue}
@@ -715,7 +715,7 @@ export default function TaskDetail() {
       {/* Task Details and Instructions Card */}
       <div className="glass-2" style={{ borderRadius: 'var(--r-xl)', padding: '26px 30px', marginBottom: 24 }}>
         <h2 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', margin: '0 0 16px' }}>
-          Instructions &amp; Details
+          Homework Instructions
         </h2>
         <div style={{
           fontSize: 14.5, lineHeight: 1.65, color: 'var(--txt-primary)',
@@ -739,7 +739,7 @@ export default function TaskDetail() {
         {!loadingAttachments && allAttachments && allAttachments.length > 0 && (
           <div style={{ marginBottom: 20 }}>
             <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--txt-secondary)', margin: '0 0 12px' }}>
-              Materials &amp; Attached Resources ({allAttachments.length})
+              Attached Files &amp; Links ({allAttachments.length})
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
               {allAttachments.map(att => (
@@ -831,7 +831,7 @@ export default function TaskDetail() {
 
         <div>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 10 }}>
-            Accepted Submissions:
+            How students can submit:
           </span>
           <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', verticalAlign: 'middle' }}>
             {(template.submissionTypes || ['Text']).map(st => (
@@ -854,10 +854,10 @@ export default function TaskDetail() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: 19, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-            Assigned Students ({assignments.length})
+            Students Assigned ({assignments.length})
           </h2>
           <p style={{ fontSize: 12.5, color: 'var(--txt-secondary)', margin: '2px 0 0' }}>
-            Students working on this task and their current progress
+            Students working on this homework and their progress
           </p>
         </div>
         <button
@@ -865,7 +865,7 @@ export default function TaskDetail() {
           className="g-btn g-btn-secondary"
           style={{ fontSize: 12.5, padding: '7px 14px' }}
         >
-          + Assign to More Students
+          + Give to More Students
         </button>
       </div>
 
@@ -875,11 +875,11 @@ export default function TaskDetail() {
             <div className="g-tabs" style={{ gap: 4 }}>
               {[
                 { id: 'all', label: `All (${assignments.length})` },
-                { id: 'pending', label: `Pending (${stats.pending})` },
+                { id: 'pending', label: `To Do (${stats.pending})` },
                 { id: 'in_progress', label: `In Progress (${stats.inProgress})` },
-                { id: 'review', label: `Review (${stats.review})` },
-                { id: 'done', label: `Done (${stats.done})` },
-                ...(stats.overdue > 0 ? [{ id: 'overdue', label: `Overdue (${stats.overdue})` }] : []),
+                { id: 'review', label: `Checking (${stats.review})` },
+                { id: 'done', label: `Completed (${stats.done})` },
+                ...(stats.overdue > 0 ? [{ id: 'overdue', label: `Late (${stats.overdue})` }] : []),
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -897,7 +897,7 @@ export default function TaskDetail() {
                 <span className="g-search-icon"><Search size={13} /></span>
                 <input
                   className="g-search"
-                  placeholder="Filter students…"
+                  placeholder="Search students…"
                   value={studentSearch}
                   onChange={e => setStudentSearch(e.target.value)}
                   style={{ padding: '5px 8px 5px 28px', fontSize: 12 }}
@@ -922,14 +922,14 @@ export default function TaskDetail() {
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
           <div className="g-empty" style={{ padding: '40px 20px' }}>
             <div className="g-empty-icon"><Users size={22} strokeWidth={1.8} /></div>
-            <h3>No students assigned yet</h3>
-            <p>Assign this task template to one or more of your students with a deadline.</p>
+            <h3>Not given to any students yet</h3>
+            <p>Give this homework to one or more of your students with a due date.</p>
             <button
               onClick={() => setShowAssign(true)}
               className="g-btn g-btn-primary"
               style={{ marginTop: 8 }}
             >
-              Assign to Students Now
+              Give to Students Now
             </button>
           </div>
         </div>
@@ -1018,7 +1018,7 @@ export default function TaskDetail() {
                       className="g-btn g-btn-primary"
                       style={{ fontSize: 12, padding: '6px 14px' }}
                     >
-                      {assignment.status === 'DONE' ? 'View Review' : 'Review'}
+                      {assignment.status === 'DONE' ? 'View Grade' : 'Check Work'}
                     </Link>
                   )}
                   {student && (

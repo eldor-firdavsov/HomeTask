@@ -14,13 +14,13 @@ export function effectiveStatus(a) {
 }
 
 const STATUS_META = {
-  PENDING:        { label: 'Pending',        cls: 'g-badge g-badge-pending'   },
+  PENDING:        { label: 'To Do',          cls: 'g-badge g-badge-pending'   },
   IN_PROGRESS:    { label: 'In Progress',    cls: 'g-badge g-badge-progress'  },
-  SUBMITTED:      { label: 'Submitted',      cls: 'g-badge g-badge-submitted' },
-  UNDER_REVIEW:   { label: 'Under Review',   cls: 'g-badge g-badge-review'    },
-  NEEDS_REVISION: { label: 'Needs Revision', cls: 'g-badge g-badge-revision'  },
-  DONE:           { label: 'Done',           cls: 'g-badge g-badge-done'      },
-  OVERDUE:        { label: 'Overdue',        cls: 'g-badge g-badge-overdue'   },
+  SUBMITTED:      { label: 'Turned In',      cls: 'g-badge g-badge-submitted' },
+  UNDER_REVIEW:   { label: 'Checking',       cls: 'g-badge g-badge-review'    },
+  NEEDS_REVISION: { label: 'Needs Changes',  cls: 'g-badge g-badge-revision'  },
+  DONE:           { label: 'Completed',      cls: 'g-badge g-badge-done'      },
+  OVERDUE:        { label: 'Late',           cls: 'g-badge g-badge-overdue'   },
 };
 
 export function StatusBadge({ assignment }) {
@@ -69,7 +69,7 @@ export function formatDateTime(str) {
 export function deadlineLabel(str) {
   if (!str) return null;
   const diff = new Date(str) - new Date();
-  if (diff < 0) return 'Overdue';
+  if (diff < 0) return 'Late';
   if (diff < 86400000)  return 'Due today';
   if (diff < 172800000) return 'Due tomorrow';
   return 'Due ' + formatDate(str);

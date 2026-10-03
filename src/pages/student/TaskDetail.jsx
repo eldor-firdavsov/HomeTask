@@ -249,7 +249,7 @@ export default function StudentTaskDetail() {
       // 3. Transition assignment status to submitted
       await updateAssignmentStatus(assignmentId, 'SUBMITTED');
 
-      toast('Task submitted successfully!');
+      toast('Homework turned in successfully!');
       if (refreshData) await refreshData();
       setTimeout(() => navigate('/student/tasks'), 500);
     } catch (err) {
@@ -279,7 +279,7 @@ export default function StudentTaskDetail() {
         onMouseEnter={e => e.currentTarget.style.color='var(--txt-primary)'}
         onMouseLeave={e => e.currentTarget.style.color='var(--txt-secondary)'}
       >
-        <ArrowLeft size={13} /> My Tasks
+        <ArrowLeft size={13} /> My Homework
       </Link>
 
       {/* Header glass banner */}
@@ -303,7 +303,7 @@ export default function StudentTaskDetail() {
                   color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)',
                 }}>
                   <Clock size={11} />
-                  {overdueA ? 'Overdue — was due ' : 'Due '}{dlStr}
+                  {overdueA ? 'Late — was due ' : 'Due '}{dlStr}
                 </span>
               )}
             </div>
@@ -316,7 +316,7 @@ export default function StudentTaskDetail() {
                 style={{ padding: '6px 12px', fontSize: 12, gap: 6, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
               >
                 <Timer size={14} color="var(--accent-text)" />
-                <span>Focus Sprint</span>
+                <span>Study Timer</span>
               </Link>
             )}
             <StatusBadge assignment={assignment} />
@@ -356,7 +356,7 @@ export default function StudentTaskDetail() {
             <AlertCircle size={18} style={{ color: 'var(--clr-revision-txt)', flexShrink: 0, marginTop: 2 }} />
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--clr-revision-txt)', marginBottom: 6 }}>
-                Revision requested
+                Teacher asked for changes
               </div>
               <p style={{ fontSize: 13.5, color: 'var(--txt-primary)', margin: 0, lineHeight: 1.65, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                 {assignment.feedback}
@@ -369,7 +369,7 @@ export default function StudentTaskDetail() {
       {/* Instructions */}
       <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
-          Instructions
+          Homework Instructions
         </div>
         <p style={{ fontSize: 15, lineHeight: 1.75, color: 'var(--txt-primary)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           {assignment.instructions || 'No instructions provided.'}
@@ -380,7 +380,7 @@ export default function StudentTaskDetail() {
       {loadingAttachments && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--txt-secondary)', fontSize: 13 }}>
           <Loader2 size={16} className="animate-spin" />
-          <span>Loading reference materials &amp; attachments…</span>
+          <span>Loading study materials &amp; files…</span>
         </div>
       )}
 
@@ -388,7 +388,7 @@ export default function StudentTaskDetail() {
       {!loadingAttachments && taskAttachments && taskAttachments.length > 0 && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 14 }}>
-            Reference Materials &amp; Attachments ({taskAttachments.length})
+            Study Materials &amp; Files ({taskAttachments.length})
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {taskAttachments.map(att => {
@@ -568,7 +568,7 @@ export default function StudentTaskDetail() {
           )}
 
           <div style={{ fontSize: 11.5, color: 'var(--txt-tertiary)', marginTop: 14 }}>
-            Submitted {formatDateTime(submission.submittedAt)} · awaiting review
+            Turned in {formatDateTime(submission.submittedAt)} · waiting for teacher to check
           </div>
         </div>
       )}
@@ -577,7 +577,7 @@ export default function StudentTaskDetail() {
       {canSubmit && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 14 }}>
-            {assignment.status === 'NEEDS_REVISION' ? 'Revised answer' : 'Your submission'}
+            {assignment.status === 'NEEDS_REVISION' ? 'Your revised answer' : 'Your answer'}
           </div>
           <textarea
             rows={7}
@@ -636,7 +636,7 @@ export default function StudentTaskDetail() {
               </button>
               <button onClick={handleSubmit} className="g-btn g-btn-primary" disabled={busy}>
                 <Send size={13} />
-                {busy ? 'Submitting…' : assignment.status === 'NEEDS_REVISION' ? 'Resubmit' : 'Submit'}
+                {busy ? 'Turning in…' : assignment.status === 'NEEDS_REVISION' ? 'Turn in again' : 'Turn in homework'}
               </button>
             </div>
           </div>

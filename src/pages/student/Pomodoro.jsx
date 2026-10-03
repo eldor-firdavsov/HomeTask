@@ -543,13 +543,13 @@ export default function StudentPomodoro() {
             marginBottom: 8,
           }}>
             <Flame size={13} color="#f59e0b" />
-            <span>Task-Driven Pomodoro · Sprint Focus</span>
+            <span>Study Timer · 25 min work &amp; 5 min rest</span>
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.025em' }}>
-            Focus Sprint Timer
+            Study Timer
           </h1>
           <p style={{ fontSize: 13.5, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            Pick a task, enter deep focus with zero distractions, and check off homework faster.
+            Select your homework, click Start, and study peacefully without any distractions.
           </p>
         </div>
 
@@ -678,7 +678,7 @@ export default function StudentPomodoro() {
                 color: phase === 'FOCUS' ? '#4f46e5' : '#059669',
                 border: phase === 'FOCUS' ? '1px solid rgba(99,102,241,0.25)' : '1px solid rgba(16,185,129,0.3)',
               }}>
-                {phase === 'FOCUS' ? 'Focus Session' : 'Recharge Break'}
+                {phase === 'FOCUS' ? 'Study Time' : 'Break Time'}
               </span>
             </div>
 
@@ -697,10 +697,10 @@ export default function StudentPomodoro() {
             }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--txt-tertiary)', letterSpacing: '0.04em' }}>
-                  Target Assignment
+                  Homework to work on:
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                  {selectedTask ? selectedTask.title : 'General Study & Free Practice'}
+                  {selectedTask ? selectedTask.title : 'General Studying & Reading'}
                 </div>
               </div>
               {selectedTask && (
@@ -858,10 +858,10 @@ export default function StudentPomodoro() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-                  Choose Your Assignment
+                  Choose Your Homework
                 </h2>
                 <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '2px 0 0' }}>
-                  Select the homework to focus on during this sprint
+                  Click any homework below to link it to your timer
                 </p>
               </div>
 
@@ -873,7 +873,7 @@ export default function StudentPomodoro() {
                   className={`g-tab${taskFilter === 'active' ? ' active' : ''}`}
                   style={{ fontSize: 11.5, padding: '4px 10px' }}
                 >
-                  Active ({myAssignments.filter(a => a.status !== 'DONE').length})
+                  To Do ({myAssignments.filter(a => a.status !== 'DONE').length})
                 </button>
                 <button
                   type="button"
@@ -1050,11 +1050,13 @@ export default function StudentPomodoro() {
 
           {/* Quick study tips */}
           <div className="glass-card" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.45)' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={14} color="#6366f1" /> Why the Pomodoro Technique Works
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--txt-primary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={14} color="#6366f1" /> How to use the Study Timer
             </div>
-            <p style={{ fontSize: 11.5, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
-              25-minute sprints train your brain to resist distractions. Our pure dark mode shuts out visual clutter so you can achieve peak flow state.
+            <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.6 }}>
+              1. Select which homework you want to work on.<br />
+              2. Click <strong>Start</strong> — the screen turns dark so you won't get distracted.<br />
+              3. When the bell rings after 25 minutes, take a 5-minute break!
             </p>
           </div>
         </div>

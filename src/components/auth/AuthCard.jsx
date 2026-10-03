@@ -99,11 +99,11 @@ export default function AuthCard({ initialRole = 'teacher' }) {
       if (msg.includes('Invalid login credentials')) {
         triggerErrorShake(
           role === 'teacher'
-            ? 'Invalid email or password. Please verify your credentials.'
-            : 'Invalid student credentials. Please check the email and password provided by your teacher.'
+            ? 'Incorrect email or password. Please check your spelling and try again.'
+            : 'Incorrect email or password. Please check the login details from your teacher.'
         );
       } else if (msg.includes('Email not confirmed')) {
-        triggerErrorShake('Account email has not been activated. Please check your confirmation link.');
+        triggerErrorShake('Your account email has not been confirmed yet. Please check your inbox.');
       } else {
         triggerErrorShake(msg);
       }
@@ -216,7 +216,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
               textTransform: 'uppercase',
               color: 'var(--accent-text)',
             }}>
-              {role === 'teacher' ? 'Educator Sign In' : 'Student Portal'}
+              {role === 'teacher' ? 'Teacher Sign In' : 'Student Sign In'}
             </span>
           </div>
 
@@ -227,12 +227,12 @@ export default function AuthCard({ initialRole = 'teacher' }) {
             letterSpacing: '-0.02em',
             margin: '0 0 6px',
           }}>
-            {role === 'teacher' ? 'Welcome back, Teacher' : 'Welcome back, Student'}
+            {role === 'teacher' ? 'Welcome, Teacher' : 'Welcome, Student'}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
             {role === 'teacher'
-              ? 'Access your assignment manager, student submissions & grading analytics.'
-              : 'Log in with credentials from your teacher to view assignments & start sprints.'}
+              ? 'Sign in to manage students, give homework, and review work.'
+              : 'Sign in to see your homework and start your study timer.'}
           </p>
         </div>
 

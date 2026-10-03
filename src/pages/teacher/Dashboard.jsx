@@ -291,31 +291,31 @@ function StudentCard({ student, assignments }) {
         flexWrap: 'wrap', gap: 10,
       }}>
         {counts.total === 0 ? (
-          <span style={{ fontSize: 12, color: 'var(--txt-tertiary)' }}>No tasks yet</span>
+          <span style={{ fontSize: 12, color: 'var(--txt-tertiary)' }}>No homework assigned yet</span>
         ) : (
           <>
             {counts.pending > 0 && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt-primary)' }}>{counts.pending}</div>
-                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>pending</div>
+                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>to do</div>
               </div>
             )}
             {counts.review > 0 && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-submitted-txt)' }}>{counts.review}</div>
-                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>review</div>
+                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>checking</div>
               </div>
             )}
             {counts.done > 0 && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-done-txt)' }}>{counts.done}</div>
-                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>done</div>
+                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>completed</div>
               </div>
             )}
             {counts.overdue > 0 && (
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-overdue-txt)' }}>{counts.overdue}</div>
-                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>overdue</div>
+                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>late</div>
               </div>
             )}
           </>
@@ -450,14 +450,14 @@ export default function Dashboard() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 14 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-            Dashboard
+            Teacher Dashboard
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            Manage your students and track their progress
+            Welcome! Manage your students, create homework, and review their submissions.
           </p>
         </div>
         <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
-          + New task
+          + Create Homework
         </Link>
       </div>
 
@@ -468,13 +468,17 @@ export default function Dashboard() {
         marginBottom: 24,
         overflowX: 'auto', flexWrap: 'nowrap', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none',
       }}>
-        {['students','tasks','review'].map(t => (
+        {[
+          { id: 'students', label: 'My Students' },
+          { id: 'tasks',    label: 'Homework List' },
+          { id: 'review',   label: 'Check Submissions' },
+        ].map(t => (
           <button
-            key={t}
-            className={`g-tab-underline${tab === t ? ' active' : ''}`}
-            onClick={() => { setTab(t); setSearch(''); }}
+            key={t.id}
+            className={`g-tab-underline${tab === t.id ? ' active' : ''}`}
+            onClick={() => { setTab(t.id); setSearch(''); }}
           >
-            {t === 'students' ? 'Students' : t === 'tasks' ? 'Tasks' : 'Review'}
+            {t.label}
           </button>
         ))}
       </div>
@@ -487,13 +491,13 @@ export default function Dashboard() {
               <span className="g-search-icon"><Search size={13} /></span>
               <input
                 className="g-search"
-                placeholder="Search students…"
+                placeholder="Search students by name or email…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <button onClick={() => setShowAdd(true)} className="g-btn g-btn-secondary">
-              <UserPlus size={14} /> Add student
+              <UserPlus size={14} /> + Add student
             </button>
           </div>
 
@@ -509,7 +513,7 @@ export default function Dashboard() {
               <div className="g-empty">
                 <div className="g-empty-icon"><UserPlus size={20} strokeWidth={1.8} /></div>
                 <h3>{search ? 'No students found' : 'No students yet'}</h3>
-                <p>{search ? 'Try a different name or email.' : 'Add your first student to get started.'}</p>
+                <p>{search ? 'Try searching a different name or email.' : 'Add your first student to get started.'}</p>
                 {!search && (
                   <button onClick={() => setShowAdd(true)} className="g-btn g-btn-primary">
                     + Add student
@@ -528,9 +532,9 @@ export default function Dashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 12 }}>
               <div className="g-tabs" style={{ gap: 4 }}>
                 {[
-                  { id: 'all', label: `All Tasks (${(data.templates || []).length})` },
-                  { id: 'assigned', label: `Assigned (${(data.templates || []).filter(t => (assignmentCountMap[t.id] || 0) > 0).length})` },
-                  { id: 'unassigned', label: `Unassigned (${(data.templates || []).filter(t => !assignmentCountMap[t.id]).length})` },
+                  { id: 'all', label: `All Homework (${(data.templates || []).length})` },
+                  { id: 'assigned', label: `Given to Students (${(data.templates || []).filter(t => (assignmentCountMap[t.id] || 0) > 0).length})` },
+                  { id: 'unassigned', label: `Not Given Yet (${(data.templates || []).filter(t => !assignmentCountMap[t.id]).length})` },
                 ].map(item => (
                   <button
                     key={item.id}
@@ -545,10 +549,10 @@ export default function Dashboard() {
 
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Link to="/teacher/tasks" className="g-btn g-btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }}>
-                  Task Library <ChevronRight size={13} />
+                  Full Library <ChevronRight size={13} />
                 </Link>
                 <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}>
-                  <Plus size={14} /> New task
+                  <Plus size={14} /> Create Homework
                 </Link>
               </div>
             </div>
@@ -653,7 +657,7 @@ export default function Dashboard() {
                         {(tpl.instructions || '').slice(0, 100)}{tpl.instructions?.length > 100 ? '…' : ''}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 4 }}>
-                        {assignedCount} {assignedCount === 1 ? 'student' : 'students'} assigned · Created {formatDate(tpl.createdAt)}
+                        {assignedCount} {assignedCount === 1 ? 'student has this' : 'students have this'} · Created {formatDate(tpl.createdAt)}
                       </div>
                     </div>
 
@@ -662,9 +666,9 @@ export default function Dashboard() {
                         onClick={() => setAssigningTemplate(tpl)}
                         className="g-btn g-btn-primary"
                         style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
-                        title="Assign to one or several students"
+                        title="Give this homework to students"
                       >
-                        <UserCheck size={13} /> Assign
+                        <UserCheck size={13} /> Give to students
                       </button>
                       <Link
                         to={`/teacher/tasks/${tpl.id}`}
@@ -682,10 +686,10 @@ export default function Dashboard() {
             <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
               <div className="g-empty">
                 <div className="g-empty-icon"><BookOpen size={20} strokeWidth={1.8} /></div>
-                <h3>{search ? 'No tasks found' : 'No tasks yet'}</h3>
-                <p>{search ? 'Try a different search keyword.' : 'Create your first task template to start assigning homework.'}</p>
+                <h3>{search ? 'No homework found' : 'No homework created yet'}</h3>
+                <p>{search ? 'Try a different search word.' : 'Create your first homework to start giving exercises to your students.'}</p>
                 <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ marginTop: 8 }}>
-                  + Create task
+                  + Create Homework
                 </Link>
               </div>
             </div>
