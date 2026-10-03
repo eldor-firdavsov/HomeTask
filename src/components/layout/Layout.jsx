@@ -256,7 +256,9 @@ export default function Layout() {
         minWidth: 0,
       }}>
         <div style={{ maxWidth: 1060, margin: '0 auto' }}>
-          <Outlet />
+          <div key={location.pathname} className="g-page-transition">
+            <Outlet />
+          </div>
         </div>
       </main>
 
