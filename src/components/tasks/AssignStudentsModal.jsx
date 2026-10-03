@@ -134,13 +134,13 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-              Give Homework to Students
+              Assign Task to Students
             </h2>
-            <p style={{ fontSize: 12.5, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-              Choose which students will receive <strong style={{ color: 'var(--txt-primary)' }}>"{template.title}"</strong> and when it is due.
+            <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
+              Assign <strong style={{ color: 'var(--txt-primary)' }}>"{template.title}"</strong> to one or several students simultaneously
             </p>
           </div>
-          <button onClick={onClose} className="g-btn g-btn-ghost" style={{ padding: '6px 8px' }} aria-label="Close">
+          <button onClick={onClose} className="g-btn g-btn-ghost" style={{ padding: '6px 8px' }}>
             <X size={16} />
           </button>
         </div>
@@ -150,7 +150,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
           background: 'rgba(255,255,255,0.40)', border: '1px solid rgba(255,255,255,0.60)',
           borderRadius: 'var(--r-md)', padding: '16px 18px', marginBottom: 18
         }}>
-          <label style={labelStyle}>When is it due? *</label>
+          <label style={labelStyle}>Assignment Deadline *</label>
           <input
             type="datetime-local"
             style={{ ...inputStyle, marginBottom: 10 }}
@@ -162,10 +162,10 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginRight: 4 }}>Quick presets:</span>
             {[
-              { label: 'Tomorrow', days: 1 },
-              { label: 'In 3 Days', days: 3 },
-              { label: 'In 1 Week', days: 7 },
-              { label: 'In 2 Weeks', days: 14 },
+              { label: '+1 Day', days: 1 },
+              { label: '+3 Days', days: 3 },
+              { label: '+1 Week', days: 7 },
+              { label: '+2 Weeks', days: 14 },
             ].map(preset => (
               <button
                 key={preset.label}
@@ -184,7 +184,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
         {/* Student Selection Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <label style={{ ...labelStyle, margin: 0 }}>
-            Who should do this homework? ({selectedIds.length} of {students.length} chosen)
+            Select Students ({selectedIds.length} of {students.length} selected)
           </label>
           <button
             type="button"
@@ -192,7 +192,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
             className="g-btn g-btn-ghost"
             style={{ padding: '4px 10px', fontSize: 11.5 }}
           >
-            {selectedIds.length === filteredStudents.length && filteredStudents.length > 0 ? 'Clear all' : 'Select all'}
+            {selectedIds.length === filteredStudents.length && filteredStudents.length > 0 ? 'Deselect all' : 'Select all'}
           </button>
         </div>
 
@@ -283,7 +283,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6 }}>
           <div style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
-            Chosen: <strong style={{ color: 'var(--txt-primary)' }}>{selectedIds.length}</strong> {selectedIds.length === 1 ? 'student' : 'students'}
+            Selected: <strong style={{ color: 'var(--txt-primary)' }}>{selectedIds.length}</strong> {selectedIds.length === 1 ? 'student' : 'students'}
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={onClose} className="g-btn g-btn-ghost">
@@ -297,7 +297,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
               style={{ opacity: selectedIds.length === 0 || submitting ? 0.6 : 1 }}
             >
               <Send size={13} />
-              {submitting ? 'Sending…' : `Give to ${selectedIds.length || 0} ${selectedIds.length === 1 ? 'student' : 'students'}`}
+              {submitting ? 'Assigning…' : `Assign to ${selectedIds.length || 0} ${selectedIds.length === 1 ? 'student' : 'students'}`}
             </button>
           </div>
         </div>

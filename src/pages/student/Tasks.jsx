@@ -4,24 +4,24 @@ import { useData } from '../../context/DataContext';
 import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar, Timer } from 'lucide-react';
 import { StatusBadge, TypeChip, isOverdue } from '../../utils/helpers.jsx';
 
-const STATUS_FILTERS = ['All', 'To Do', 'In Progress', 'Turned In', 'Checking', 'Needs Changes', 'Completed', 'Late'];
+const STATUS_FILTERS = ['All', 'Pending', 'In Progress', 'Submitted', 'Under Review', 'Needs Revision', 'Done', 'Overdue'];
 
 const STATUS_MAP = {
-  'To Do': 'PENDING',
+  'Pending': 'PENDING',
   'In Progress': 'IN_PROGRESS',
-  'Turned In': 'SUBMITTED',
-  'Checking': 'UNDER_REVIEW',
-  'Needs Changes': 'NEEDS_REVISION',
-  'Completed': 'DONE',
+  'Submitted': 'SUBMITTED',
+  'Under Review': 'UNDER_REVIEW',
+  'Needs Revision': 'NEEDS_REVISION',
+  'Done': 'DONE',
 };
 
-const TASK_TYPES = ['All Subjects', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
+const TASK_TYPES = ['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
 
 export default function StudentTasks() {
   const { data, session } = useData();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All Subjects');
+  const [typeFilter, setTypeFilter] = useState('All Types');
   const [timeframeFilter, setTimeframeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('deadline_asc');
 
@@ -32,13 +32,13 @@ export default function StudentTasks() {
 
   // Status counts for badge indicators
   const statusCounts = useMemo(() => {
-    const counts = { All: mine.length, Late: 0 };
+    const counts = { All: mine.length, Overdue: 0 };
     STATUS_FILTERS.forEach(f => {
-      if (f !== 'All' && f !== 'Late') {
+      if (f !== 'All' && f !== 'Overdue') {
         counts[f] = mine.filter(a => a.status === STATUS_MAP[f]).length;
       }
     });
-    counts.Late = mine.filter(isOverdue).length;
+    counts.Overdue = mine.filter(isOverdue).length;
     return counts;
   }, [mine]);
 
@@ -57,7 +57,7 @@ export default function StudentTasks() {
 
     // Status filter
     if (statusFilter !== 'All') {
-      if (statusFilter === 'Late') {
+      if (statusFilter === 'Overdue') {
         list = list.filter(isOverdue);
       } else {
         list = list.filter(a => a.status === STATUS_MAP[statusFilter]);
@@ -65,7 +65,7 @@ export default function StudentTasks() {
     }
 
     // Task Type filter
-    if (typeFilter !== 'All Subjects') {
+    if (typeFilter !== 'All Types') {
       list = list.filter(a => (a.type || '').toUpperCase() === typeFilter.toUpperCase());
     }
 
@@ -127,12 +127,12 @@ export default function StudentTasks() {
     });
   }, [mine, search, statusFilter, typeFilter, timeframeFilter, sortBy]);
 
-  const hasActiveFilters = search || statusFilter !== 'All' || typeFilter !== 'All Subjects' || timeframeFilter !== 'all' || sortBy !== 'deadline_asc';
+  const hasActiveFilters = search || statusFilter !== 'All' || typeFilter !== 'All Types' || timeframeFilter !== 'all' || sortBy !== 'deadline_asc';
 
   const resetFilters = () => {
     setSearch('');
     setStatusFilter('All');
-    setTypeFilter('All Subjects');
+    setTypeFilter('All Types');
     setTimeframeFilter('all');
     setSortBy('deadline_asc');
   };
@@ -143,10 +143,10 @@ export default function StudentTasks() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-            My Homework
+            My Tasks
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            {mine.length} {mine.length === 1 ? 'homework assignment' : 'homework assignments'} for you
+            {mine.length} {mine.length === 1 ? 'task' : 'tasks'} assigned to you
           </p>
         </div>
 
@@ -158,14 +158,14 @@ export default function StudentTasks() {
             style={{ padding: '8px 14px', fontSize: 12.5, gap: 6, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
           >
             <Timer size={14} color="var(--accent-text)" />
-            <span>Study Timer</span>
+            <span>Pomodoro Focus</span>
           </Link>
 
           <div className="g-search-wrap" style={{ minWidth: 220 }}>
             <span className="g-search-icon"><Search size={14} /></span>
             <input
               className="g-search"
-              placeholder="Search homework by title or topic…"
+              placeholder="Search by title or instructions…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
@@ -211,9 +211,9 @@ export default function StudentTasks() {
           borderTop: '1px solid rgba(255,255,255,0.40)',
           paddingTop: 12,
         }}>
-          {/* Subject Filter */}
+          {/* Subject / Type Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Subject:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
             <select
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
@@ -228,33 +228,33 @@ export default function StudentTasks() {
 
           {/* Timeframe Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Due date:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Deadline:</span>
             <select
               value={timeframeFilter}
               onChange={e => setTimeframeFilter(e.target.value)}
               className="g-select"
               style={{ fontSize: 12.5, padding: '5px 10px' }}
             >
-              <option value="all">All Dates</option>
+              <option value="all">All Deadlines</option>
               <option value="today">Due Today</option>
               <option value="tomorrow">Due Tomorrow</option>
               <option value="this_week">Due This Week</option>
-              <option value="overdue">Late Only</option>
-              <option value="no_deadline">No Due Date</option>
+              <option value="overdue">Overdue Only</option>
+              <option value="no_deadline">No Deadline</option>
             </select>
           </div>
 
           {/* Sort By */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort by:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               className="g-select"
               style={{ fontSize: 12.5, padding: '5px 10px' }}
             >
-              <option value="deadline_asc">Due Soonest</option>
-              <option value="deadline_desc">Due Latest</option>
+              <option value="deadline_asc">Deadline (Soonest first)</option>
+              <option value="deadline_desc">Deadline (Latest first)</option>
               <option value="newest">Recently Assigned</option>
               <option value="grade">Highest Grade</option>
               <option value="title">Title (A-Z)</option>
@@ -277,7 +277,7 @@ export default function StudentTasks() {
               }}
             >
               <X size={13} />
-              Clear filters
+              Reset filters
             </button>
           )}
         </div>
@@ -286,7 +286,7 @@ export default function StudentTasks() {
       {/* Results Header / Status Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, padding: '0 4px' }}>
         <span style={{ fontSize: 12.5, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-          Showing <strong>{filtered.length}</strong> of <strong>{mine.length}</strong> assignments
+          Showing <strong>{filtered.length}</strong> of <strong>{mine.length}</strong> tasks
         </span>
       </div>
 
@@ -295,11 +295,11 @@ export default function StudentTasks() {
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
           <div className="g-empty" style={{ padding: '48px 20px' }}>
             <div className="g-empty-icon"><ClipboardList size={22} strokeWidth={1.8} /></div>
-            <h3>{hasActiveFilters ? 'No homework matches your filters' : 'No homework yet!'}</h3>
+            <h3>{hasActiveFilters ? 'No tasks match your filters' : 'No tasks yet'}</h3>
             <p>
               {hasActiveFilters
-                ? 'Try clicking "Clear all filters" above to see all your homework.'
-                : "Your teacher hasn't assigned any homework yet. Enjoy your day!"}
+                ? 'Try adjusting your status, subject type, or deadline filter criteria.'
+                : "Your teacher hasn't assigned any tasks yet."}
             </p>
             {hasActiveFilters && (
               <button

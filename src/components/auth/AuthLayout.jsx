@@ -59,9 +59,7 @@ export default function AuthLayout({ role = 'teacher', children }) {
 
         {/* Auth Form Card Column */}
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-          <div key={role} className="g-page-transition" style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-            {children}
-          </div>
+          {children}
         </div>
       </div>
 

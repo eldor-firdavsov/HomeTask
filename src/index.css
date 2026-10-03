@@ -330,6 +330,9 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   line-height: 1;
   white-space: nowrap;
 }
+.g-btn:active {
+  transform: scale(0.965) translateY(0);
+}
 
 /* Primary */
 .g-btn-primary {
@@ -471,73 +474,104 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MODAL OVERLAY & POPUPS
+   PAGE TRANSITION & VIEW ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+.g-page-transition {
+  animation: pageTransitionIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes pageTransitionIn {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.993);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .g-page-transition {
+    animation: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL & POPUP OVERLAY SYSTEM
 ═══════════════════════════════════════════════════════════ */
 .g-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(12, 18, 42, 0.40);
-  backdrop-filter: blur(10px) saturate(135%);
-  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  background: rgba(15, 20, 45, 0.38);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   animation: overlayFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: opacity, backdrop-filter;
 }
 
 @keyframes overlayFadeIn {
   0% {
     opacity: 0;
-    backdrop-filter: blur(0px) saturate(100%);
-    -webkit-backdrop-filter: blur(0px) saturate(100%);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
   }
   100% {
     opacity: 1;
-    backdrop-filter: blur(10px) saturate(135%);
-    -webkit-backdrop-filter: blur(10px) saturate(135%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 }
 
-.g-modal,
-.g-overlay > .glass-4 {
+.g-modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
   border-radius: var(--r-xl);
-  animation: modalPopIn 0.34s cubic-bezier(0.34, 1.45, 0.64, 1) both;
-  transform-origin: center center;
-  box-shadow: 
-    0 24px 70px -12px rgba(15, 23, 42, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.80) inset,
-    0 8px 30px rgba(99, 102, 241, 0.12);
+  animation: modalPopupSpring 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity, filter;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22), 0 4px 16px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
-@keyframes modalPopIn {
+@keyframes modalPopupSpring {
   0% {
     opacity: 0;
-    transform: scale(0.90) translateY(18px);
-    filter: blur(4px);
+    transform: scale(0.91) translateY(16px);
+    filter: blur(6px);
   }
   65% {
     opacity: 1;
-    transform: scale(1.015) translateY(-2px);
-    filter: blur(0);
+    transform: scale(1.012) translateY(-2px);
+    filter: blur(0px);
   }
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
-    filter: blur(0);
+    filter: blur(0px);
   }
 }
 
-/* Close button spring rotate micro-animation */
-.g-modal .g-btn-ghost:hover,
-.g-overlay .g-btn-ghost:hover {
-  transform: rotate(90deg) scale(1.08);
-  transition: transform 0.22s cubic-bezier(0.34, 1.5, 0.64, 1), background var(--t-fast);
+/* Image zoom popup animation */
+.g-zoom-image {
+  animation: zoomImgPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes zoomImgPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0px);
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -657,18 +691,31 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
   color: var(--txt-primary);
   background: rgba(255,255,255,0.88);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   border: 1px solid rgba(255,255,255,0.92);
-  box-shadow: 0 16px 36px -6px rgba(30,40,100,0.16), 0 0 0 1px rgba(99,102,241,0.08);
+  box-shadow: 0 16px 36px rgba(30,40,100,0.14), 0 2px 8px rgba(30,40,100,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
   pointer-events: all;
-  animation: toastSpringIn 0.32s cubic-bezier(0.34, 1.45, 0.64, 1) both;
+  animation: toastSpringIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   will-change: transform, opacity;
 }
+
 @keyframes toastSpringIn {
-  0%   { opacity: 0; transform: translateX(28px) scale(0.92); }
-  70%  { opacity: 1; transform: translateX(-3px) scale(1.02); }
-  100% { opacity: 1; transform: translateX(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+    filter: blur(4px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.015);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
 }
 
 .g-toast-dot {
@@ -728,61 +775,11 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   PAGE TRANSITION SYSTEM
+   PAGE BASE WRAPPER
 ═══════════════════════════════════════════════════════════ */
-.g-page-transition {
-  width: 100%;
-  animation: pageTransitionIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity, filter;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
 .g-page {
-  animation: pageGlideIn 0.30s cubic-bezier(0.16, 1, 0.3, 1) both;
-  will-change: transform, opacity;
-}
-
-@keyframes pageTransitionIn {
-  0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.995);
-    filter: blur(3px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes pageGlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Floating dropdown / popover animations */
-.g-dropdown,
-.g-popover {
-  animation: popoverEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
-  transform-origin: top right;
-}
-
-@keyframes popoverEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.96);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+  width: 100%;
+  position: relative;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1028,23 +1025,37 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     align-items: flex-end !important;
   }
 
-  .g-modal,
-  .g-overlay > .glass-4 {
+  .g-modal {
     width: 100% !important;
     max-width: 100% !important;
-    border-radius: 26px 26px 0 0 !important;
+    border-radius: 24px 24px 0 0 !important;
     border-bottom: none !important;
     max-height: 90vh !important;
     max-height: 90dvh !important;
     overflow-y: auto !important;
-    padding: 24px 18px 38px !important;
-    animation: modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
-    box-shadow: 0 -12px 40px rgba(15, 23, 42, 0.22) !important;
+    padding: 24px 18px 40px !important;
+    animation: modalSlideUpSpring 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    will-change: transform, opacity;
+  }
+
+  @keyframes modalSlideUpSpring {
+    0% {
+      opacity: 0.4;
+      transform: translateY(100%);
+    }
+    75% {
+      opacity: 1;
+      transform: translateY(-4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes modalSlideUp {
     0% {
-      opacity: 0;
+      opacity: 0.4;
       transform: translateY(100%);
     }
     100% {
@@ -1228,45 +1239,4 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
 .auth-spinner {
   animation: authSpin 0.8s linear infinite;
 }
-
-/* ═══════════════════════════════════════════════════════════
-   MICRO-INTERACTIONS & TACTILE FEEDBACK
-═══════════════════════════════════════════════════════════ */
-.g-btn:active:not(:disabled) {
-  transform: scale(0.96) !important;
-  transition: transform 0.08s ease !important;
-}
-
-.glass-card:active {
-  transform: translateY(-1px) scale(0.99) !important;
-  transition: transform 0.08s ease !important;
-}
-
-.g-tab:active {
-  transform: scale(0.96);
-  transition: transform 0.08s ease;
-}
-
-/* ═══════════════════════════════════════════════════════════
-   ACCESSIBILITY: PREFERS REDUCED MOTION
-═══════════════════════════════════════════════════════════ */
-@media (prefers-reduced-motion: reduce) {
-  .g-page-transition,
-  .g-page,
-  .g-modal,
-  .g-overlay > .glass-4,
-  .g-overlay,
-  .g-toast,
-  .g-dropdown,
-  .g-popover,
-  .auth-floating-card-1,
-  .auth-floating-card-2 {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    filter: none !important;
-    transform: none !important;
-  }
-}
-
 

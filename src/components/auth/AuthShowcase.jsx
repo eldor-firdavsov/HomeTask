@@ -64,7 +64,7 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
               </span>
             </div>
             <p style={{ margin: 0, fontSize: 13, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-              Simple homework for teachers &amp; students
+              Classroom & Student Workflow OS
             </p>
           </div>
         </div>
@@ -79,24 +79,24 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
         }}>
           {activeRole === 'teacher' ? (
             <>
-              Simple homework.<br />
+              Elevate your classroom.<br />
               <span style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
-                Better learning for everyone.
+                Inspire student success.
               </span>
             </>
           ) : (
             <>
-              Stay focused.<br />
+              Stay focused today.<br />
               <span style={{
                 background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}>
-                Complete homework with ease.
+                Achieve your study goals.
               </span>
             </>
           )}
@@ -110,8 +110,8 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
           margin: '0 0 28px',
         }}>
           {activeRole === 'teacher'
-            ? 'Create homework exercises, give them to your students with one click, and check their submissions without any complicated tools.'
-            : 'See your homework clearly, use the peaceful study timer to focus without distractions, and get feedback from your teacher.'}
+            ? 'Effortlessly curate homework assignments, grade submissions with personalized audio & text feedback, and track student mastery in real time.'
+            : 'Track today’s assignments, launch focused 25-minute Pomodoro study sprints, and submit your work seamlessly to receive instant feedback.'}
         </p>
       </div>
 

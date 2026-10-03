@@ -107,12 +107,12 @@ export default function SubmissionReview() {
         feedback: feedback.trim(),
         teacherId,
       });
-      toast('Changes requested — student can now turn it in again');
+      toast('Revision requested — student can now resubmit');
       if (refreshData) await refreshData();
       navigate('/teacher/dashboard');
     } catch (err) {
       console.error('Request revision error:', err);
-      toast(err.message || 'Failed to request changes', 'error');
+      toast(err.message || 'Failed to request revision', 'error');
     } finally {
       setBusy(false);
     }
@@ -120,7 +120,7 @@ export default function SubmissionReview() {
 
   const handleDone = async () => {
     if (!gradeValid) {
-      toast('A valid grade (0–100) is required to complete.', 'error');
+      toast('A valid grade (0–100) is required to mark as done.', 'error');
       return;
     }
     setBusy(true);
@@ -133,7 +133,7 @@ export default function SubmissionReview() {
         feedback: feedback.trim(),
         teacherId,
       });
-      toast('Homework graded and marked as completed!');
+      toast('Assignment marked as complete');
       if (refreshData) await refreshData();
       navigate('/teacher/dashboard');
     } catch (err) {
@@ -152,7 +152,7 @@ export default function SubmissionReview() {
         onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
       >
-        <ArrowLeft size={13} /> Back to dashboard
+        <ArrowLeft size={13} /> Dashboard
       </Link>
 
       {/* Page header — glass banner */}
@@ -168,7 +168,7 @@ export default function SubmissionReview() {
                 {student.firstName} {student.lastName}
               </span>
               <span style={{ fontSize: 12, color: 'var(--txt-tertiary)' }}>
-                · Turned in {formatDateTime(submission.submittedAt)}
+                · Submitted {formatDateTime(submission.submittedAt)}
               </span>
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function SubmissionReview() {
         {/* LEFT — submission */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
-            Student's Work
+            Student submission
           </div>
 
           {/* Submission content glass panel */}
@@ -231,7 +231,7 @@ export default function SubmissionReview() {
           {/* Instructions reference */}
           <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '18px 22px', minWidth: 0, overflow: 'hidden' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 10 }}>
-              Homework instructions
+              Task instructions
             </div>
             <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--txt-secondary)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               {assignment.instructions}
@@ -242,7 +242,7 @@ export default function SubmissionReview() {
         {/* RIGHT — review panel */}
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
-            Grade &amp; Feedback
+            Review panel
           </div>
 
           <div className="glass-4" style={{ borderRadius: 'var(--r-xl)', padding: '24px 22px', position: 'sticky', top: 0 }}>
@@ -251,7 +251,7 @@ export default function SubmissionReview() {
               <label style={labelStyle}>Grade  <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--txt-tertiary)', fontSize: 10 }}>(0–100)</span></label>
               <input
                 type="number" min="0" max="100" step="1"
-                placeholder="e.g. 85"
+                placeholder="e.g. 87"
                 value={grade}
                 onChange={e => setGrade(e.target.value)}
                 style={{ ...inputStyle, fontSize: 22, fontWeight: 700, padding: '12px 16px',
@@ -259,18 +259,18 @@ export default function SubmissionReview() {
                 onFocus={onFocus} onBlur={onBlur}
               />
               {grade !== '' && !gradeValid && (
-                <div style={{ fontSize: 11.5, color: 'var(--clr-overdue-txt)', marginTop: 5 }}>Grade must be between 0 and 100.</div>
+                <div style={{ fontSize: 11.5, color: 'var(--clr-overdue-txt)', marginTop: 5 }}>Grade must be 0–100.</div>
               )}
             </div>
 
             {/* Feedback */}
             <div style={{ marginBottom: 24 }}>
-              <label style={labelStyle}>Teacher Feedback</label>
+              <label style={labelStyle}>Feedback</label>
               <textarea
                 rows={6}
                 value={feedback}
                 onChange={e => setFeedback(e.target.value)}
-                placeholder="Write helpful feedback for your student…"
+                placeholder="Write your feedback here…"
                 style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }}
                 onFocus={onFocus} onBlur={onBlur}
               />
@@ -282,10 +282,10 @@ export default function SubmissionReview() {
             {/* Action buttons */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
               <button onClick={handleSaveDraft} className="g-btn g-btn-secondary" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
-                <Save size={14} /> Save draft feedback
+                <Save size={14} /> Save draft
               </button>
               <button onClick={handleRevision} className="g-btn g-btn-warning" disabled={busy} style={{ width: '100%', justifyContent: 'center' }}>
-                <RotateCcw size={14} /> Ask student for changes
+                <RotateCcw size={14} /> Request revision
               </button>
               <button
                 onClick={handleDone}
@@ -293,13 +293,13 @@ export default function SubmissionReview() {
                 disabled={busy || !gradeValid}
                 style={{ width: '100%', justifyContent: 'center', opacity: gradeValid ? 1 : 0.45 }}
               >
-                <CheckCircle size={14} /> Give grade &amp; mark completed
+                <CheckCircle size={14} /> Mark as done
               </button>
             </div>
 
             {!gradeValid && (
               <p style={{ fontSize: 11, color: 'var(--txt-tertiary)', textAlign: 'center', marginTop: 12, marginBottom: 0 }}>
-                Enter a grade (0–100) to complete this homework.
+                A valid grade is required to mark as done.
               </p>
             )}
           </div>

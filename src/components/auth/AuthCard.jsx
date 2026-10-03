@@ -99,11 +99,11 @@ export default function AuthCard({ initialRole = 'teacher' }) {
       if (msg.includes('Invalid login credentials')) {
         triggerErrorShake(
           role === 'teacher'
-            ? 'Incorrect email or password. Please check your spelling and try again.'
-            : 'Incorrect email or password. Please check the login details from your teacher.'
+            ? 'Invalid email or password. Please verify your credentials.'
+            : 'Invalid student credentials. Please check the email and password provided by your teacher.'
         );
       } else if (msg.includes('Email not confirmed')) {
-        triggerErrorShake('Your account email has not been confirmed yet. Please check your inbox.');
+        triggerErrorShake('Account email has not been activated. Please check your confirmation link.');
       } else {
         triggerErrorShake(msg);
       }
@@ -216,7 +216,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
               textTransform: 'uppercase',
               color: 'var(--accent-text)',
             }}>
-              {role === 'teacher' ? 'Teacher Sign In' : 'Student Sign In'}
+              {role === 'teacher' ? 'Educator Sign In' : 'Student Portal'}
             </span>
           </div>
 
@@ -227,12 +227,12 @@ export default function AuthCard({ initialRole = 'teacher' }) {
             letterSpacing: '-0.02em',
             margin: '0 0 6px',
           }}>
-            {role === 'teacher' ? 'Welcome, Teacher' : 'Welcome, Student'}
+            {role === 'teacher' ? 'Welcome back, Teacher' : 'Welcome back, Student'}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
             {role === 'teacher'
-              ? 'Sign in to manage students, give homework, and review work.'
-              : 'Sign in to see your homework and start your study timer.'}
+              ? 'Access your assignment manager, student submissions & grading analytics.'
+              : 'Log in with credentials from your teacher to view assignments & start sprints.'}
           </p>
         </div>
 

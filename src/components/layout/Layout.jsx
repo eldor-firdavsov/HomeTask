@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings, Timer } from 'lucide-react';
@@ -9,6 +9,12 @@ export default function Layout() {
   const location  = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const mainContentRef = useRef(null);
+
+  // Scroll to top on route change
+  useEffect(() => {
+    mainContentRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+  }, [location.pathname]);
 
   if (loading) return null;
   if (!session) return <Navigate to="/teacher/login" replace />;
@@ -92,7 +98,7 @@ export default function Layout() {
               padding: '24px 20px 32px',
               border: '1px solid rgba(255, 255, 255, 0.80)',
               boxShadow: '0 -8px 32px rgba(30, 40, 100, 0.15)',
-              animation: 'modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              animation: 'modalSlideUpSpring 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
             {/* Drawer Header */}
@@ -128,16 +134,16 @@ export default function Layout() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 20 }}>
               {session.role === 'TEACHER' ? (
                 <>
-                  {navItem('/teacher/dashboard', LayoutDashboard, 'Home')}
-                  {navItem('/teacher/tasks',     BookOpen,        'Homework')}
-                  {navItem('/teacher/tasks/new', Plus,            'Create Homework')}
+                  {navItem('/teacher/dashboard', LayoutDashboard, 'Dashboard')}
+                  {navItem('/teacher/tasks',     BookOpen,        'Task Library')}
+                  {navItem('/teacher/tasks/new', Plus,            'Create New Task')}
                   {navItem('/teacher/settings',  Settings,        'Settings')}
                 </>
               ) : (
                 <>
-                  {navItem('/student/dashboard', LayoutDashboard, 'Home')}
-                  {navItem('/student/tasks',     ClipboardList,   'My Homework')}
-                  {navItem('/student/pomodoro',  Timer,           'Study Timer')}
+                  {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
+                  {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+                  {navItem('/student/pomodoro',  Timer,           'Pomodoro Focus')}
                 </>
               )}
             </div>
@@ -195,19 +201,19 @@ export default function Layout() {
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
           {session.role === 'TEACHER' ? (
             <>
-              {navItem('/teacher/dashboard', LayoutDashboard, 'Home')}
-              {navItem('/teacher/tasks',     BookOpen,        'Homework')}
-              {navItem('/teacher/tasks/new', Plus,            'Create Homework')}
+              {navItem('/teacher/dashboard', LayoutDashboard, 'Dashboard')}
+              {navItem('/teacher/tasks',     BookOpen,        'Tasks')}
+              {navItem('/teacher/tasks/new', Plus,            'Add Task')}
               {navItem('/teacher/settings',  Settings,        'Settings')}
             </>
           ) : (
             <>
-              {navItem('/student/dashboard', LayoutDashboard, 'Home')}
-              {navItem('/student/tasks',     ClipboardList,   'My Homework')}
-              {navItem('/student/pomodoro',  Timer,           'Study Timer')}
+              {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
+              {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+              {navItem('/student/pomodoro',  Timer,           'Pomodoro')}
             </>
           )}
         </nav>
@@ -249,12 +255,16 @@ export default function Layout() {
       </aside>
 
       {/* ── Main content ── */}
-      <main className="g-main-content" style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '44px 52px',
-        minWidth: 0,
-      }}>
+      <main
+        ref={mainContentRef}
+        className="g-main-content"
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '44px 52px',
+          minWidth: 0,
+        }}
+      >
         <div style={{ maxWidth: 1060, margin: '0 auto' }}>
           <div key={location.pathname} className="g-page-transition">
             <Outlet />
@@ -271,7 +281,7 @@ export default function Layout() {
               className={`g-mobile-nav-btn${location.pathname === '/teacher/dashboard' ? ' active' : ''}`}
             >
               <LayoutDashboard size={19} />
-              <span>Home</span>
+              <span>Dashboard</span>
             </Link>
 
             <Link
@@ -279,7 +289,7 @@ export default function Layout() {
               className={`g-mobile-nav-btn${isActive('/teacher/tasks') ? ' active' : ''}`}
             >
               <BookOpen size={19} />
-              <span>Homework</span>
+              <span>Tasks</span>
             </Link>
 
             <Link
@@ -289,7 +299,7 @@ export default function Layout() {
               <div className="g-mobile-nav-btn-highlight">
                 <Plus size={20} strokeWidth={2.5} />
               </div>
-              <span>Create</span>
+              <span>Add</span>
             </Link>
 
             <button
@@ -307,7 +317,7 @@ export default function Layout() {
               className={`g-mobile-nav-btn${location.pathname === '/student/dashboard' ? ' active' : ''}`}
             >
               <LayoutDashboard size={19} />
-              <span>Home</span>
+              <span>Dashboard</span>
             </Link>
 
             <Link
@@ -315,7 +325,7 @@ export default function Layout() {
               className={`g-mobile-nav-btn${location.pathname.startsWith('/student/tasks') ? ' active' : ''}`}
             >
               <ClipboardList size={19} />
-              <span>Homework</span>
+              <span>Tasks</span>
             </Link>
 
             <Link
@@ -323,7 +333,7 @@ export default function Layout() {
               className={`g-mobile-nav-btn${location.pathname === '/student/pomodoro' ? ' active' : ''}`}
             >
               <Timer size={19} />
-              <span>Timer</span>
+              <span>Pomodoro</span>
             </Link>
 
             <button

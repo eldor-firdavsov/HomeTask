@@ -10,7 +10,8 @@ export default function TeacherAnalytics() {
 
   const handleExportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Student,Task,Type,Deadline,Submitted At,Status,Score\n";
+    csvContent += "Student,Task,Type,Deadline,Submitted At,Status,Score
+";
 
     assignments.forEach(a => {
       const student = students.find(s => s.id === a.studentId)?.name || 'Unknown';
@@ -19,7 +20,8 @@ export default function TeacherAnalytics() {
       const status = getTaskStatus(a, task);
       const submitted = a.submittedAt ? new Date(a.submittedAt).toLocaleString() : 'N/A';
       const row = `"${student}","${task.title}","${task.type}","${new Date(task.deadline).toLocaleString()}","${submitted}","${status}","${a.score || ''}"`;
-      csvContent += row + "\n";
+      csvContent += row + "
+";
     });
 
     const encodedUri = encodeURI(csvContent);

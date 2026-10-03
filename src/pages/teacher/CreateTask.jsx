@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, Plus, Link as LinkIcon, FileText, Image as ImageIcon,
-  Trash2, ExternalLink, Calendar, Search, Send
+  Trash2, X, Upload, ExternalLink, Paperclip, Calendar, Search, Send
 } from 'lucide-react';
 import { uid } from '../../utils/helpers.jsx';
 import { createTaskTemplate, addTaskAttachment } from '../../lib/supabase/tasks.js';
@@ -29,7 +29,7 @@ function formatFileSize(bytes) {
 }
 
 export default function CreateTask() {
-  const { data, session, profile, refreshData } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
 
@@ -294,44 +294,44 @@ export default function CreateTask() {
         onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
       >
-        <ArrowLeft size={13} /> Back to Homework
+        <ArrowLeft size={13} /> Tasks
       </Link>
 
       <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 24px', letterSpacing: '-0.02em' }}>
-        Create New Homework
+        New task
       </h1>
 
       {/* Task Info Section */}
       <div className="glass-2" style={sectionStyle()}>
         <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', margin: '0 0 18px' }}>
-          1. Homework Information
+          Task information
         </h2>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Homework title *</label>
+          <label style={labelStyle}>Task title</label>
           <input
             style={inputStyle} value={title}
             onChange={e => setTitle(e.target.value)}
-            placeholder="e.g. Math exercises page 42, English reading comprehension"
+            placeholder="e.g. Unit 7 Vocabulary Quiz"
             onFocus={onFocus} onBlur={onBlur}
           />
           {err('title')}
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Subject</label>
+          <label style={labelStyle}>Task type</label>
           <select style={inputStyle} value={type} onChange={e => setType(e.target.value)} onFocus={onFocus} onBlur={onBlur}>
             {TASK_TYPES.map(t => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}
           </select>
         </div>
 
         <div>
-          <label style={labelStyle}>Instructions for students *</label>
+          <label style={labelStyle}>Instructions</label>
           <textarea
             style={{ ...inputStyle, minHeight: 110, resize: 'vertical', lineHeight: 1.6 }}
             value={instructions}
             onChange={e => setInstructions(e.target.value)}
-            placeholder="Describe clearly what the student needs to do and learn…"
+            placeholder="Describe what the student needs to do…"
             onFocus={onFocus} onBlur={onBlur}
           />
           {err('instructions')}
@@ -342,12 +342,12 @@ export default function CreateTask() {
       <div className="glass-2" style={sectionStyle()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', margin: 0 }}>
-            2. Study Materials &amp; Files
+            Task Materials &amp; Resources
           </h2>
           <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>Optional</span>
         </div>
         <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '0 0 16px' }}>
-          Attach a website link, document file, or picture for students to reference while doing this homework.
+          Attach a web link, document file, or image for students to reference while completing this task.
         </p>
 
         {/* Attachment type selector tabs */}
@@ -565,18 +565,18 @@ export default function CreateTask() {
       <div className="glass-2" style={sectionStyle()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <h2 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', margin: 0 }}>
-            4. Give to students now
+            Assign to students
           </h2>
           <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>Optional</span>
         </div>
         <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '0 0 16px' }}>
-          Choose which students should receive this homework right away, or leave empty to save it for later.
+          Select one or several students to assign this task to immediately, or leave unselected to save only into the task library.
         </p>
 
         {/* Student Selection Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <label style={{ ...labelStyle, margin: 0 }}>
-            Who should do this homework? ({selectedStudentIds.length} of {students.length} chosen)
+            Select Students ({selectedStudentIds.length} of {students.length} selected)
           </label>
           <button
             type="button"
@@ -584,7 +584,7 @@ export default function CreateTask() {
             className="g-btn g-btn-ghost"
             style={{ padding: '4px 10px', fontSize: 11.5 }}
           >
-            {selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0 ? 'Clear all' : 'Select all'}
+            {selectedStudentIds.length === filteredStudents.length && filteredStudents.length > 0 ? 'Deselect all' : 'Select all'}
           </button>
         </div>
 
@@ -695,7 +695,7 @@ export default function CreateTask() {
         <button type="button" onClick={() => navigate(-1)} className="g-btn g-btn-ghost">Cancel</button>
         {selectedStudentIds.length > 0 && (
           <button type="button" onClick={handleSave} className="g-btn g-btn-secondary" disabled={busy}>
-            Save for later
+            Save to library only
           </button>
         )}
         <button
@@ -707,12 +707,12 @@ export default function CreateTask() {
           {selectedStudentIds.length > 0 ? (
             <>
               <Send size={13} style={{ marginRight: 6 }} />
-              {`Create & give to ${selectedStudentIds.length} student${selectedStudentIds.length === 1 ? '' : 's'}`}
+              {`Create & assign to ${selectedStudentIds.length} student${selectedStudentIds.length === 1 ? '' : 's'}`}
             </>
           ) : (
             <>
               <Plus size={14} style={{ marginRight: 6 }} />
-              Create &amp; save homework
+              Create & save to library
             </>
           )}
         </button>

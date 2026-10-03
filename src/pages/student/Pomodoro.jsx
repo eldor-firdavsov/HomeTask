@@ -16,9 +16,7 @@ import {
   VolumeX,
   ArrowRight,
   BookOpen,
-  AlertTriangle,
   Flame,
-  ChevronRight,
   Check,
   Search,
   ExternalLink,
@@ -26,42 +24,58 @@ import {
 import { TypeChip, StatusBadge, isOverdue } from '../../utils/helpers.jsx';
 
 /* ── Web Audio Chime Synthesis (Zero asset dependencies) ── */
-function playAudioChime(type = 'focusEnd') {
+let sharedAudioCtx = null;
+function initAudio() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
+    if (!AudioContextClass) return null;
+    if (!sharedAudioCtx) {
+      sharedAudioCtx = new AudioContextClass();
+    }
+    if (sharedAudioCtx.state === 'suspended') {
+      sharedAudioCtx.resume().catch(() => {});
+    }
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+function playAudioChime(type = 'focusEnd') {
+  try {
+    const ctx = initAudio();
+    if (!ctx) return;
     const now = ctx.currentTime;
 
     if (type === 'focusEnd') {
-      [528, 660, 792].forEach((freq, idx) => {
+      [528, 660, 792, 1056].forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-        gain.gain.setValueAtTime(0.22, now + idx * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.8);
+        osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+        gain.gain.setValueAtTime(0.24, now + idx * 0.14);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 3.0);
         osc.connect(gain);
         gain.connect(ctx.destination);
-        osc.start(now + idx * 0.12);
-        osc.stop(now + 2.8);
+        osc.start(now + idx * 0.14);
+        osc.stop(now + 3.0);
       });
     } else {
-      [440, 554, 659.25].forEach((freq, idx) => {
+      [440, 554, 659.25, 880].forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, now + idx * 0.12);
-        gain.gain.setValueAtTime(0.18, now + idx * 0.12);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.0);
+        gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.4);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now + idx * 0.12);
-        osc.stop(now + 2.0);
+        osc.stop(now + 2.4);
       });
     }
   } catch {
-    // audio permission fallback
+    // audio fallback
   }
 }
 
@@ -82,7 +96,6 @@ export default function StudentPomodoro() {
     if (requestedTaskId && myAssignments.some(a => a.id === requestedTaskId)) {
       return requestedTaskId;
     }
-    // Default to first urgent or in_progress task, else first task or 'general'
     const urgent = myAssignments.find(a => isOverdue(a) || a.status === 'NEEDS_REVISION');
     if (urgent) return urgent.id;
     const inProgress = myAssignments.find(a => a.status === 'IN_PROGRESS');
@@ -119,8 +132,12 @@ export default function StudentPomodoro() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [taskFilter, setTaskFilter] = useState('active'); // 'active' | 'all'
   const [taskSearch, setTaskSearch] = useState('');
+  const [markingDone, setMarkingDone] = useState(false);
 
-  // Auto-hide controls in deep focus dark mode after 3 seconds of inactivity
+  // Target timestamp ref to eliminate clock drift & background tab freezing
+  const targetEndTimeRef = useRef(null);
+
+  // Auto-hide controls in deep focus dark mode after 3.2 seconds of inactivity
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimeoutRef = useRef(null);
 
@@ -140,46 +157,49 @@ export default function StudentPomodoro() {
     }
   };
 
-  // Keyboard shortcut listener (Space = play/pause, R = reset, F = fullscreen)
+  // Accurate timestamp-based countdown effect (No clock drift)
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Don't trigger if user is typing in search or input
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+    if (!isRunning) {
+      targetEndTimeRef.current = null;
+      return;
+    }
 
-      if (e.code === 'Space') {
-        e.preventDefault();
-        setIsRunning(prev => !prev);
-      } else if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        handleReset();
-      } else if (e.key === 'f' || e.key === 'F') {
-        e.preventDefault();
-        toggleBrowserFullscreen();
+    if (!targetEndTimeRef.current) {
+      targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+    }
+
+    const checkTick = () => {
+      if (!targetEndTimeRef.current) return;
+      const remainingMs = targetEndTimeRef.current - Date.now();
+      const remainingSec = Math.max(0, Math.ceil(remainingMs / 1000));
+      setTimeLeft(remainingSec);
+
+      if (remainingMs <= 0) {
+        targetEndTimeRef.current = null;
+        handlePhaseComplete();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, currentTotalSeconds]);
+    const intervalId = setInterval(checkTick, 250);
 
-  // Main countdown tick effect
-  useEffect(() => {
-    let interval = null;
+    const onVisibilityChange = () => {
+      if (!document.hidden && targetEndTimeRef.current) {
+        checkTick();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (isRunning && timeLeft === 0) {
-      // Phase completed!
-      handlePhaseComplete();
-    }
-
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [isRunning, phase]);
 
   // Handle phase completion transition
   const handlePhaseComplete = async () => {
+    targetEndTimeRef.current = null;
+    setIsRunning(false);
+
     if (soundEnabled) {
       playAudioChime(phase === 'FOCUS' ? 'focusEnd' : 'breakEnd');
     }
@@ -211,17 +231,19 @@ export default function StudentPomodoro() {
         setTimeLeft(shortBreakMinutes * 60);
         setRound(prev => prev + 1);
       }
-      setIsRunning(false); // Stop running so screen becomes normal rest view!
     } else {
       // Break completed, back to Focus mode
       toast(`✨ Break ended! Ready for the next focus sprint?`);
       setPhase('FOCUS');
       setTimeLeft(focusDurationMinutes * 60);
-      setIsRunning(false);
     }
   };
 
   const handleStart = async () => {
+    initAudio();
+    targetEndTimeRef.current = Date.now() + timeLeft * 1000;
+    setIsRunning(true);
+
     // If starting on a PENDING task, automatically promote to IN_PROGRESS
     if (phase === 'FOCUS' && selectedTask && selectedTask.status === 'PENDING') {
       try {
@@ -231,19 +253,25 @@ export default function StudentPomodoro() {
         console.warn('Could not update status on start:', err);
       }
     }
-    setIsRunning(true);
   };
 
   const handlePause = () => {
+    if (targetEndTimeRef.current) {
+      const remainingSec = Math.max(0, Math.ceil((targetEndTimeRef.current - Date.now()) / 1000));
+      setTimeLeft(remainingSec);
+    }
+    targetEndTimeRef.current = null;
     setIsRunning(false);
   };
 
   const handleReset = () => {
+    targetEndTimeRef.current = null;
     setIsRunning(false);
     setTimeLeft(currentTotalSeconds);
   };
 
   const handleSkipPhase = () => {
+    targetEndTimeRef.current = null;
     setIsRunning(false);
     if (phase === 'FOCUS') {
       setPhase('SHORT_BREAK');
@@ -253,6 +281,50 @@ export default function StudentPomodoro() {
       setTimeLeft(focusDurationMinutes * 60);
     }
   };
+
+  // Mark task as done directly from Pomodoro
+  const handleMarkTaskDone = async () => {
+    if (!selectedTask || selectedTask.id === 'general') return;
+    try {
+      setMarkingDone(true);
+      await updateAssignmentStatus(selectedTask.id, 'DONE');
+      refreshData?.();
+      toast(`🎉 Completed "${selectedTask.title}"! Outstanding work!`);
+      if (soundEnabled) {
+        playAudioChime('breakEnd');
+      }
+      handlePause();
+    } catch (err) {
+      toast(err.message || 'Could not update task status', 'error');
+    } finally {
+      setMarkingDone(false);
+    }
+  };
+
+  // Keyboard shortcut listener (Space = play/pause, R = reset, F = fullscreen)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isRunning) {
+          handlePause();
+        } else {
+          handleStart();
+        }
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        handleReset();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleBrowserFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isRunning, phase, timeLeft, selectedTask]);
 
   // Browser Fullscreen toggle
   const toggleBrowserFullscreen = () => {
@@ -282,13 +354,13 @@ export default function StudentPomodoro() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Mouse activity in dark mode
+  // Mouse activity in dark mode (fade controls when idle)
   const handleMouseMoveInDark = () => {
     setControlsVisible(true);
     if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     hideTimeoutRef.current = setTimeout(() => {
       setControlsVisible(false);
-    }, 3500);
+    }, 3200);
   };
 
   // Progress percentage
@@ -307,13 +379,17 @@ export default function StudentPomodoro() {
     return list;
   }, [myAssignments, taskFilter, taskSearch]);
 
-  // ═════════════════════════════════════════════════════════════
-  // PURE DEEP FOCUS DARK MODE
-  // Triggered when Pomodoro is started and running in FOCUS phase
-  // ═════════════════════════════════════════════════════════════
-  if (isRunning && phase === 'FOCUS') {
-    return (
+  const isDarkModeActive = isRunning && phase === 'FOCUS';
+
+  return (
+    <div className="g-page" style={{ paddingBottom: 60, position: 'relative' }}>
+      {/* ═══════════════════════════════════════════════════════════
+         PURE DEEP FOCUS DARK MODE OVERLAY
+         (Smooth non-unmounting overlay: fades in on start, fades out on pause/stop/break)
+         Completely dark background (#040407) · Huge running time · Zero distractions
+      ═══════════════════════════════════════════════════════════ */}
       <div
+        className="pomodoro-dark-overlay"
         onMouseMove={handleMouseMoveInDark}
         onTouchStart={handleMouseMoveInDark}
         style={{
@@ -329,7 +405,11 @@ export default function StudentPomodoro() {
           userSelect: 'none',
           padding: '24px 16px',
           cursor: controlsVisible ? 'default' : 'none',
-          transition: 'background-color 0.4s ease',
+          opacity: isDarkModeActive ? 1 : 0,
+          visibility: isDarkModeActive ? 'visible' : 'hidden',
+          pointerEvents: isDarkModeActive ? 'auto' : 'none',
+          transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease',
+          transform: isDarkModeActive ? 'scale(1)' : 'scale(1.025)',
           overflow: 'hidden',
         }}
       >
@@ -346,39 +426,50 @@ export default function StudentPomodoro() {
           borderRadius: '50%',
           background: 'radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, transparent 65%)',
           pointerEvents: 'none',
-          filter: 'blur(40px)',
+          filter: 'blur(45px)',
         }} />
 
-        {/* Minimal top status: Current Task Whisper */}
+        {/* Minimal top status: Current Task Whisper & Round */}
         <div style={{
           position: 'absolute',
           top: 'max(20px, env(safe-area-inset-top, 20px))',
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          opacity: controlsVisible ? 1 : 0.4,
+          opacity: controlsVisible ? 1 : 0.35,
           transition: 'opacity 0.4s ease',
         }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 6,
+            gap: 8,
             background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            padding: '5px 14px',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            padding: '6px 16px',
             borderRadius: 999,
-            fontSize: 12.5,
-            color: 'rgba(255, 255, 255, 0.85)',
-            letterSpacing: '0.02em',
+            fontSize: 13,
+            color: 'rgba(255, 255, 255, 0.90)',
+            letterSpacing: '0.015em',
+            maxWidth: '85vw',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}>
-            <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#6366f1', animation: 'authPulseGlow 2s infinite' }} />
+            <span style={{
+              display: 'inline-block',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#6366f1',
+              boxShadow: '0 0 10px #6366f1',
+            }} />
             <span>
               {selectedTask ? selectedTask.title : 'General Deep Focus'}
             </span>
           </div>
 
-          <span style={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.4)' }}>
-            · Round {round} of 4
+          <span style={{ fontSize: 12.5, color: 'rgba(255, 255, 255, 0.45)', whiteSpace: 'nowrap' }}>
+            · Round {round}/4
           </span>
         </div>
 
@@ -393,30 +484,30 @@ export default function StudentPomodoro() {
         }}>
           <div
             style={{
-              fontSize: 'clamp(88px, 22vw, 240px)',
+              fontSize: 'clamp(96px, 24vw, 250px)',
               fontWeight: 800,
               fontFamily: '"SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
               fontVariantNumeric: 'tabular-nums',
-              letterSpacing: '-0.04em',
-              lineHeight: 0.95,
+              letterSpacing: '-0.045em',
+              lineHeight: 0.92,
               color: '#ffffff',
-              textShadow: '0 0 50px rgba(99, 102, 241, 0.35)',
-              transition: 'all 0.2s ease',
+              textShadow: '0 0 60px rgba(99, 102, 241, 0.40)',
+              transition: 'all 0.15s ease',
             }}
           >
             {formatTime(timeLeft)}
           </div>
 
-          {/* Minimal Breathing Focus Quote */}
+          {/* Minimal Breathing Focus Line */}
           <div style={{
-            fontSize: 'clamp(12px, 2.5vw, 15px)',
-            color: 'rgba(255, 255, 255, 0.45)',
-            marginTop: 24,
-            fontWeight: 400,
-            letterSpacing: '0.04em',
+            fontSize: 'clamp(12px, 2.4vw, 15px)',
+            color: 'rgba(255, 255, 255, 0.42)',
+            marginTop: 22,
+            fontWeight: 500,
+            letterSpacing: '0.06em',
             textTransform: 'uppercase',
           }}>
-            Pure Focus Mode · Breathe and immerse
+            Pure Focus Mode · Zero Distractions
           </div>
         </div>
 
@@ -426,7 +517,9 @@ export default function StudentPomodoro() {
           bottom: 'max(28px, env(safe-area-inset-bottom, 28px))',
           display: 'flex',
           alignItems: 'center',
-          gap: 16,
+          gap: 12,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
           opacity: controlsVisible ? 1 : 0.15,
           transition: 'opacity 0.4s ease',
         }}>
@@ -435,7 +528,7 @@ export default function StudentPomodoro() {
             className="g-btn"
             style={{
               background: 'rgba(255, 255, 255, 0.14)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.28)',
               color: '#ffffff',
               padding: '12px 26px',
               fontSize: 14,
@@ -449,16 +542,41 @@ export default function StudentPomodoro() {
             }}
           >
             <Pause size={17} />
-            Pause Sprint
+            Pause Sprint (Space)
           </button>
+
+          {selectedTask && selectedTask.id !== 'general' && selectedTask.status !== 'DONE' && (
+            <button
+              onClick={handleMarkTaskDone}
+              disabled={markingDone}
+              className="g-btn"
+              style={{
+                background: 'rgba(16, 185, 129, 0.22)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                color: '#34d399',
+                padding: '12px 20px',
+                fontSize: 13,
+                fontWeight: 700,
+                borderRadius: 999,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                cursor: 'pointer',
+              }}
+              title="Mark homework assignment as completed"
+            >
+              <CheckCircle2 size={16} />
+              {markingDone ? 'Completing…' : 'Mark Task Done'}
+            </button>
+          )}
 
           <button
             onClick={handleReset}
             className="g-btn"
             style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: 'rgba(255, 255, 255, 0.7)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              color: 'rgba(255, 255, 255, 0.75)',
               padding: '12px 18px',
               fontSize: 13,
               borderRadius: 999,
@@ -467,27 +585,40 @@ export default function StudentPomodoro() {
               gap: 6,
               cursor: 'pointer',
             }}
-            title="Reset Timer"
+            title="Stop Timer (R)"
           >
             <RotateCcw size={15} />
             Stop
           </button>
 
           <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className="g-btn"
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              color: soundEnabled ? '#34d399' : 'rgba(255, 255, 255, 0.5)',
+              padding: '12px',
+              borderRadius: 999,
+              cursor: 'pointer',
+            }}
+            title={soundEnabled ? 'Chime sound is on' : 'Sound muted'}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+          </button>
+
+          <button
             onClick={toggleBrowserFullscreen}
             className="g-btn"
             style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: 'rgba(255, 255, 255, 0.7)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.16)',
+              color: 'rgba(255, 255, 255, 0.75)',
               padding: '12px',
               borderRadius: 999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               cursor: 'pointer',
             }}
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen (F)'}
           >
             {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
           </button>
@@ -506,20 +637,16 @@ export default function StudentPomodoro() {
             height: '100%',
             width: `${progressPercent}%`,
             background: 'linear-gradient(90deg, #6366f1, #818cf8)',
-            boxShadow: '0 0 8px rgba(99, 102, 241, 0.8)',
-            transition: 'width 1s linear',
+            boxShadow: '0 0 10px rgba(99, 102, 241, 0.8)',
+            transition: 'width 0.4s linear',
           }} />
         </div>
       </div>
-    );
-  }
 
-  // ═════════════════════════════════════════════════════════════
-  // NORMAL VIEW
-  // (Rendered when paused, stopped, during rest break, or configuring)
-  // ═════════════════════════════════════════════════════════════
-  return (
-    <div className="g-page" style={{ paddingBottom: 60 }}>
+      {/* ═══════════════════════════════════════════════════════════
+         NORMAL VIEW
+         (Visible when paused, stopped, during rest break, or configuring)
+      ═══════════════════════════════════════════════════════════ */}
       {/* ── Page Header ── */}
       <div style={{
         display: 'flex',
@@ -543,13 +670,13 @@ export default function StudentPomodoro() {
             marginBottom: 8,
           }}>
             <Flame size={13} color="#f59e0b" />
-            <span>Study Timer · 25 min work &amp; 5 min rest</span>
+            <span>Task-Driven Pomodoro · Sprint Focus</span>
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.025em' }}>
-            Study Timer
+            Focus Sprint Timer
           </h1>
           <p style={{ fontSize: 13.5, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            Select your homework, click Start, and study peacefully without any distractions.
+            Pick a task, enter deep focus with zero distractions, and finish homework faster.
           </p>
         </div>
 
@@ -570,7 +697,8 @@ export default function StudentPomodoro() {
             className="g-btn g-btn-ghost"
             style={{ padding: '8px 12px', fontSize: 12, gap: 6 }}
           >
-            <Maximize2 size={14} /> Fullscreen
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
           </button>
         </div>
       </div>
@@ -580,7 +708,7 @@ export default function StudentPomodoro() {
         <div
           className="glass-card"
           style={{
-            background: 'linear-gradient(135deg, rgba(236,253,245,0.85) 0%, rgba(209,250,229,0.7) 100%)',
+            background: 'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.78) 100%)',
             border: '1px solid rgba(52,211,153,0.4)',
             padding: '20px 24px',
             borderRadius: 'var(--r-xl)',
@@ -591,6 +719,7 @@ export default function StudentPomodoro() {
             flexWrap: 'wrap',
             gap: 16,
             boxShadow: '0 8px 24px rgba(16, 185, 129, 0.12)',
+            animation: 'modalPopupSpring 0.3s ease',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -603,6 +732,7 @@ export default function StudentPomodoro() {
               alignItems: 'center',
               justifyContent: 'center',
               color: '#059669',
+              flexShrink: 0,
             }}>
               <Coffee size={24} />
             </div>
@@ -637,7 +767,7 @@ export default function StudentPomodoro() {
                 gap: 6,
               }}
             >
-              Skip Break & Focus
+              Skip Break &amp; Focus
               <ArrowRight size={14} />
             </button>
           </div>
@@ -662,7 +792,7 @@ export default function StudentPomodoro() {
               textAlign: 'center',
               position: 'relative',
               overflow: 'hidden',
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(245,247,255,0.55) 100%)',
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(245,247,255,0.58) 100%)',
             }}
           >
             {/* Phase Badge */}
@@ -678,14 +808,14 @@ export default function StudentPomodoro() {
                 color: phase === 'FOCUS' ? '#4f46e5' : '#059669',
                 border: phase === 'FOCUS' ? '1px solid rgba(99,102,241,0.25)' : '1px solid rgba(16,185,129,0.3)',
               }}>
-                {phase === 'FOCUS' ? 'Study Time' : 'Break Time'}
+                {phase === 'FOCUS' ? (isRunning ? 'Sprint Active' : 'Focus Session') : 'Recharge Break'}
               </span>
             </div>
 
             {/* Selected Task Highlight Card inside Dial */}
             <div style={{
-              background: 'rgba(255,255,255,0.55)',
-              border: '1px solid rgba(255,255,255,0.8)',
+              background: 'rgba(255,255,255,0.60)',
+              border: '1px solid rgba(255,255,255,0.85)',
               borderRadius: 'var(--r-md)',
               padding: '12px 16px',
               marginBottom: 24,
@@ -697,15 +827,37 @@ export default function StudentPomodoro() {
             }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--txt-tertiary)', letterSpacing: '0.04em' }}>
-                  Homework to work on:
+                  Target Assignment
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--txt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
-                  {selectedTask ? selectedTask.title : 'General Studying & Reading'}
+                  {selectedTask ? selectedTask.title : 'General Study & Free Practice'}
                 </div>
               </div>
-              {selectedTask && (
-                <TypeChip type={selectedTask.type} />
-              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {selectedTask && (
+                  <TypeChip type={selectedTask.type} />
+                )}
+                {selectedTask && selectedTask.id !== 'general' && selectedTask.status !== 'DONE' && (
+                  <button
+                    onClick={handleMarkTaskDone}
+                    disabled={markingDone}
+                    className="g-btn"
+                    style={{
+                      background: 'rgba(16, 185, 129, 0.14)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      color: '#059669',
+                      padding: '5px 10px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      borderRadius: 'var(--r-pill)',
+                    }}
+                    title="Mark task completed"
+                  >
+                    <CheckCircle2 size={12} />
+                    Done
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Timer Digits Display */}
@@ -739,28 +891,58 @@ export default function StudentPomodoro() {
                   ? 'linear-gradient(90deg, #6366f1, #818cf8)'
                   : 'linear-gradient(90deg, #10b981, #059669)',
                 borderRadius: 4,
-                transition: 'width 0.4s ease',
+                transition: 'width 0.3s ease',
               }} />
             </div>
 
             {/* Main Action Buttons */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                onClick={handleStart}
-                className="g-btn g-btn-primary"
-                style={{
-                  padding: '14px 32px',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  borderRadius: 'var(--r-md)',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                  boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
-                  gap: 8,
-                }}
-              >
-                <Play size={18} fill="#fff" />
-                Start Focus (Dark Mode)
-              </button>
+              {phase === 'FOCUS' ? (
+                <button
+                  onClick={isRunning ? handlePause : handleStart}
+                  className="g-btn g-btn-primary"
+                  style={{
+                    padding: '14px 32px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    borderRadius: 'var(--r-md)',
+                    background: isRunning
+                      ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                      : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                    boxShadow: '0 6px 20px rgba(99, 102, 241, 0.35)',
+                    gap: 8,
+                  }}
+                >
+                  {isRunning ? (
+                    <>
+                      <Pause size={18} />
+                      Pause Sprint
+                    </>
+                  ) : (
+                    <>
+                      <Play size={18} fill="#fff" />
+                      {timeLeft < focusDurationMinutes * 60 ? 'Resume Focus (Dark Mode)' : 'Start Focus (Dark Mode)'}
+                    </>
+                  )}
+                </button>
+              ) : (
+                <button
+                  onClick={isRunning ? handlePause : handleStart}
+                  className="g-btn g-btn-primary"
+                  style={{
+                    padding: '14px 32px',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    borderRadius: 'var(--r-md)',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    boxShadow: '0 6px 20px rgba(16, 185, 129, 0.35)',
+                    gap: 8,
+                  }}
+                >
+                  {isRunning ? <Pause size={18} /> : <Play size={18} fill="#fff" />}
+                  {isRunning ? 'Pause Break' : 'Resume Break'}
+                </button>
+              )}
 
               <button
                 onClick={handleReset}
@@ -783,7 +965,7 @@ export default function StudentPomodoro() {
 
             {/* Sprint Info Banner */}
             <p style={{ fontSize: 12, color: 'var(--txt-secondary)', marginTop: 20, marginBottom: 0 }}>
-              💡 Pressing <strong>Start</strong> immediately enters deep focus dark mode. Pausing or resting returns to normal.
+              💡 Starting immediately enters pure dark mode. Pausing or resting returns to normal screen. Press <strong>[Space]</strong> to pause/resume.
             </p>
           </div>
 
@@ -858,10 +1040,10 @@ export default function StudentPomodoro() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-                  Choose Your Homework
+                  Choose Your Assignment
                 </h2>
                 <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '2px 0 0' }}>
-                  Click any homework below to link it to your timer
+                  Select the homework to focus on during this sprint
                 </p>
               </div>
 
@@ -873,7 +1055,7 @@ export default function StudentPomodoro() {
                   className={`g-tab${taskFilter === 'active' ? ' active' : ''}`}
                   style={{ fontSize: 11.5, padding: '4px 10px' }}
                 >
-                  To Do ({myAssignments.filter(a => a.status !== 'DONE').length})
+                  Active ({myAssignments.filter(a => a.status !== 'DONE').length})
                 </button>
                 <button
                   type="button"
@@ -887,14 +1069,14 @@ export default function StudentPomodoro() {
             </div>
 
             {/* Search Input */}
-            <div className="g-search-wrap" style={{ marginBottom: 14 }}>
+            <div className="g-search-wrap" style={{ marginBottom: 14, width: '100%' }}>
               <span className="g-search-icon"><Search size={13} /></span>
               <input
                 className="g-search"
                 placeholder="Search assignments…"
                 value={taskSearch}
                 onChange={e => setTaskSearch(e.target.value)}
-                style={{ padding: '6px 10px 6px 30px', fontSize: 12 }}
+                style={{ padding: '6px 10px 6px 30px', fontSize: 12, width: '100%' }}
               />
             </div>
 
@@ -1050,13 +1232,11 @@ export default function StudentPomodoro() {
 
           {/* Quick study tips */}
           <div className="glass-card" style={{ padding: '16px 20px', background: 'rgba(255,255,255,0.45)' }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--txt-primary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={14} color="#6366f1" /> How to use the Study Timer
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Sparkles size={14} color="#6366f1" /> Why the Pomodoro Technique Works
             </div>
-            <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.6 }}>
-              1. Select which homework you want to work on.<br />
-              2. Click <strong>Start</strong> — the screen turns dark so you won't get distracted.<br />
-              3. When the bell rings after 25 minutes, take a 5-minute break!
+            <p style={{ fontSize: 11.5, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
+              25-minute sprints train your brain to resist distractions. Our pure dark mode shuts out visual clutter so you can achieve peak flow state.
             </p>
           </div>
         </div>

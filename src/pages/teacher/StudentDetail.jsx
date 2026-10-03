@@ -9,14 +9,10 @@ import {
 import { createAssignments } from '../../lib/supabase/assignments.js';
 import { deactivateStudent } from '../../lib/supabase/students.js';
 
-const TABS = ['All', 'To Do', 'In Progress', 'Turned In', 'Checking', 'Needs Changes', 'Completed', 'Late'];
+const TABS = ['All','Pending','In Progress','Submitted','Review','Needs Revision','Done','Overdue'];
 const STATUS_MAP = {
-  'To Do': 'PENDING',
-  'In Progress': 'IN_PROGRESS',
-  'Turned In': 'SUBMITTED',
-  'Checking': 'UNDER_REVIEW',
-  'Needs Changes': 'NEEDS_REVISION',
-  'Completed': 'DONE',
+  'Pending':'PENDING','In Progress':'IN_PROGRESS','Submitted':'SUBMITTED',
+  'Review':'UNDER_REVIEW','Needs Revision':'NEEDS_REVISION','Done':'DONE',
 };
 
 /* ── Assign Modal ──────────────────────────── */
@@ -53,12 +49,12 @@ function AssignModal({ studentId, onClose }) {
   };
 
   const handleSend = async () => {
-    if (!templateId) return setErr('Please select a homework assignment.');
-    if (!deadline)   return setErr('Please set a due date.');
+    if (!templateId) return setErr('Please select a task template.');
+    if (!deadline)   return setErr('Please set a deadline.');
     const tpl = data.templates.find(t => t.id === templateId);
-    if (!tpl) return setErr('Homework not found.');
+    if (!tpl) return setErr('Template not found.');
     const exists = data.assignments.find(a => a.templateId === templateId && a.studentId === studentId && a.status !== 'DONE');
-    if (exists && !confirm('This homework is already given to this student. Give again?')) return;
+    if (exists && !confirm('This template is already active for this student. Assign again?')) return;
 
     setBusy(true);
     try {
@@ -79,12 +75,12 @@ function AssignModal({ studentId, onClose }) {
         ...prev,
         assignments: [...(prev.assignments || []), ...created],
       }));
-      toast('Homework given to student');
+      toast('Task assigned');
       if (refreshData) await refreshData();
       onClose();
     } catch (err) {
       console.error('Assign error:', err);
-      setErr(err.message || 'Failed to give homework');
+      setErr(err.message || 'Failed to assign task');
     } finally {
       setBusy(false);
     }
@@ -94,19 +90,19 @@ function AssignModal({ studentId, onClose }) {
     <div className="g-overlay" onClick={onClose}>
       <div className="glass-4 g-modal" onClick={e => e.stopPropagation()} style={{ padding: '30px 28px' }}>
         <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 22px' }}>
-          Give Homework
+          Assign Task
         </h2>
 
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Homework assignment</label>
+          <label style={labelStyle}>Task template</label>
           <select style={inputStyle} value={templateId} onChange={e => setTemplateId(e.target.value)} onFocus={onFocus} onBlur={onBlur}>
-            <option value="">— Select homework —</option>
+            <option value="">— Select a template —</option>
             {data.templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
           </select>
         </div>
 
         <div style={{ marginBottom: err ? 12 : 22 }}>
-          <label style={labelStyle}>Due date</label>
+          <label style={labelStyle}>Deadline</label>
           <input type="datetime-local" style={inputStyle} value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={onFocus} onBlur={onBlur} />
         </div>
 
@@ -119,7 +115,7 @@ function AssignModal({ studentId, onClose }) {
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button onClick={onClose} className="g-btn g-btn-ghost">Cancel</button>
-          <button onClick={handleSend} className="g-btn g-btn-primary">Give homework</button>
+          <button onClick={handleSend} className="g-btn g-btn-primary">Send task</button>
         </div>
       </div>
     </div>
@@ -140,8 +136,8 @@ export default function StudentDetail() {
   const assignments = useMemo(() => data.assignments.filter(a => a.studentId === studentId), [data.assignments, studentId]);
 
   const filtered = useMemo(() => {
-    if (tab === 'All')  return assignments;
-    if (tab === 'Late') return assignments.filter(a => isOverdue(a));
+    if (tab === 'All')     return assignments;
+    if (tab === 'Overdue') return assignments.filter(a => isOverdue(a));
     return assignments.filter(a => a.status === STATUS_MAP[tab]);
   }, [assignments, tab]);
 
@@ -182,7 +178,7 @@ export default function StudentDetail() {
         onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
       >
-        <ArrowLeft size={13} /> Back to dashboard
+        <ArrowLeft size={13} /> Dashboard
       </Link>
 
       {/* Header glass panel */}
@@ -191,11 +187,11 @@ export default function StudentDetail() {
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             {/* Avatar */}
             <div style={{
-               width: 52, height: 52, borderRadius: 15, flexShrink: 0,
-               background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.25)',
-               display: 'flex', alignItems: 'center', justifyContent: 'center',
-               fontSize: 18, fontWeight: 700, color: 'var(--accent-text)',
-             }}>
+              width: 52, height: 52, borderRadius: 15, flexShrink: 0,
+              background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.25)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, fontWeight: 700, color: 'var(--accent-text)',
+            }}>
               {student.firstName?.[0]}{student.lastName?.[0]}
             </div>
             <div>
@@ -221,7 +217,7 @@ export default function StudentDetail() {
               </div>
             </div>
             <button onClick={() => setShowAssign(true)} className="g-btn g-btn-primary">
-              <Plus size={14} /> Give homework
+              <Plus size={14} /> Assign task
             </button>
             <button
               onClick={handleDeactivate}
@@ -253,8 +249,8 @@ export default function StudentDetail() {
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
           <div className="g-empty">
             <div className="g-empty-icon"><ClipboardList size={20} strokeWidth={1.8} /></div>
-            <h3>No homework</h3>
-            <p>No homework matches the selected filter.</p>
+            <h3>No tasks</h3>
+            <p>No tasks match the selected filter.</p>
           </div>
         </div>
       ) : (
@@ -276,7 +272,7 @@ export default function StudentDetail() {
                   </div>
                   <div style={{ fontSize: 12, color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)' }}>
                     {a.deadline
-                      ? (overdueA ? 'Late — ' : 'Due ') + new Date(a.deadline).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ', ' + new Date(a.deadline).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+                      ? (overdueA ? 'Overdue — ' : 'Due ') + new Date(a.deadline).toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ', ' + new Date(a.deadline).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
                       : 'No deadline'
                     }
                     {typeof a.grade === 'number' && (
@@ -290,7 +286,7 @@ export default function StudentDetail() {
                   <StatusBadge assignment={a} />
                   {canReview && (
                     <Link to={`/teacher/submissions/${sub.id}`} className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 13px' }}>
-                      {a.status === 'DONE' ? 'View Grade' : 'Check Work'}
+                      {a.status === 'DONE' ? 'View Review' : 'Review'}
                     </Link>
                   )}
                 </div>

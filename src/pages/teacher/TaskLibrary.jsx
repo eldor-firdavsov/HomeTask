@@ -8,9 +8,9 @@ import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/ta
 
 const TYPES = ['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
 const STATUS_TABS = [
-  { id: 'all', label: 'All Homework' },
-  { id: 'assigned', label: 'Given to Students' },
-  { id: 'unassigned', label: 'Not Given Yet' },
+  { id: 'all', label: 'All Tasks' },
+  { id: 'assigned', label: 'Assigned' },
+  { id: 'unassigned', label: 'Unassigned / Drafts' },
 ];
 
 export default function TaskLibrary() {
@@ -140,14 +140,14 @@ export default function TaskLibrary() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-            Homework Library
+            Task Library
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            All your homework assignments. You can give any assignment to your students with one click.
+            Reusable task templates and curriculum assignments for your students
           </p>
         </div>
         <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
-          + Create Homework
+          + New task
         </Link>
       </div>
 
@@ -190,14 +190,14 @@ export default function TaskLibrary() {
             <span className="g-search-icon"><Search size={13} /></span>
             <input
               className="g-search"
-              placeholder="Search homework by title or topic…"
+              placeholder="Search tasks…"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        {/* Secondary Filter Controls: Subject Dropdown, Sort Dropdown, Clear button */}
+        {/* Secondary Filter Controls: Type Dropdown, Sort Dropdown, Clear button */}
         <div style={{
           display: 'flex',
           gap: 12,
@@ -206,9 +206,9 @@ export default function TaskLibrary() {
           borderTop: '1px solid rgba(255,255,255,0.40)',
           paddingTop: 12,
         }}>
-          {/* Subject Filter */}
+          {/* Task Type Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Subject:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
             <select
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
@@ -216,14 +216,14 @@ export default function TaskLibrary() {
               style={{ fontSize: 12.5, padding: '5px 10px' }}
             >
               {TYPES.map(t => (
-                <option key={t} value={t}>{t === 'All Types' ? 'All Subjects' : t}</option>
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
 
           {/* Sort By Filter */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort by:</span>
+            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
@@ -232,7 +232,7 @@ export default function TaskLibrary() {
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
-              <option value="most_assigned">Most Assigned</option>
+              <option value="most_assigned">Most Assigned Students</option>
               <option value="title">Title (A-Z)</option>
             </select>
           </div>
@@ -240,7 +240,7 @@ export default function TaskLibrary() {
           {/* Result Count and Reset Button */}
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 11.5, color: 'var(--txt-tertiary)' }}>
-              Showing {filtered.length} of {(data.templates || []).length} assignments
+              Showing {filtered.length} of {(data.templates || []).length} templates
             </span>
             {hasActiveFilters && (
               <button
@@ -249,7 +249,7 @@ export default function TaskLibrary() {
                 style={{ fontSize: 11.5, padding: '4px 8px', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', gap: 4 }}
               >
                 <X size={12} />
-                Clear filters
+                Reset filters
               </button>
             )}
           </div>
@@ -319,7 +319,7 @@ export default function TaskLibrary() {
                     {(tpl.instructions || '').slice(0, 100)}{tpl.instructions?.length > 100 ? '…' : ''}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 5 }}>
-                    {assignedCount} {assignedCount === 1 ? 'student has this' : 'students have this'} · Created {formatDate(tpl.createdAt)}
+                    {assignedCount} {assignedCount === 1 ? 'student' : 'students'} assigned · Updated {formatDate(tpl.createdAt)}
                   </div>
                 </div>
 
@@ -329,15 +329,15 @@ export default function TaskLibrary() {
                     onClick={() => setAssigningTemplate(tpl)}
                     className="g-btn g-btn-primary"
                     style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
-                    title="Give this homework to students"
+                    title="Assign to one or several students"
                   >
-                    <UserCheck size={13} /> Give to students
+                    <UserCheck size={13} /> Assign
                   </button>
                   <button
                     onClick={() => handleDuplicate(tpl)}
                     className="g-btn g-btn-ghost"
                     style={{ padding: '7px 9px', fontSize: 12 }}
-                    title="Make a copy"
+                    title="Duplicate"
                   >
                     <Copy size={13} />
                   </button>
@@ -345,7 +345,7 @@ export default function TaskLibrary() {
                     onClick={() => handleDelete(tpl.id)}
                     className="g-btn g-btn-ghost"
                     style={{ padding: '7px 9px', fontSize: 12, color: 'var(--clr-overdue-txt)' }}
-                    title="Delete homework"
+                    title="Delete"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -354,7 +354,7 @@ export default function TaskLibrary() {
                     className="g-btn g-btn-ghost"
                     style={{ padding: '7px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}
                   >
-                    Open <ChevronRight size={12} />
+                    View <ChevronRight size={12} />
                   </Link>
                 </div>
               </div>
