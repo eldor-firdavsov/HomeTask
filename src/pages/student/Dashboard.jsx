@@ -515,7 +515,7 @@ export default function StudentDashboard() {
       {/* ── Hero Row: Motivation & Daily Progress ── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
         gap: 16,
         marginBottom: 24
       }}>
@@ -672,12 +672,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* ── Key Metrics Summary Bar ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: 12,
-        marginBottom: 28,
-      }}>
+      <div className="g-metrics-grid" style={{ marginBottom: 28 }}>
         {/* Do Now (Urgent) */}
         <div className="glass-card" style={{
           padding: '14px 18px',
@@ -800,7 +795,7 @@ export default function StudentDashboard() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: 14 }}>
             {nowTasks.map(task => {
               const urgency = getTimeUrgency(task);
               const overdueA = isOverdue(task);
@@ -916,12 +911,7 @@ export default function StudentDashboard() {
       </div>
 
       {/* ── Main Workspace Grid: Action Plan (What to do today) + Focus Timer ── */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.8fr) minmax(280px, 1fr)',
-        gap: 20,
-        alignItems: 'start'
-      }}>
+      <div className="g-student-workspace-grid" style={{ marginBottom: 28 }}>
         {/* Left Column: What to do today (Task Checklist & Schedule) */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
@@ -1105,7 +1095,7 @@ export default function StudentDashboard() {
                       </div>
 
                       {/* Right side: Badge and arrow */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
                         <StatusBadge assignment={task} />
                         <ChevronRight size={14} style={{ color: 'var(--txt-tertiary)' }} />
                       </div>

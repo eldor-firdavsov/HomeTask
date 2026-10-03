@@ -744,18 +744,29 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   display: none;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .g-student-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+  .g-student-workspace-grid {
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
   }
 }
 
 @media (max-width: 768px) {
-  /* Layout adjustments */
+  /* Layout adjustments & Safe Area */
+  html, body, #root {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
   .g-layout-container {
     flex-direction: column !important;
     height: 100vh !important;
     height: 100dvh !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
   }
 
   .g-sidebar {
@@ -767,13 +778,15 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-    height: 56px;
-    padding: 0 16px;
-    background: rgba(255, 255, 255, 0.75);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.65);
-    box-shadow: 0 2px 10px rgba(30, 40, 100, 0.04);
+    height: calc(56px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    background: rgba(255, 255, 255, 0.82) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.70) !important;
+    box-shadow: 0 2px 12px rgba(30, 40, 100, 0.05) !important;
     position: sticky;
     top: 0;
     z-index: 40;
@@ -783,17 +796,17 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   /* Show mobile bottom navigation bar */
   .g-mobile-bottom-bar {
     display: flex !important;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 64px;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-top: 1px solid rgba(255, 255, 255, 0.70);
-    box-shadow: 0 -4px 20px rgba(30, 40, 100, 0.07);
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: calc(58px + max(10px, env(safe-area-inset-bottom, 0px))) !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)) !important;
+    background: rgba(255, 255, 255, 0.90) !important;
+    backdrop-filter: blur(28px) !important;
+    -webkit-backdrop-filter: blur(28px) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.75) !important;
+    box-shadow: 0 -4px 24px rgba(30, 40, 100, 0.08) !important;
     z-index: 40;
     align-items: center;
     justify-content: space-around;
@@ -839,20 +852,30 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 14px rgba(99, 102, 241, 0.38);
-    margin-top: -10px;
+    margin-top: -12px;
     border: 2px solid #fff;
   }
 
   /* Main content container on mobile */
   .g-main-content {
-    padding: 16px 14px 84px 14px !important;
+    padding: 14px 12px calc(80px + max(12px, env(safe-area-inset-bottom, 0px))) 12px !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+
+  .g-page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
   }
 
   /* Headings on mobile */
   h1 {
     font-size: 22px !important;
+    line-height: 1.25 !important;
   }
 
   /* Tabs horizontal scrolling */
@@ -863,7 +886,7 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
     max-width: 100% !important;
-    padding-bottom: 2px;
+    padding-bottom: 4px !important;
   }
   .g-tabs::-webkit-scrollbar {
     display: none;
@@ -880,6 +903,8 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   .g-search-wrap {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
   }
 
   /* Grids */
@@ -889,6 +914,7 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   }
   .g-review-grid {
     grid-template-columns: 1fr !important;
+    gap: 16px !important;
   }
 
   /* Glass rows on mobile */
@@ -904,6 +930,8 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     display: flex !important;
     justify-content: space-between !important;
     align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
     border-top: 1px solid rgba(255, 255, 255, 0.40);
     padding-top: 10px;
     margin-top: 2px;
@@ -921,8 +949,9 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
     border-radius: 22px 22px 0 0 !important;
     border-bottom: none !important;
     max-height: 90vh !important;
+    max-height: 90dvh !important;
     overflow-y: auto !important;
-    padding: 24px 18px !important;
+    padding: 22px 16px 36px !important;
     animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
   }
 
@@ -945,11 +974,29 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   /* Touch-friendly buttons */
   .g-btn {
     min-height: 38px;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Glass Cards on mobile */
   .glass-card, .glass-section, .glass-1, .glass-2 {
-    padding: 16px 16px !important;
+    padding: 16px 14px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .g-metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .auth-wrapper {
+    padding: 14px 10px !important;
+    align-items: flex-start !important;
+  }
+
+  .auth-card-panel .glass-4 {
+    padding: 22px 14px 20px !important;
+    border-radius: var(--r-lg) !important;
   }
 }
 

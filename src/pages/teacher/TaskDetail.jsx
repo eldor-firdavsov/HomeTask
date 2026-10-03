@@ -978,7 +978,7 @@ export default function TaskDetail() {
 
                 {/* Student Info & Deadline */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
                     <Link
                       to={student ? `/teacher/students/${student.id}` : '#'}
                       style={{
@@ -990,7 +990,7 @@ export default function TaskDetail() {
                     >
                       {student ? `${student.firstName} ${student.lastName}` : 'Unknown student'}
                     </Link>
-                    <span style={{ fontSize: 12, color: 'var(--txt-tertiary)' }}>
+                    <span style={{ fontSize: 12, color: 'var(--txt-tertiary)', wordBreak: 'break-all' }}>
                       {student?.email}
                     </span>
                   </div>
@@ -1010,7 +1010,7 @@ export default function TaskDetail() {
                 </div>
 
                 {/* Status Badge & Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
                   <StatusBadge assignment={assignment} />
                   {submission && ['SUBMITTED', 'UNDER_REVIEW', 'DONE'].includes(assignment.status) && (
                     <Link

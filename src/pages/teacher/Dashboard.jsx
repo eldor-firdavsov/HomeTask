@@ -482,7 +482,7 @@ export default function Dashboard() {
       {tab === 'students' && (
         <>
           {/* Controls */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22, flexWrap: 'wrap', gap: 10 }}>
             <div className="g-search-wrap">
               <span className="g-search-icon"><Search size={13} /></span>
               <input
