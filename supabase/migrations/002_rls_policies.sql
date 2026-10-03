@@ -16,22 +16,26 @@ ALTER TABLE submission_attachments ENABLE ROW LEVEL SECURITY;
 -- ═══════════════════════════════════════════════════════════
 
 -- Teachers can read their own profile
+DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
 CREATE POLICY "Users can read own profile"
   ON profiles FOR SELECT
   USING (id = auth.uid());
 
 -- Teachers can read profiles of their students
+DROP POLICY IF EXISTS "Teachers can read their students profiles" ON profiles;
 CREATE POLICY "Teachers can read their students profiles"
   ON profiles FOR SELECT
   USING (teacher_id = auth.uid());
 
 -- Users can update their own profile (limited fields)
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
 
 -- Allow service role insert (for Edge Function student creation)
+DROP POLICY IF EXISTS "Service role can insert profiles" ON profiles;
 CREATE POLICY "Service role can insert profiles"
   ON profiles FOR INSERT
   WITH CHECK (true);
@@ -41,19 +45,23 @@ CREATE POLICY "Service role can insert profiles"
 -- ═══════════════════════════════════════════════════════════
 
 -- Teachers can CRUD only their own templates
+DROP POLICY IF EXISTS "Teachers can read own templates" ON task_templates;
 CREATE POLICY "Teachers can read own templates"
   ON task_templates FOR SELECT
   USING (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can insert own templates" ON task_templates;
 CREATE POLICY "Teachers can insert own templates"
   ON task_templates FOR INSERT
   WITH CHECK (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can update own templates" ON task_templates;
 CREATE POLICY "Teachers can update own templates"
   ON task_templates FOR UPDATE
   USING (teacher_id = auth.uid())
   WITH CHECK (teacher_id = auth.uid());
 
+DROP POLICY IF EXISTS "Teachers can delete own templates" ON task_templates;
 CREATE POLICY "Teachers can delete own templates"
   ON task_templates FOR DELETE
   USING (teacher_id = auth.uid());
@@ -63,6 +71,7 @@ CREATE POLICY "Teachers can delete own templates"
 -- ═══════════════════════════════════════════════════════════
 
 -- Teachers can manage attachments for their templates
+DROP POLICY IF EXISTS "Teachers can read own template attachments" ON task_attachments;
 CREATE POLICY "Teachers can read own template attachments"
   ON task_attachments FOR SELECT
   USING (
@@ -74,6 +83,7 @@ CREATE POLICY "Teachers can read own template attachments"
   );
 
 -- Students can read attachments for their assigned templates
+DROP POLICY IF EXISTS "Students can read assigned template attachments" ON task_attachments;
 CREATE POLICY "Students can read assigned template attachments"
   ON task_attachments FOR SELECT
   USING (
@@ -84,6 +94,7 @@ CREATE POLICY "Students can read assigned template attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can insert own template attachments" ON task_attachments;
 CREATE POLICY "Teachers can insert own template attachments"
   ON task_attachments FOR INSERT
   WITH CHECK (
@@ -94,6 +105,7 @@ CREATE POLICY "Teachers can insert own template attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can delete own template attachments" ON task_attachments;
 CREATE POLICY "Teachers can delete own template attachments"
   ON task_attachments FOR DELETE
   USING (
@@ -109,16 +121,19 @@ CREATE POLICY "Teachers can delete own template attachments"
 -- ═══════════════════════════════════════════════════════════
 
 -- Teachers can read their assignments
+DROP POLICY IF EXISTS "Teachers can read own assignments" ON assignments;
 CREATE POLICY "Teachers can read own assignments"
   ON assignments FOR SELECT
   USING (teacher_id = auth.uid());
 
 -- Students can read their assignments
+DROP POLICY IF EXISTS "Students can read own assignments" ON assignments;
 CREATE POLICY "Students can read own assignments"
   ON assignments FOR SELECT
   USING (student_id = auth.uid());
 
 -- Teachers can create assignments for their students
+DROP POLICY IF EXISTS "Teachers can create assignments" ON assignments;
 CREATE POLICY "Teachers can create assignments"
   ON assignments FOR INSERT
   WITH CHECK (
@@ -131,12 +146,14 @@ CREATE POLICY "Teachers can create assignments"
   );
 
 -- Teachers can update their assignments
+DROP POLICY IF EXISTS "Teachers can update own assignments" ON assignments;
 CREATE POLICY "Teachers can update own assignments"
   ON assignments FOR UPDATE
   USING (teacher_id = auth.uid())
   WITH CHECK (teacher_id = auth.uid());
 
 -- Students can update status of their assignments (limited)
+DROP POLICY IF EXISTS "Students can update own assignment status" ON assignments;
 CREATE POLICY "Students can update own assignment status"
   ON assignments FOR UPDATE
   USING (student_id = auth.uid())
@@ -147,6 +164,7 @@ CREATE POLICY "Students can update own assignment status"
   );
 
 -- Teachers can delete their assignments
+DROP POLICY IF EXISTS "Teachers can delete own assignments" ON assignments;
 CREATE POLICY "Teachers can delete own assignments"
   ON assignments FOR DELETE
   USING (teacher_id = auth.uid());
@@ -155,6 +173,7 @@ CREATE POLICY "Teachers can delete own assignments"
 -- ASSIGNMENT ATTACHMENTS POLICIES
 -- ═══════════════════════════════════════════════════════════
 
+DROP POLICY IF EXISTS "Teachers can read own assignment attachments" ON assignment_attachments;
 CREATE POLICY "Teachers can read own assignment attachments"
   ON assignment_attachments FOR SELECT
   USING (
@@ -165,6 +184,7 @@ CREATE POLICY "Teachers can read own assignment attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Students can read own assignment attachments" ON assignment_attachments;
 CREATE POLICY "Students can read own assignment attachments"
   ON assignment_attachments FOR SELECT
   USING (
@@ -175,6 +195,7 @@ CREATE POLICY "Students can read own assignment attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can insert assignment attachments" ON assignment_attachments;
 CREATE POLICY "Teachers can insert assignment attachments"
   ON assignment_attachments FOR INSERT
   WITH CHECK (
@@ -185,6 +206,7 @@ CREATE POLICY "Teachers can insert assignment attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can delete assignment attachments" ON assignment_attachments;
 CREATE POLICY "Teachers can delete assignment attachments"
   ON assignment_attachments FOR DELETE
   USING (
@@ -200,6 +222,7 @@ CREATE POLICY "Teachers can delete assignment attachments"
 -- ═══════════════════════════════════════════════════════════
 
 -- Students can create submissions for their own assignments
+DROP POLICY IF EXISTS "Students can create own submissions" ON submissions;
 CREATE POLICY "Students can create own submissions"
   ON submissions FOR INSERT
   WITH CHECK (
@@ -212,11 +235,13 @@ CREATE POLICY "Students can create own submissions"
   );
 
 -- Students can read their own submissions
+DROP POLICY IF EXISTS "Students can read own submissions" ON submissions;
 CREATE POLICY "Students can read own submissions"
   ON submissions FOR SELECT
   USING (student_id = auth.uid());
 
 -- Teachers can read submissions for their assignments
+DROP POLICY IF EXISTS "Teachers can read submissions for own assignments" ON submissions;
 CREATE POLICY "Teachers can read submissions for own assignments"
   ON submissions FOR SELECT
   USING (
@@ -228,6 +253,7 @@ CREATE POLICY "Teachers can read submissions for own assignments"
   );
 
 -- Students can update their own submissions (before final review)
+DROP POLICY IF EXISTS "Students can update own submissions" ON submissions;
 CREATE POLICY "Students can update own submissions"
   ON submissions FOR UPDATE
   USING (student_id = auth.uid())
@@ -237,6 +263,7 @@ CREATE POLICY "Students can update own submissions"
 -- SUBMISSION ATTACHMENTS POLICIES
 -- ═══════════════════════════════════════════════════════════
 
+DROP POLICY IF EXISTS "Students can insert own submission attachments" ON submission_attachments;
 CREATE POLICY "Students can insert own submission attachments"
   ON submission_attachments FOR INSERT
   WITH CHECK (
@@ -247,6 +274,7 @@ CREATE POLICY "Students can insert own submission attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Students can read own submission attachments" ON submission_attachments;
 CREATE POLICY "Students can read own submission attachments"
   ON submission_attachments FOR SELECT
   USING (
@@ -257,6 +285,7 @@ CREATE POLICY "Students can read own submission attachments"
     )
   );
 
+DROP POLICY IF EXISTS "Teachers can read submission attachments for own assignments" ON submission_attachments;
 CREATE POLICY "Teachers can read submission attachments for own assignments"
   ON submission_attachments FOR SELECT
   USING (

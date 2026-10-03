@@ -1,31 +1,56 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Clock, Send,
-  Link as LinkIcon, FileText, Image as ImageIcon, ExternalLink, Download, X
+  Link as LinkIcon, FileText, Image as ImageIcon, ExternalLink, Download, X,
+  Paperclip, Upload, Trash2
 } from 'lucide-react';
-import { TypeChip, StatusBadge, formatDateTime, isOverdue, uid } from '../../utils/helpers.jsx';
+import { TypeChip, StatusBadge, formatDateTime, isOverdue } from '../../utils/helpers.jsx';
+import { createSubmission, addSubmissionAttachment, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
+import { updateAssignmentStatus } from '../../lib/supabase/assignments.js';
+import { uploadSubmissionFile, getSignedUrl, validateFile, formatFileSize } from '../../lib/supabase/storage.js';
 
 export default function StudentTaskDetail() {
   const { assignmentId } = useParams();
-  const { data, setData, session } = useData();
+  const { data, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
   const [zoomImage, setZoomImage] = useState(null);
 
-  const assignment = data.assignments.find(a => a.id === assignmentId);
-  const teacher    = data.users.find(u => u.role === 'TEACHER');
+  const assignment = (data?.assignments || []).find(a => a.id === assignmentId);
+  const teacher    = (data?.users || []).find(u => u.role === 'TEACHER');
 
   const submission = useMemo(() =>
-    data.submissions
+    (data?.submissions || [])
       .filter(s => s.assignedTaskId === assignmentId)
       .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0],
-    [data.submissions, assignmentId]
+    [data?.submissions, assignmentId]
   );
 
-  const [content,  setContent]  = useState(submission?.content || '');
-  const [busy,     setBusy]     = useState(false);
+  const [content, setContent] = useState(submission?.content || '');
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [savedAttachments, setSavedAttachments] = useState([]);
+  const [busy, setBusy] = useState(false);
+
+  // Load attachments of the previous submission if any
+  useEffect(() => {
+    if (submission?.id) {
+      getSubmissionAttachments(submission.id)
+        .then(async (atts) => {
+          const withUrls = await Promise.all(atts.map(async (att) => {
+            try {
+              const url = await getSignedUrl('submission-files', att.storage_path);
+              return { ...att, downloadUrl: url };
+            } catch (err) {
+              return att;
+            }
+          }));
+          setSavedAttachments(withUrls);
+        })
+        .catch(console.error);
+    }
+  }, [submission?.id]);
 
   const onFocus = e => {
     e.target.style.borderColor = 'rgba(99,102,241,0.50)';
@@ -50,31 +75,85 @@ export default function StudentTaskDetail() {
   const dlDate    = assignment.deadline ? new Date(assignment.deadline) : null;
   const dlStr     = dlDate ? dlDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + ', ' + dlDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : null;
 
-  const handleSaveDraft = () => {
-    setData({
-      ...data,
-      assignments: data.assignments.map(a =>
-        a.id === assignmentId ? { ...a, status: 'IN_PROGRESS', updatedAt: new Date().toISOString() } : a
-      ),
-    });
-    toast('Draft saved');
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    for (const f of files) {
+      const isImg = f.type.startsWith('image/');
+      const validation = validateFile(f, isImg ? 'image' : 'document');
+      if (!validation.valid) {
+        toast(validation.error, 'error');
+        continue;
+      }
+      setAttachedFiles(prev => [...prev, f]);
+    }
+    e.target.value = '';
   };
 
-  const handleSubmit = () => {
-    if (!content.trim()) { toast('Your submission cannot be empty.', 'error'); return; }
+  const handleRemoveFile = (index) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveDraft = async () => {
     setBusy(true);
-    const newSub = {
-      id: uid('sub'), assignedTaskId: assignmentId, studentId: session.user.id,
-      content: content.trim(), status: 'SUBMITTED',
-      submittedAt: new Date().toISOString(), createdAt: new Date().toISOString(),
-    };
-    const updatedAssignments = data.assignments.map(a =>
-      a.id === assignmentId ? { ...a, status: 'SUBMITTED', updatedAt: new Date().toISOString() } : a
-    );
-    setData({ ...data, submissions: [...data.submissions, newSub], assignments: updatedAssignments });
-    setBusy(false);
-    toast('Task submitted successfully');
-    setTimeout(() => navigate('/student/tasks'), 600);
+    try {
+      await updateAssignmentStatus(assignmentId, 'IN_PROGRESS');
+      toast('Draft saved');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Draft error:', err);
+      toast(err.message || 'Failed to save draft', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!content.trim() && attachedFiles.length === 0) {
+      toast('Your submission cannot be empty. Enter text or attach a file.', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      const studentId = session?.user?.id || profile?.id;
+      const nextVersion = (submission?.version || 0) + 1;
+
+      // 1. Create submission record in database
+      const newSub = await createSubmission({
+        assignmentId,
+        studentId,
+        textContent: content.trim(),
+        version: nextVersion,
+      });
+
+      // 2. Upload any attached files to private Supabase Storage
+      for (const f of attachedFiles) {
+        try {
+          const uploaded = await uploadSubmissionFile(studentId, assignmentId, f);
+          await addSubmissionAttachment(newSub.id, {
+            fileName: f.name,
+            storagePath: uploaded.storagePath,
+            mimeType: f.type,
+            fileSize: f.size,
+          });
+        } catch (uploadErr) {
+          console.error('Error uploading submission attachment:', uploadErr);
+        }
+      }
+
+      // 3. Transition assignment status to submitted
+      await updateAssignmentStatus(assignmentId, 'SUBMITTED');
+
+      toast('Task submitted successfully!');
+      if (refreshData) await refreshData();
+      setTimeout(() => navigate('/student/tasks'), 500);
+    } catch (err) {
+      console.error('Submit error:', err);
+      toast(err.message || 'Failed to submit task', 'error');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const textareaStyle = {
@@ -142,7 +221,7 @@ export default function StudentTaskDetail() {
                 Completed · Grade: {assignment.grade}/100
               </div>
               {assignment.feedback && (
-                <p style={{ fontSize: 13.5, color: 'var(--txt-primary)', margin: 0, lineHeight: 1.65 }}>
+                <p style={{ fontSize: 13.5, color: 'var(--txt-primary)', margin: 0, lineHeight: 1.65, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                   {assignment.feedback}
                 </p>
               )}
@@ -163,7 +242,7 @@ export default function StudentTaskDetail() {
               <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--clr-revision-txt)', marginBottom: 6 }}>
                 Revision requested
               </div>
-              <p style={{ fontSize: 13.5, color: 'var(--txt-primary)', margin: 0, lineHeight: 1.65 }}>
+              <p style={{ fontSize: 13.5, color: 'var(--txt-primary)', margin: 0, lineHeight: 1.65, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                 {assignment.feedback}
               </p>
             </div>
@@ -172,11 +251,11 @@ export default function StudentTaskDetail() {
       )}
 
       {/* Instructions */}
-      <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20 }}>
+      <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
         <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
           Instructions
         </div>
-        <p style={{ fontSize: 15, lineHeight: 1.75, color: 'var(--txt-primary)', margin: 0, whiteSpace: 'pre-wrap' }}>
+        <p style={{ fontSize: 15, lineHeight: 1.75, color: 'var(--txt-primary)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
           {assignment.instructions || 'No instructions provided.'}
         </p>
       </div>
@@ -281,13 +360,59 @@ export default function StudentTaskDetail() {
 
       {/* Already submitted (read-only) */}
       {submission && !canSubmit && assignment.status !== 'NEEDS_REVISION' && (
-        <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20 }}>
+        <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
-            Your submission
+            Your submission {submission.version > 1 ? `(Version ${submission.version})` : ''}
           </div>
-          <p style={{ fontSize: 14.5, lineHeight: 1.7, color: 'var(--txt-primary)', margin: 0, whiteSpace: 'pre-wrap' }}>
-            {submission.content}
-          </p>
+          {submission.content ? (
+            <p style={{
+              fontSize: 14.5,
+              lineHeight: 1.7,
+              color: 'var(--txt-primary)',
+              margin: 0,
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere'
+            }}>
+              {submission.content}
+            </p>
+          ) : (
+            <p style={{ color: 'var(--txt-tertiary)', fontSize: 13, fontStyle: 'italic', margin: 0 }}>No text submitted.</p>
+          )}
+
+          {/* Saved attachments */}
+          {savedAttachments.length > 0 && (
+            <div style={{ marginTop: 18, borderTop: '1px solid rgba(255,255,255,0.40)', paddingTop: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
+                Attached Files
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {savedAttachments.map(att => (
+                  <div key={att.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', background: 'rgba(255,255,255,0.45)', borderRadius: 'var(--r-sm)',
+                    border: '1px solid rgba(255,255,255,0.60)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <FileText size={16} color="var(--accent-text)" />
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--txt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {att.file_name}
+                      </span>
+                      {att.file_size && (
+                        <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>({formatFileSize(att.file_size)})</span>
+                      )}
+                    </div>
+                    {att.downloadUrl && (
+                      <a href={att.downloadUrl} target="_blank" rel="noopener noreferrer" download={att.file_name} className="g-btn g-btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>
+                        <Download size={11} style={{ marginRight: 4 }} /> Download
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={{ fontSize: 11.5, color: 'var(--txt-tertiary)', marginTop: 14 }}>
             Submitted {formatDateTime(submission.submittedAt)} · awaiting review
           </div>
@@ -301,19 +426,65 @@ export default function StudentTaskDetail() {
             {assignment.status === 'NEEDS_REVISION' ? 'Revised answer' : 'Your submission'}
           </div>
           <textarea
-            rows={8}
+            rows={7}
             value={content}
             onChange={e => setContent(e.target.value)}
             placeholder="Type your answer here…"
             style={textareaStyle}
             onFocus={onFocus} onBlur={onBlur}
+            disabled={busy}
           />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
-            <button onClick={handleSaveDraft} className="g-btn g-btn-ghost" disabled={busy}>Save draft</button>
-            <button onClick={handleSubmit} className="g-btn g-btn-primary" disabled={busy}>
-              <Send size={13} />
-              {assignment.status === 'NEEDS_REVISION' ? 'Resubmit' : 'Submit'}
-            </button>
+
+          {/* Attached Files List */}
+          {attachedFiles.length > 0 && (
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {attachedFiles.map((file, idx) => (
+                <div key={idx} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 12px', background: 'rgba(255,255,255,0.45)', borderRadius: 'var(--r-sm)',
+                  border: '1px solid rgba(255,255,255,0.60)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Paperclip size={14} color="var(--accent-text)" />
+                    <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--txt-primary)' }}>{file.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>({formatFileSize(file.size)})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(idx)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--txt-tertiary)', padding: 2 }}
+                    title="Remove attachment"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Actions Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 18, flexWrap: 'wrap', gap: 10 }}>
+            <label className="g-btn g-btn-secondary" style={{ cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12, padding: '7px 12px' }}>
+              <Paperclip size={13} style={{ marginRight: 6 }} />
+              Attach file or image
+              <input
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: 'none' }}
+                disabled={busy}
+              />
+            </label>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={handleSaveDraft} className="g-btn g-btn-ghost" disabled={busy}>
+                Save draft
+              </button>
+              <button onClick={handleSubmit} className="g-btn g-btn-primary" disabled={busy}>
+                <Send size={13} />
+                {busy ? 'Submitting…' : assignment.status === 'NEEDS_REVISION' ? 'Resubmit' : 'Submit'}
+              </button>
+            </div>
           </div>
         </div>
       )}

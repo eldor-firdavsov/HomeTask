@@ -4,20 +4,34 @@
 -- ═══════════════════════════════════════════════════════════
 
 -- ── Role enum ─────────────────────────────────────────────
-CREATE TYPE user_role AS ENUM ('teacher', 'student');
+DO $$ BEGIN
+  CREATE TYPE user_role AS ENUM (
+'teacher', 'student'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ── Assignment status enum ────────────────────────────────
-CREATE TYPE assignment_status AS ENUM (
+DO $$ BEGIN
+  CREATE TYPE assignment_status AS ENUM (
+
   'not_started',
   'in_progress',
   'submitted',
   'under_review',
   'needs_revision',
   'done'
-);
+
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ── Task type enum ────────────────────────────────────────
-CREATE TYPE task_type AS ENUM (
+DO $$ BEGIN
+  CREATE TYPE task_type AS ENUM (
+
   'keyword',
   'summary',
   'vocabulary',
@@ -27,12 +41,16 @@ CREATE TYPE task_type AS ENUM (
   'speaking',
   'grammar',
   'other'
-);
+
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- ═══════════════════════════════════════════════════════════
 -- PROFILES
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   first_name  TEXT NOT NULL,
   last_name   TEXT NOT NULL,
@@ -45,13 +63,13 @@ CREATE TABLE profiles (
 );
 
 -- Index for teacher-student lookup
-CREATE INDEX idx_profiles_teacher_id ON profiles(teacher_id);
-CREATE INDEX idx_profiles_role ON profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_teacher_id ON profiles(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON profiles(role);
 
 -- ═══════════════════════════════════════════════════════════
 -- TASK TEMPLATES
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE task_templates (
+CREATE TABLE IF NOT EXISTS task_templates (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   title            TEXT NOT NULL,
@@ -64,12 +82,12 @@ CREATE TABLE task_templates (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_task_templates_teacher_id ON task_templates(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_task_templates_teacher_id ON task_templates(teacher_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- TASK ATTACHMENTS
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE task_attachments (
+CREATE TABLE IF NOT EXISTS task_attachments (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_template_id UUID NOT NULL REFERENCES task_templates(id) ON DELETE CASCADE,
   file_name        TEXT NOT NULL,
@@ -81,12 +99,12 @@ CREATE TABLE task_attachments (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_task_attachments_template_id ON task_attachments(task_template_id);
+CREATE INDEX IF NOT EXISTS idx_task_attachments_template_id ON task_attachments(task_template_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- ASSIGNMENTS
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE assignments (
+CREATE TABLE IF NOT EXISTS assignments (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   task_template_id UUID REFERENCES task_templates(id) ON DELETE SET NULL,
   teacher_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -110,16 +128,16 @@ CREATE TABLE assignments (
   updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_assignments_teacher_id ON assignments(teacher_id);
-CREATE INDEX idx_assignments_student_id ON assignments(student_id);
-CREATE INDEX idx_assignments_status ON assignments(status);
-CREATE INDEX idx_assignments_deadline ON assignments(deadline);
-CREATE INDEX idx_assignments_template_id ON assignments(task_template_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_teacher_id ON assignments(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_student_id ON assignments(student_id);
+CREATE INDEX IF NOT EXISTS idx_assignments_status ON assignments(status);
+CREATE INDEX IF NOT EXISTS idx_assignments_deadline ON assignments(deadline);
+CREATE INDEX IF NOT EXISTS idx_assignments_template_id ON assignments(task_template_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- ASSIGNMENT ATTACHMENTS (references to template attachments)
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE assignment_attachments (
+CREATE TABLE IF NOT EXISTS assignment_attachments (
   id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   assignment_id    UUID NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
   file_name        TEXT NOT NULL,
@@ -131,12 +149,12 @@ CREATE TABLE assignment_attachments (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_assignment_attachments_assignment_id ON assignment_attachments(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_assignment_attachments_assignment_id ON assignment_attachments(assignment_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- SUBMISSIONS
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE submissions (
+CREATE TABLE IF NOT EXISTS submissions (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   assignment_id   UUID NOT NULL REFERENCES assignments(id) ON DELETE CASCADE,
   student_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -150,13 +168,13 @@ CREATE TABLE submissions (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_submissions_assignment_id ON submissions(assignment_id);
-CREATE INDEX idx_submissions_student_id ON submissions(student_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_assignment_id ON submissions(assignment_id);
+CREATE INDEX IF NOT EXISTS idx_submissions_student_id ON submissions(student_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- SUBMISSION ATTACHMENTS
 -- ═══════════════════════════════════════════════════════════
-CREATE TABLE submission_attachments (
+CREATE TABLE IF NOT EXISTS submission_attachments (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   submission_id   UUID NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
   file_name       TEXT NOT NULL,
@@ -166,7 +184,7 @@ CREATE TABLE submission_attachments (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_submission_attachments_submission_id ON submission_attachments(submission_id);
+CREATE INDEX IF NOT EXISTS idx_submission_attachments_submission_id ON submission_attachments(submission_id);
 
 -- ═══════════════════════════════════════════════════════════
 -- TRIGGERS: Auto-update updated_at
@@ -179,18 +197,22 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
 CREATE TRIGGER update_profiles_updated_at
   BEFORE UPDATE ON profiles
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_task_templates_updated_at ON task_templates;
 CREATE TRIGGER update_task_templates_updated_at
   BEFORE UPDATE ON task_templates
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_assignments_updated_at ON assignments;
 CREATE TRIGGER update_assignments_updated_at
   BEFORE UPDATE ON assignments
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_submissions_updated_at ON submissions;
 CREATE TRIGGER update_submissions_updated_at
   BEFORE UPDATE ON submissions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

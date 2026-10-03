@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus, UserCheck } from 'lucide-react';
+import { Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus, UserCheck, Copy, Check, RefreshCw } from 'lucide-react';
 import {
   calcAverageGrade, gradeColor, studentTaskCounts,
   StatusBadge, formatDateTime, formatDate, TypeChip, uid,
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
+import { createStudent } from '../../lib/supabase/students.js';
 
 /* ── Shared inline styles ──────────────────── */
 const labelStyle = {
@@ -23,12 +24,29 @@ const inputStyle = {
   boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
 };
 
+const generatePassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+  let pw = '';
+  for (let i = 0; i < 8; i++) {
+    pw += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pw;
+};
+
 /* ── Add Student Modal ──────────────────────── */
 function AddStudentModal({ onClose }) {
-  const { data, setData } = useData();
+  const { data, refreshData } = useData();
   const toast = useToast();
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '' });
-  const [err,  setErr]  = useState('');
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: generatePassword(),
+  });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [createdStudent, setCreatedStudent] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -43,65 +61,183 @@ function AddStudentModal({ onClose }) {
     e.target.style.background = 'rgba(255,255,255,0.40)';
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim())
+    setErr('');
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim() || !form.password.trim()) {
       return setErr('All fields are required.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      return setErr('Enter a valid email address.');
-    if (data.users.some(u => u.email.toLowerCase() === form.email.toLowerCase()))
-      return setErr('A student with this email already exists.');
+    }
+    if (!/^[^\s@]+@[^\s@]+$/.test(form.email)) {
+      return setErr('Enter a valid email address (e.g. name@school or student@example.com).');
+    }
+    if (form.password.length < 6) {
+      return setErr('Password must be at least 6 characters.');
+    }
 
-    const newUser = {
-      id: uid('s'), role: 'STUDENT',
-      firstName: form.firstName.trim(), lastName: form.lastName.trim(),
-      email: form.email.trim().toLowerCase(),
-    };
-    setData({ ...data, users: [...data.users, newUser] });
-    toast('Student added successfully');
-    onClose();
+    setLoading(true);
+    try {
+      await createStudent({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
+      });
+      setCreatedStudent({
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
+      });
+      toast('Student created successfully!');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Error creating student:', err);
+      setErr(err.message || 'Failed to create student account.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!createdStudent) return;
+    const text = `Homework Platform Student Credentials:\nEmail: ${createdStudent.email}\nTemporary Password: ${createdStudent.password}\nLogin URL: ${window.location.origin}/student/login`;
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast('Credentials copied to clipboard!');
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
     <div className="g-overlay" onClick={onClose}>
-      <div className="glass-4 g-modal" onClick={e => e.stopPropagation()} style={{ padding: '32px 30px' }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 24px' }}>
-          Add Student
-        </h2>
-        <form onSubmit={handleSave}>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-            {['firstName', 'lastName'].map(k => (
-              <div key={k} style={{ flex: 1 }}>
-                <label style={labelStyle}>{k === 'firstName' ? 'First name' : 'Last name'}</label>
+      <div className="glass-4 g-modal" onClick={e => e.stopPropagation()} style={{ padding: '32px 30px', maxWidth: 460 }}>
+        {!createdStudent ? (
+          <>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 20px' }}>
+              Add Student
+            </h2>
+            <form onSubmit={handleSave}>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 14 }}>
+                {['firstName', 'lastName'].map(k => (
+                  <div key={k} style={{ flex: 1 }}>
+                    <label style={labelStyle}>{k === 'firstName' ? 'First name' : 'Last name'}</label>
+                    <input
+                      style={inputStyle} value={form[k]}
+                      onChange={e => set(k, e.target.value)}
+                      placeholder={k === 'firstName' ? 'Ahmadjon' : 'Karimov'}
+                      onFocus={handleFocus} onBlur={handleBlur}
+                      disabled={loading}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={labelStyle}>Email address</label>
                 <input
-                  style={inputStyle} value={form[k]}
-                  onChange={e => set(k, e.target.value)}
-                  placeholder={k === 'firstName' ? 'Ahmadjon' : 'Karimov'}
-                  onFocus={handleFocus} onBlur={handleBlur}
+                  style={inputStyle}
+                  type="text"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  value={form.email}
+                  onChange={e => set('email', e.target.value)}
+                  placeholder="student@school or student@example.com"
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                  disabled={loading}
                 />
               </div>
-            ))}
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <label style={labelStyle}>Email address</label>
-            <input
-              style={inputStyle} type="email" value={form.email}
-              onChange={e => set('email', e.target.value)}
-              placeholder="student@example.com"
-              onFocus={handleFocus} onBlur={handleBlur}
-            />
-          </div>
-          {err && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ ...labelStyle, margin: 0 }}>Initial Password</label>
+                  <button
+                    type="button"
+                    onClick={() => set('password', generatePassword())}
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 11, color: 'var(--accent-text)', fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: 4, padding: 0
+                    }}
+                  >
+                    <RefreshCw size={11} /> Generate random
+                  </button>
+                </div>
+                <input
+                  style={inputStyle} value={form.password}
+                  onChange={e => set('password', e.target.value)}
+                  placeholder="Password"
+                  onFocus={handleFocus} onBlur={handleBlur}
+                  disabled={loading}
+                />
+              </div>
+              {err && (
+                <div style={{
+                  padding: '10px 14px', background: 'var(--clr-overdue)', border: '1px solid var(--clr-overdue-bd)',
+                  borderRadius: 'var(--r-sm)', fontSize: 12, color: 'var(--clr-overdue-txt)', marginBottom: 16,
+                }}>{err}</div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
+                <button type="button" onClick={onClose} className="g-btn g-btn-ghost" disabled={loading}>
+                  Cancel
+                </button>
+                <button type="submit" className="g-btn g-btn-primary" disabled={loading}>
+                  {loading ? 'Creating student…' : 'Add student'}
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 20 }}>
+              <div style={{
+                width: 44, height: 44, borderRadius: 22,
+                background: 'rgba(52,211,153,0.18)', border: '1px solid rgba(52,211,153,0.3)',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--clr-done-txt)', marginBottom: 12
+              }}>
+                <Check size={22} strokeWidth={2.5} />
+              </div>
+              <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 6px' }}>
+                Student Created!
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: 0 }}>
+                Copy the credentials below and provide them to <strong>{createdStudent.firstName}</strong>.
+              </p>
+            </div>
+
             <div style={{
-              padding: '10px 14px', background: 'var(--clr-overdue)', border: '1px solid var(--clr-overdue-bd)',
-              borderRadius: 'var(--r-sm)', fontSize: 12, color: 'var(--clr-overdue-txt)', marginBottom: 16,
-            }}>{err}</div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 4 }}>
-            <button type="button" onClick={onClose} className="g-btn g-btn-ghost">Cancel</button>
-            <button type="submit" className="g-btn g-btn-primary">Add student</button>
+              background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
+              borderRadius: 'var(--r-sm)', padding: '14px 16px', marginBottom: 20
+            }}>
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase' }}>Student Email</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt-primary)', marginTop: 2 }}>{createdStudent.email}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase' }}>Temporary Password</div>
+                <div style={{ fontSize: 14, fontWeight: 700, fontFamily: 'monospace', color: 'var(--accent-text)', marginTop: 2 }}>{createdStudent.password}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                type="button"
+                onClick={handleCopyCredentials}
+                className="g-btn g-btn-primary"
+                style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? 'Copied to clipboard!' : 'Copy credentials'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="g-btn g-btn-ghost"
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                Done
+              </button>
+            </div>
           </div>
-        </form>
+        )}
       </div>
     </div>
   );
@@ -191,7 +327,10 @@ function StudentCard({ student, assignments }) {
 
 /* ── Review Queue ───────────────────────────── */
 function ReviewQueue({ submissions, assignments, users }) {
-  const toReview = submissions.filter(s => ['SUBMITTED','UNDER_REVIEW'].includes(s.status));
+  const toReview = submissions.filter(s => {
+    const assignment = assignments.find(a => a.id === s.assignedTaskId);
+    return assignment && ['SUBMITTED', 'UNDER_REVIEW'].includes(assignment.status);
+  });
 
   if (!toReview.length) {
     return (
@@ -226,7 +365,7 @@ function ReviewQueue({ submissions, assignments, users }) {
                 {student.firstName} {student.lastName}
               </div>
               <div style={{ fontSize: 12, color: 'var(--txt-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <span>{assignment.title}</span>
+                <span style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{assignment.title}</span>
                 <span>·</span>
                 <span style={{ textTransform: 'capitalize' }}>
                   {assignment.type?.toLowerCase()}
@@ -236,7 +375,7 @@ function ReviewQueue({ submissions, assignments, users }) {
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <StatusBadge assignment={{ ...assignment, status: sub.status }} />
+              <StatusBadge assignment={assignment} />
               <Link to={`/teacher/submissions/${sub.id}`} className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '7px 14px' }}>
                 Review
               </Link>

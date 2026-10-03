@@ -4,11 +4,12 @@ import { useData, useToast } from '../../context/DataContext';
 import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck } from 'lucide-react';
 import { TypeChip, formatDate, uid } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
+import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/tasks.js';
 
 const TYPES = ['All','Vocabulary','Writing','Reading','Listening','Speaking','Grammar','Keyword','Summary','Other'];
 
 export default function TaskLibrary() {
-  const { data, setData } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
   const [search,            setSearch]            = useState('');
   const [activeType,        setActiveType]        = useState('All');
@@ -29,21 +30,41 @@ export default function TaskLibrary() {
     return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }, [data.templates, search, activeType]);
 
-  const handleDelete = (tplId) => {
+  const handleDelete = async (tplId) => {
     const inUse = data.assignments.some(a => a.templateId === tplId);
     if (inUse) {
       toast('Cannot delete — this template has active assignments.', 'error');
       return;
     }
     if (!confirm('Delete this task template? This cannot be undone.')) return;
-    setData({ ...data, templates: data.templates.filter(t => t.id !== tplId) });
-    toast('Template deleted');
+    try {
+      await deleteTaskTemplate(tplId);
+      setData(prev => ({
+        ...prev,
+        templates: prev.templates.filter(t => t.id !== tplId),
+      }));
+      toast('Template deleted');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Delete template error:', err);
+      toast(err.message || 'Failed to delete template', 'error');
+    }
   };
 
-  const handleDuplicate = (tpl) => {
-    const copy = { ...tpl, id: uid('tpl'), title: `${tpl.title} (copy)`, createdAt: new Date().toISOString() };
-    setData({ ...data, templates: [...data.templates, copy] });
-    toast('Template duplicated');
+  const handleDuplicate = async (tpl) => {
+    try {
+      const teacherId = session?.user?.id || profile?.id || tpl.teacherId;
+      const copy = await duplicateTaskTemplate(tpl.id, teacherId);
+      setData(prev => ({
+        ...prev,
+        templates: [copy, ...(prev.templates || [])],
+      }));
+      toast('Template duplicated');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Duplicate error:', err);
+      toast(err.message || 'Failed to duplicate template', 'error');
+    }
   };
 
   return (

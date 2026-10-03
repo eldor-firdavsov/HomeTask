@@ -16,8 +16,8 @@ export default function StudentTasks() {
   const [filter, setFilter] = useState('All');
 
   const mine = useMemo(
-    () => data.assignments.filter(a => a.studentId === session.user.id),
-    [data.assignments, session.user.id]
+    () => (data?.assignments || []).filter(a => a.studentId === session?.user?.id),
+    [data?.assignments, session?.user?.id]
   );
 
   const filtered = useMemo(() => {

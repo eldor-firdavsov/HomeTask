@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { ArrowLeft, Plus, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Plus, ClipboardList, Trash2 } from 'lucide-react';
 import {
   calcAverageGrade, gradeColor, StatusBadge, TypeChip,
   formatDateTime, isOverdue, uid,
 } from '../../utils/helpers.jsx';
+import { createAssignments } from '../../lib/supabase/assignments.js';
+import { deactivateStudent } from '../../lib/supabase/students.js';
 
 const TABS = ['All','Pending','In Progress','Submitted','Review','Needs Revision','Done','Overdue'];
 const STATUS_MAP = {
@@ -15,11 +17,12 @@ const STATUS_MAP = {
 
 /* ── Assign Modal ──────────────────────────── */
 function AssignModal({ studentId, onClose }) {
-  const { data, setData } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
   const [templateId, setTemplateId] = useState('');
   const [deadline,   setDeadline]   = useState('');
   const [err,        setErr]        = useState('');
+  const [busy,       setBusy]       = useState(false);
 
   const onFocus = e => {
     e.target.style.borderColor = 'rgba(99,102,241,0.50)';
@@ -45,25 +48,42 @@ function AssignModal({ studentId, onClose }) {
     textTransform: 'uppercase', color: 'var(--txt-secondary)', marginBottom: 7,
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!templateId) return setErr('Please select a task template.');
     if (!deadline)   return setErr('Please set a deadline.');
     const tpl = data.templates.find(t => t.id === templateId);
+    if (!tpl) return setErr('Template not found.');
     const exists = data.assignments.find(a => a.templateId === templateId && a.studentId === studentId && a.status !== 'DONE');
     if (exists && !confirm('This template is already active for this student. Assign again?')) return;
 
-    const assignment = {
-      id: uid('a'), templateId, teacherId: tpl.teacherId, studentId,
-      title: tpl.title, type: tpl.type, instructions: tpl.instructions,
-      submissionTypes: tpl.submissionTypes,
-      attachments: tpl.attachments || [],
-      deadline,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-    };
-    setData({ ...data, assignments: [...data.assignments, assignment] });
-    toast('Task assigned');
-    onClose();
+    setBusy(true);
+    try {
+      const teacherId = session?.user?.id || profile?.id || tpl.teacherId;
+      const created = await createAssignments([{
+        templateId,
+        teacherId,
+        studentId,
+        title: tpl.title,
+        type: tpl.type,
+        instructions: tpl.instructions,
+        submissionTypes: tpl.submissionTypes,
+        attachments: tpl.attachments || [],
+        deadline,
+      }]);
+
+      setData(prev => ({
+        ...prev,
+        assignments: [...(prev.assignments || []), ...created],
+      }));
+      toast('Task assigned');
+      if (refreshData) await refreshData();
+      onClose();
+    } catch (err) {
+      console.error('Assign error:', err);
+      setErr(err.message || 'Failed to assign task');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -105,9 +125,12 @@ function AssignModal({ studentId, onClose }) {
 /* ── Student Detail ────────────────────────── */
 export default function StudentDetail() {
   const { studentId } = useParams();
-  const { data } = useData();
+  const { data, refreshData } = useData();
+  const navigate = useNavigate();
+  const toast = useToast();
   const [tab,        setTab]        = useState('All');
   const [showAssign, setShowAssign] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
 
   const student     = data.users.find(u => u.id === studentId);
   const assignments = useMemo(() => data.assignments.filter(a => a.studentId === studentId), [data.assignments, studentId]);
@@ -122,6 +145,23 @@ export default function StudentDetail() {
 
   const getSubmission = (assignmentId) =>
     data.submissions.find(s => s.assignedTaskId === assignmentId);
+
+  const handleDeactivate = async () => {
+    if (!student) return;
+    if (!confirm(`Are you sure you want to deactivate ${student.firstName} ${student.lastName}? They will be removed from your active student roster.`)) return;
+    setDeactivating(true);
+    try {
+      await deactivateStudent(studentId);
+      toast('Student removed from active roster');
+      if (refreshData) await refreshData();
+      navigate('/teacher/dashboard');
+    } catch (err) {
+      console.error('Failed to deactivate student:', err);
+      toast(err.message || 'Failed to deactivate student', 'error');
+    } finally {
+      setDeactivating(false);
+    }
+  };
 
   if (!student) return (
     <div className="g-page" style={{ textAlign: 'center', padding: 80 }}>
@@ -162,7 +202,7 @@ export default function StudentDetail() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Average grade pill */}
             <div style={{
               padding: '10px 18px', borderRadius: 'var(--r-md)',
@@ -178,6 +218,15 @@ export default function StudentDetail() {
             </div>
             <button onClick={() => setShowAssign(true)} className="g-btn g-btn-primary">
               <Plus size={14} /> Assign task
+            </button>
+            <button
+              onClick={handleDeactivate}
+              className="g-btn g-btn-ghost"
+              style={{ color: 'var(--clr-overdue-txt)', border: '1px solid rgba(239,68,68,0.2)' }}
+              disabled={deactivating}
+              title="Remove student from roster"
+            >
+              <Trash2 size={14} />
             </button>
           </div>
         </div>
@@ -208,7 +257,7 @@ export default function StudentDetail() {
         <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
           {filtered.map((a, i) => {
             const sub      = getSubmission(a.id);
-            const canReview = sub && ['SUBMITTED','UNDER_REVIEW'].includes(sub.status);
+            const canReview = sub && ['SUBMITTED', 'UNDER_REVIEW', 'DONE'].includes(a.status);
             const overdueA = isOverdue(a);
             return (
               <div key={a.id} className="glass-row" style={{
@@ -218,7 +267,7 @@ export default function StudentDetail() {
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt-primary)' }}>{a.title}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{a.title}</span>
                     <TypeChip type={a.type} />
                   </div>
                   <div style={{ fontSize: 12, color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)' }}>
@@ -237,7 +286,7 @@ export default function StudentDetail() {
                   <StatusBadge assignment={a} />
                   {canReview && (
                     <Link to={`/teacher/submissions/${sub.id}`} className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 13px' }}>
-                      Review
+                      {a.status === 'DONE' ? 'View Review' : 'Review'}
                     </Link>
                   )}
                 </div>

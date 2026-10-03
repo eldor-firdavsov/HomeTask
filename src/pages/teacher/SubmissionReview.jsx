@@ -1,23 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { ArrowLeft, Save, RotateCcw, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, CheckCircle, FileText, Download } from 'lucide-react';
 import { TypeChip, StatusBadge, formatDateTime, gradeColor } from '../../utils/helpers.jsx';
+import { gradeSubmission, requestRevision, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
+import { updateAssignment } from '../../lib/supabase/assignments.js';
+import { getSignedUrl, formatFileSize } from '../../lib/supabase/storage.js';
 
 export default function SubmissionReview() {
   const { submissionId } = useParams();
-  const { data, setData } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
 
-  const submission = data.submissions.find(s => s.id === submissionId);
-  const assignment = submission ? data.assignments.find(a => a.id === submission.assignedTaskId) : null;
-  const student    = assignment  ? data.users.find(u => u.id === assignment.studentId) : null;
-  const teacher    = data.users.find(u => u.role === 'TEACHER');
+  const submission = (data?.submissions || []).find(s => s.id === submissionId);
+  const assignment = submission ? (data?.assignments || []).find(a => a.id === submission.assignedTaskId) : null;
+  const student    = assignment  ? (data?.users || []).find(u => u.id === assignment.studentId) : null;
 
   const [grade,    setGrade]    = useState(typeof assignment?.grade === 'number' ? String(assignment.grade) : '');
   const [feedback, setFeedback] = useState(assignment?.feedback || '');
+  const [submissionAttachments, setSubmissionAttachments] = useState([]);
   const [busy,     setBusy]     = useState(false);
+
+  useEffect(() => {
+    if (submission?.id) {
+      getSubmissionAttachments(submission.id)
+        .then(async (atts) => {
+          const withUrls = await Promise.all(atts.map(async (att) => {
+            try {
+              const url = await getSignedUrl('submission-files', att.storage_path);
+              return { ...att, downloadUrl: url };
+            } catch (err) {
+              return att;
+            }
+          }));
+          setSubmissionAttachments(withUrls);
+        })
+        .catch(console.error);
+    }
+  }, [submission?.id]);
 
   const onFocus = e => {
     e.target.style.borderColor = 'rgba(99,102,241,0.50)';
@@ -55,52 +76,71 @@ export default function SubmissionReview() {
   const gradeNum   = parseInt(grade, 10);
   const gradeValid = !isNaN(gradeNum) && gradeNum >= 0 && gradeNum <= 100;
 
-  const applyChange = ({ newAssignStatus, newSubStatus, requireGrade }) => {
-    if (requireGrade && !gradeValid) {
-      toast('Please enter a valid grade between 0 and 100.', 'error');
-      return false;
+  const handleSaveDraft = async () => {
+    setBusy(true);
+    try {
+      await updateAssignment(assignment.id, {
+        feedback: feedback.trim(),
+        grade: gradeValid ? gradeNum : undefined,
+      });
+      toast('Draft feedback saved');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Save draft error:', err);
+      toast(err.message || 'Failed to save draft', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRevision = async () => {
+    if (!feedback.trim()) {
+      toast('Please add feedback before requesting revision.', 'error');
+      return;
     }
     setBusy(true);
-
-    const updatedSubs = data.submissions.map(s =>
-      s.id === submissionId
-        ? { ...s, status: newSubStatus, reviewedAt: new Date().toISOString(), reviewedBy: teacher?.id }
-        : s
-    );
-    const updatedAssignments = data.assignments.map(a =>
-      a.id === assignment.id
-        ? {
-            ...a, status: newAssignStatus,
-            grade:    requireGrade ? gradeNum : a.grade,
-            feedback: feedback || a.feedback,
-            updatedAt: new Date().toISOString(),
-          }
-        : a
-    );
-    setData({ ...data, submissions: updatedSubs, assignments: updatedAssignments });
-    setBusy(false);
-    return true;
-  };
-
-  const handleSaveDraft = () => {
-    if (applyChange({ newAssignStatus: assignment.status, newSubStatus: 'UNDER_REVIEW', requireGrade: false })) {
-      toast('Draft saved');
-    }
-  };
-
-  const handleRevision = () => {
-    if (!feedback.trim()) { toast('Please add feedback before requesting revision.', 'error'); return; }
-    if (applyChange({ newAssignStatus: 'NEEDS_REVISION', newSubStatus: 'NEEDS_REVISION', requireGrade: false })) {
+    try {
+      const teacherId = session?.user?.id || profile?.id;
+      await requestRevision({
+        assignmentId: assignment.id,
+        submissionId: submission.id,
+        feedback: feedback.trim(),
+        teacherId,
+      });
       toast('Revision requested — student can now resubmit');
-      setTimeout(() => navigate('/teacher/dashboard'), 700);
+      if (refreshData) await refreshData();
+      navigate('/teacher/dashboard');
+    } catch (err) {
+      console.error('Request revision error:', err);
+      toast(err.message || 'Failed to request revision', 'error');
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handleDone = () => {
-    if (!gradeValid) { toast('A valid grade (0–100) is required to mark as done.', 'error'); return; }
-    if (applyChange({ newAssignStatus: 'DONE', newSubStatus: 'DONE', requireGrade: true })) {
+  const handleDone = async () => {
+    if (!gradeValid) {
+      toast('A valid grade (0–100) is required to mark as done.', 'error');
+      return;
+    }
+    setBusy(true);
+    try {
+      const teacherId = session?.user?.id || profile?.id;
+      await gradeSubmission({
+        assignmentId: assignment.id,
+        submissionId: submission.id,
+        grade: gradeNum,
+        feedback: feedback.trim(),
+        teacherId,
+      });
       toast('Assignment marked as complete');
-      setTimeout(() => navigate('/teacher/dashboard'), 700);
+      if (refreshData) await refreshData();
+      navigate('/teacher/dashboard');
+    } catch (err) {
+      console.error('Grade error:', err);
+      toast(err.message || 'Failed to grade submission', 'error');
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -132,7 +172,7 @@ export default function SubmissionReview() {
               </span>
             </div>
           </div>
-          <StatusBadge assignment={{ ...assignment, status: submission.status }} />
+          <StatusBadge assignment={assignment} />
         </div>
       </div>
 
@@ -145,22 +185,55 @@ export default function SubmissionReview() {
           </div>
 
           {/* Submission content glass panel */}
-          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 24px', minHeight: 220, marginBottom: 20 }}>
+          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 24px', minHeight: 180, marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
             {submission.content ? (
-              <p style={{ fontSize: 14.5, lineHeight: 1.75, color: 'var(--txt-primary)', whiteSpace: 'pre-wrap', margin: 0 }}>
+              <p style={{ fontSize: 14.5, lineHeight: 1.75, color: 'var(--txt-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', margin: 0 }}>
                 {submission.content}
               </p>
             ) : (
               <p style={{ color: 'var(--txt-tertiary)', fontSize: 13, fontStyle: 'italic', margin: 0 }}>No text submitted.</p>
             )}
+
+            {/* Student Attached Files */}
+            {submissionAttachments.length > 0 && (
+              <div style={{ marginTop: 18, borderTop: '1px solid rgba(255,255,255,0.40)', paddingTop: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase', marginBottom: 10 }}>
+                  Submitted Files
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {submissionAttachments.map(att => (
+                    <div key={att.id} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 12px', background: 'rgba(255,255,255,0.45)', borderRadius: 'var(--r-sm)',
+                      border: '1px solid rgba(255,255,255,0.60)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <FileText size={16} color="var(--accent-text)" />
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--txt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {att.file_name}
+                        </span>
+                        {att.file_size && (
+                          <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>({formatFileSize(att.file_size)})</span>
+                        )}
+                      </div>
+                      {att.downloadUrl && (
+                        <a href={att.downloadUrl} target="_blank" rel="noopener noreferrer" download={att.file_name} className="g-btn g-btn-secondary" style={{ padding: '4px 10px', fontSize: 11 }}>
+                          <Download size={11} style={{ marginRight: 4 }} /> Download
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Instructions reference */}
-          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '18px 22px' }}>
+          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '18px 22px', minWidth: 0, overflow: 'hidden' }}>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 10 }}>
               Task instructions
             </div>
-            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--txt-secondary)', margin: 0, whiteSpace: 'pre-wrap' }}>
+            <p style={{ fontSize: 13.5, lineHeight: 1.65, color: 'var(--txt-secondary)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               {assignment.instructions}
             </p>
           </div>

@@ -4,12 +4,14 @@ import { useData } from '../../context/DataContext';
 import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight } from 'lucide-react';
 
 export default function Layout() {
-  const { session, logout } = useData();
+  const { session, logout, loading } = useData();
   const navigate  = useNavigate();
   const location  = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  if (!session) return <Navigate to="/login" replace />;
+  if (loading) return null;
+  if (!session) return <Navigate to="/teacher/login" replace />;
 
   const isActive = (path) => {
     if (path === '/teacher/tasks') {
@@ -19,6 +21,12 @@ export default function Layout() {
   };
   const user = session.user;
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    await logout();
+    navigate(session.role === 'TEACHER' ? '/teacher/login' : '/student/login');
+  };
 
   const navItem = (to, Icon, label) => (
     <Link
@@ -132,7 +140,8 @@ export default function Layout() {
             {/* Logout button */}
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: 16 }}>
               <button
-                onClick={() => { logout(); navigate('/login'); }}
+                onClick={handleLogout}
+                disabled={loggingOut}
                 className="g-btn g-btn-ghost"
                 style={{
                   width: '100%',
@@ -143,10 +152,11 @@ export default function Layout() {
                   padding: '10px 14px',
                   fontWeight: 600,
                   fontSize: 13,
+                  opacity: loggingOut ? 0.6 : 1,
                 }}
               >
                 <LogOut size={15} style={{ marginRight: 6 }} />
-                Log out
+                {loggingOut ? 'Logging out…' : 'Log out'}
               </button>
             </div>
           </div>
@@ -217,12 +227,13 @@ export default function Layout() {
             </div>
           </div>
           <button
-            onClick={() => { logout(); navigate('/login'); }}
+            onClick={handleLogout}
+            disabled={loggingOut}
             className="g-nav-link"
-            style={{ width: '100%', background: 'none', border: '1px solid transparent', color: 'var(--txt-secondary)', cursor: 'pointer' }}
+            style={{ width: '100%', background: 'none', border: '1px solid transparent', color: 'var(--txt-secondary)', cursor: 'pointer', opacity: loggingOut ? 0.6 : 1 }}
           >
             <LogOut size={14} strokeWidth={2} />
-            Logout
+            {loggingOut ? 'Logging out…' : 'Logout'}
           </button>
         </div>
       </aside>

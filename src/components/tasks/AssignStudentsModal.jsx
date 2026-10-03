@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useData, useToast } from '../../context/DataContext';
 import { Send, Calendar, Search, X, CheckSquare, Square, Users } from 'lucide-react';
 import { uid } from '../../utils/helpers.jsx';
+import { createAssignments } from '../../lib/supabase/assignments.js';
 
 const labelStyle = {
   display: 'block', fontSize: 11, fontWeight: 600,
@@ -31,13 +32,14 @@ const handleBlur = e => {
 };
 
 export default function AssignStudentsModal({ template, onClose, onSuccess }) {
-  const { data, setData, session } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [deadline,    setDeadline]    = useState('');
   const [search,      setSearch]      = useState('');
   const [err,         setErr]         = useState('');
+  const [submitting,  setSubmitting]  = useState(false);
 
   const students = useMemo(() => {
     return (data.users || []).filter(u => u.role === 'STUDENT');
@@ -80,7 +82,7 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedIds.length) {
       return setErr('Please select at least one student.');
     }
@@ -88,30 +90,38 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
       return setErr('Please choose a deadline for the assignment.');
     }
 
-    const newAssignments = selectedIds.map(sId => ({
-      id: uid('a'),
-      templateId: template.id,
-      teacherId: session?.user?.id || template.teacherId,
-      studentId: sId,
-      title: template.title,
-      type: template.type,
-      instructions: template.instructions,
-      submissionTypes: template.submissionTypes || ['Text'],
-      attachments: template.attachments || [],
-      deadline,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+    setSubmitting(true);
+    setErr('');
+    try {
+      const assignmentInputs = selectedIds.map(sId => ({
+        templateId: template.id,
+        teacherId: session?.user?.id || profile?.id || template.teacherId,
+        studentId: sId,
+        title: template.title,
+        type: template.type,
+        instructions: template.instructions,
+        submissionTypes: template.submissionTypes || ['Text'],
+        attachments: template.attachments || [],
+        deadline,
+      }));
 
-    setData({
-      ...data,
-      assignments: [...data.assignments, ...newAssignments],
-    });
+      const created = await createAssignments(assignmentInputs);
 
-    toast(`Assigned "${template.title}" to ${selectedIds.length} student${selectedIds.length === 1 ? '' : 's'}`);
-    if (onSuccess) onSuccess(newAssignments);
-    onClose();
+      setData(prev => ({
+        ...prev,
+        assignments: [...(prev.assignments || []), ...created],
+      }));
+
+      toast(`Assigned "${template.title}" to ${selectedIds.length} student${selectedIds.length === 1 ? '' : 's'}`);
+      if (refreshData) await refreshData();
+      if (onSuccess) onSuccess(created);
+      onClose();
+    } catch (err) {
+      console.error('Failed to create assignments:', err);
+      setErr(err.message || 'Failed to assign task to students');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -283,11 +293,11 @@ export default function AssignStudentsModal({ template, onClose, onSuccess }) {
               type="button"
               onClick={handleConfirm}
               className="g-btn g-btn-primary"
-              disabled={selectedIds.length === 0}
-              style={{ opacity: selectedIds.length === 0 ? 0.6 : 1 }}
+              disabled={selectedIds.length === 0 || submitting}
+              style={{ opacity: selectedIds.length === 0 || submitting ? 0.6 : 1 }}
             >
               <Send size={13} />
-              Assign to {selectedIds.length || 0} {selectedIds.length === 1 ? 'student' : 'students'}
+              {submitting ? 'Assigning…' : `Assign to ${selectedIds.length || 0} ${selectedIds.length === 1 ? 'student' : 'students'}`}
             </button>
           </div>
         </div>

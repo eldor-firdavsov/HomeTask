@@ -11,6 +11,8 @@ import {
   isOverdue, gradeColor, uid,
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
+import { updateTaskTemplate, duplicateTaskTemplate, deleteTaskTemplate } from '../../lib/supabase/tasks.js';
+import { createAssignments } from '../../lib/supabase/assignments.js';
 
 const TASK_TYPES = ['WRITING','READING','VOCABULARY','GRAMMAR','LISTENING','SPEAKING','KEYWORD','SUMMARY','OTHER'];
 const SUB_TYPES = ['Text','Image','File','Audio'];
@@ -352,7 +354,7 @@ function EditTaskModal({ template, onClose, onSave }) {
 /* ── Main Task Detail Page ─────────────────── */
 export default function TaskDetail() {
   const { templateId } = useParams();
-  const { data, setData, session } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -403,66 +405,95 @@ export default function TaskDetail() {
   }
 
   /* ── Save edited template ── */
-  const handleSaveTemplate = (updated) => {
-    const nextTemplates = data.templates.map(t => t.id === updated.id ? updated : t);
-    setData({ ...data, templates: nextTemplates });
-    setShowEdit(false);
-    toast('Task template updated successfully');
+  const handleSaveTemplate = async (updated) => {
+    try {
+      const saved = await updateTaskTemplate(updated.id, {
+        title: updated.title,
+        type: updated.type,
+        instructions: updated.instructions,
+        submissionTypes: updated.submissionTypes,
+      });
+      setData(prev => ({
+        ...prev,
+        templates: prev.templates.map(t => t.id === updated.id ? { ...t, ...saved } : t),
+      }));
+      setShowEdit(false);
+      toast('Task template updated successfully');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Update template error:', err);
+      toast(err.message || 'Failed to update template', 'error');
+    }
   };
 
   /* ── Assign to multiple students ── */
-  const handleAssignStudents = (studentIds, deadline) => {
-    const newAssignments = studentIds.map(sId => ({
-      id: uid('a'),
-      templateId: template.id,
-      teacherId: session?.user?.id || template.teacherId,
-      studentId: sId,
-      title: template.title,
-      type: template.type,
-      instructions: template.instructions,
-      submissionTypes: template.submissionTypes || ['Text'],
-      attachments: template.attachments || [],
-      deadline,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+  const handleAssignStudents = async (studentIds, deadline) => {
+    try {
+      const teacherId = session?.user?.id || profile?.id || template.teacherId;
+      const assignmentInputs = studentIds.map(sId => ({
+        templateId: template.id,
+        teacherId,
+        studentId: sId,
+        title: template.title,
+        type: template.type,
+        instructions: template.instructions,
+        submissionTypes: template.submissionTypes || ['Text'],
+        attachments: template.attachments || [],
+        deadline,
+      }));
 
-    setData({
-      ...data,
-      assignments: [...data.assignments, ...newAssignments],
-    });
-
-    setShowAssign(false);
-    toast(`Assigned "${template.title}" to ${studentIds.length} student${studentIds.length === 1 ? '' : 's'}`);
+      const created = await createAssignments(assignmentInputs);
+      setData(prev => ({
+        ...prev,
+        assignments: [...(prev.assignments || []), ...created],
+      }));
+      setShowAssign(false);
+      toast(`Assigned "${template.title}" to ${studentIds.length} student${studentIds.length === 1 ? '' : 's'}`);
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Assign students error:', err);
+      toast(err.message || 'Failed to assign task', 'error');
+    }
   };
 
   /* ── Duplicate template ── */
-  const handleDuplicate = () => {
-    const copy = {
-      ...template,
-      id: uid('tpl'),
-      title: `${template.title} (copy)`,
-      createdAt: new Date().toISOString(),
-    };
-    setData({ ...data, templates: [...data.templates, copy] });
-    toast('Task duplicated into library');
-    navigate(`/teacher/tasks/${copy.id}`);
+  const handleDuplicate = async () => {
+    try {
+      const teacherId = session?.user?.id || profile?.id || template.teacherId;
+      const copy = await duplicateTaskTemplate(template.id, teacherId);
+      setData(prev => ({
+        ...prev,
+        templates: [copy, ...(prev.templates || [])],
+      }));
+      toast('Task duplicated into library');
+      if (refreshData) await refreshData();
+      navigate(`/teacher/tasks/${copy.id}`);
+    } catch (err) {
+      console.error('Duplicate error:', err);
+      toast(err.message || 'Failed to duplicate task', 'error');
+    }
   };
 
   /* ── Delete template ── */
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (assignments.length > 0) {
       toast('Cannot delete: this task is assigned to active students.', 'error');
       return;
     }
     if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) return;
-    setData({
-      ...data,
-      templates: data.templates.filter(t => t.id !== template.id),
-    });
-    toast('Task template deleted');
-    navigate('/teacher/tasks');
+    try {
+      await deleteTaskTemplate(template.id);
+      setData(prev => ({
+        ...prev,
+        templates: prev.templates.filter(t => t.id !== template.id),
+      }));
+      toast('Task template deleted');
+      if (refreshData) await refreshData();
+      navigate('/teacher/tasks');
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast(err.message || 'Failed to delete task template', 'error');
+    }
   };
 
   return (
@@ -830,13 +861,13 @@ export default function TaskDetail() {
                 {/* Status Badge & Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                   <StatusBadge assignment={assignment} />
-                  {submission && ['SUBMITTED','UNDER_REVIEW'].includes(submission.status) && (
+                  {submission && ['SUBMITTED', 'UNDER_REVIEW', 'DONE'].includes(assignment.status) && (
                     <Link
                       to={`/teacher/submissions/${submission.id}`}
                       className="g-btn g-btn-primary"
                       style={{ fontSize: 12, padding: '6px 14px' }}
                     >
-                      Review
+                      {assignment.status === 'DONE' ? 'View Review' : 'Review'}
                     </Link>
                   )}
                   {student && (

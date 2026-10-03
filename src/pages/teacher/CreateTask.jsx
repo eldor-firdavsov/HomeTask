@@ -6,6 +6,9 @@ import {
   Trash2, X, Upload, ExternalLink, Paperclip, Calendar, Search, Send
 } from 'lucide-react';
 import { uid } from '../../utils/helpers.jsx';
+import { createTaskTemplate, addTaskAttachment } from '../../lib/supabase/tasks.js';
+import { createAssignments } from '../../lib/supabase/assignments.js';
+import { uploadTaskAttachment } from '../../lib/supabase/storage.js';
 
 const TASK_TYPES = ['WRITING','READING','VOCABULARY','GRAMMAR','LISTENING','SPEAKING','KEYWORD','SUMMARY','OTHER'];
 const SUB_TYPES  = ['Text','Image','File','Audio'];
@@ -26,7 +29,7 @@ function formatFileSize(bytes) {
 }
 
 export default function CreateTask() {
-  const { data, setData, session } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
 
@@ -148,6 +151,7 @@ export default function CreateTask() {
         name: file.name,
         size: formatFileSize(file.size),
         dataUrl: ev.target.result,
+        rawFile: file,
       };
       setAttachments(prev => [...prev, newAtt]);
       toast(isImg ? 'Image attached' : 'File attached');
@@ -160,59 +164,118 @@ export default function CreateTask() {
     setAttachments(prev => prev.filter(a => a.id !== id));
   };
 
-  const buildTemplate = () => ({
-    id: uid('tpl'),
-    teacherId: session?.user?.id || 'u-teacher-1',
-    title: title.trim(),
-    type,
-    instructions: instructions.trim(),
-    submissionTypes: subTypes,
-    attachments: attachments || [],
-    createdAt: new Date().toISOString(),
-  });
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate(false) || busy) return;
     setBusy(true);
-    const tpl = buildTemplate();
-    setData({
-      ...data,
-      templates: [...(data?.templates || []), tpl]
-    });
-    toast('Task saved to library');
-    setTimeout(() => navigate('/teacher/tasks'), 80);
+    try {
+      const teacherId = session?.user?.id || profile?.id;
+      const tpl = await createTaskTemplate({
+        teacherId,
+        title: title.trim(),
+        type,
+        instructions: instructions.trim(),
+        submissionTypes: subTypes,
+      });
+
+      // Save attachments if any
+      for (const att of attachments) {
+        if (att.type === 'LINK') {
+          await addTaskAttachment(tpl.id, {
+            type: 'link',
+            fileName: att.title || att.url,
+            url: att.url,
+            storagePath: '',
+          }).catch(console.error);
+        } else if (att.rawFile) {
+          try {
+            const uploaded = await uploadTaskAttachment(teacherId, tpl.id, att.rawFile);
+            await addTaskAttachment(tpl.id, {
+              type: att.type === 'IMAGE' ? 'image' : 'file',
+              fileName: att.name,
+              storagePath: uploaded.storagePath,
+              mimeType: uploaded.mimeType,
+              fileSize: uploaded.fileSize,
+            });
+          } catch (uploadErr) {
+            console.warn('Storage upload note:', uploadErr);
+          }
+        }
+      }
+
+      toast('Task saved to library');
+      if (refreshData) await refreshData();
+      navigate('/teacher/tasks');
+    } catch (err) {
+      console.error('Save template error:', err);
+      toast(err.message || 'Failed to save task to library', 'error');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (selectedStudentIds.length === 0) {
       return handleSave();
     }
     if (!validate(true) || busy) return;
     setBusy(true);
-    const tpl = buildTemplate();
-    const newAssignments = selectedStudentIds.map(sId => ({
-      id: uid('a'),
-      templateId: tpl.id,
-      teacherId: session?.user?.id || 'u-teacher-1',
-      studentId: sId,
-      title: tpl.title,
-      type: tpl.type,
-      instructions: tpl.instructions,
-      submissionTypes: tpl.submissionTypes,
-      attachments: tpl.attachments || [],
-      deadline,
-      status: 'PENDING',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }));
+    try {
+      const teacherId = session?.user?.id || profile?.id;
+      const tpl = await createTaskTemplate({
+        teacherId,
+        title: title.trim(),
+        type,
+        instructions: instructions.trim(),
+        submissionTypes: subTypes,
+      });
 
-    setData({
-      ...data,
-      templates: [...(data?.templates || []), tpl],
-      assignments: [...(data?.assignments || []), ...newAssignments]
-    });
-    toast(`Task created and assigned to ${selectedStudentIds.length} student${selectedStudentIds.length === 1 ? '' : 's'}`);
-    setTimeout(() => navigate('/teacher/dashboard'), 80);
+      // Save attachments if any
+      for (const att of attachments) {
+        if (att.type === 'LINK') {
+          await addTaskAttachment(tpl.id, {
+            type: 'link',
+            fileName: att.title || att.url,
+            url: att.url,
+            storagePath: '',
+          }).catch(console.error);
+        } else if (att.rawFile) {
+          try {
+            const uploaded = await uploadTaskAttachment(teacherId, tpl.id, att.rawFile);
+            await addTaskAttachment(tpl.id, {
+              type: att.type === 'IMAGE' ? 'image' : 'file',
+              fileName: att.name,
+              storagePath: uploaded.storagePath,
+              mimeType: uploaded.mimeType,
+              fileSize: uploaded.fileSize,
+            });
+          } catch (uploadErr) {
+            console.warn('Storage upload note:', uploadErr);
+          }
+        }
+      }
+
+      const assignmentInputs = selectedStudentIds.map(sId => ({
+        templateId: tpl.id,
+        teacherId,
+        studentId: sId,
+        title: tpl.title,
+        type: tpl.type,
+        instructions: tpl.instructions,
+        submissionTypes: tpl.submissionTypes,
+        deadline,
+      }));
+
+      await createAssignments(assignmentInputs);
+
+      toast(`Task created and assigned to ${selectedStudentIds.length} student${selectedStudentIds.length === 1 ? '' : 's'}`);
+      if (refreshData) await refreshData();
+      navigate('/teacher/dashboard');
+    } catch (err) {
+      console.error('Create and assign error:', err);
+      toast(err.message || 'Failed to create and assign task', 'error');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const toggleSub = (st) =>
