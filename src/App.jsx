@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
 import Layout from './components/layout/Layout';
+import Login from './pages/auth/Login';
 import TeacherLogin from './pages/auth/TeacherLogin';
 import StudentLogin from './pages/auth/StudentLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -88,8 +89,14 @@ function AppRoutes() {
       <Route path="/teacher/forgot-password" element={<ForgotPassword role="teacher" />} />
       <Route path="/student/forgot-password" element={<ForgotPassword role="student" />} />
 
-      {/* Legacy login redirect */}
-      <Route path="/login" element={<Navigate to="/teacher/login" replace />} />
+      {/* Login routes */}
+      <Route path="/login" element={
+        session?.role === 'TEACHER'
+          ? <Navigate to="/teacher/dashboard" replace />
+          : session?.role === 'STUDENT'
+            ? <Navigate to="/student/dashboard" replace />
+            : <Login />
+      } />
 
       {/* Teacher routes */}
       <Route path="/" element={<Layout />}>
