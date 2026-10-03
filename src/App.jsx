@@ -15,6 +15,7 @@ import TeacherSettings from './pages/teacher/Settings';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentTasks from './pages/student/Tasks';
 import StudentTaskDetail from './pages/student/TaskDetail';
+import StudentPomodoro from './pages/student/Pomodoro';
 
 /* ── Loading Screen ──────────────────────────── */
 function LoadingScreen() {
@@ -131,6 +132,9 @@ function AppRoutes() {
         } />
         <Route path="student/tasks/:assignmentId" element={
           <StudentRoute><StudentTaskDetail /></StudentRoute>
+        } />
+        <Route path="student/pomodoro" element={
+          <StudentRoute><StudentPomodoro /></StudentRoute>
         } />
       </Route>
 

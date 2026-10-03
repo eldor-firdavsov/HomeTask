@@ -288,10 +288,10 @@ function FocusTimer({ tasks }) {
           </select>
           {selectedTask && (
             <Link
-              to={`/student/tasks/${selectedTask.id}`}
-              style={{ marginLeft: 6, color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 600 }}
+              to={`/student/pomodoro?taskId=${selectedTask.id}`}
+              style={{ marginLeft: 8, color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 600, fontSize: 11.5 }}
             >
-              Open ↗
+              Launch Dark Mode ⏱
             </Link>
           )}
         </div>

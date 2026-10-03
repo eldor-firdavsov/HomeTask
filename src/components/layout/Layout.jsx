@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings, Timer } from 'lucide-react';
 
 export default function Layout() {
   const { session, logout, loading } = useData();
@@ -137,6 +137,7 @@ export default function Layout() {
                 <>
                   {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
                   {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+                  {navItem('/student/pomodoro',  Timer,           'Pomodoro Focus')}
                 </>
               )}
             </div>
@@ -206,6 +207,7 @@ export default function Layout() {
             <>
               {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
               {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
+              {navItem('/student/pomodoro',  Timer,           'Pomodoro')}
             </>
           )}
         </nav>
@@ -302,7 +304,7 @@ export default function Layout() {
               to="/student/dashboard"
               className={`g-mobile-nav-btn${location.pathname === '/student/dashboard' ? ' active' : ''}`}
             >
-              <LayoutDashboard size={20} />
+              <LayoutDashboard size={19} />
               <span>Dashboard</span>
             </Link>
 
@@ -310,15 +312,23 @@ export default function Layout() {
               to="/student/tasks"
               className={`g-mobile-nav-btn${location.pathname.startsWith('/student/tasks') ? ' active' : ''}`}
             >
-              <ClipboardList size={20} />
-              <span>My Tasks</span>
+              <ClipboardList size={19} />
+              <span>Tasks</span>
+            </Link>
+
+            <Link
+              to="/student/pomodoro"
+              className={`g-mobile-nav-btn${location.pathname === '/student/pomodoro' ? ' active' : ''}`}
+            >
+              <Timer size={19} />
+              <span>Pomodoro</span>
             </Link>
 
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="g-mobile-nav-btn"
             >
-              <User size={20} />
+              <User size={19} />
               <span>Profile</span>
             </button>
           </>

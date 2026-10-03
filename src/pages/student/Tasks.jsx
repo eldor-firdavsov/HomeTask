@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar } from 'lucide-react';
+import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar, Timer } from 'lucide-react';
 import { StatusBadge, TypeChip, isOverdue } from '../../utils/helpers.jsx';
 
 const STATUS_FILTERS = ['All', 'Pending', 'In Progress', 'Submitted', 'Under Review', 'Needs Revision', 'Done', 'Overdue'];
@@ -150,15 +150,26 @@ export default function StudentTasks() {
           </p>
         </div>
 
-        {/* Search Bar */}
-        <div className="g-search-wrap" style={{ minWidth: 240 }}>
-          <span className="g-search-icon"><Search size={14} /></span>
-          <input
-            className="g-search"
-            placeholder="Search by title or instructions…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {/* Actions & Search Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <Link
+            to="/student/pomodoro"
+            className="g-btn g-btn-secondary"
+            style={{ padding: '8px 14px', fontSize: 12.5, gap: 6, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+          >
+            <Timer size={14} color="var(--accent-text)" />
+            <span>Pomodoro Focus</span>
+          </Link>
+
+          <div className="g-search-wrap" style={{ minWidth: 220 }}>
+            <span className="g-search-icon"><Search size={14} /></span>
+            <input
+              className="g-search"
+              placeholder="Search by title or instructions…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
