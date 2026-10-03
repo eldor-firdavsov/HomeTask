@@ -2,9 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
-  ArrowLeft, Edit3, Send, Trash2, Copy, Users, Clock, CheckCircle2,
-  AlertCircle, FileText, Check, ChevronRight, Calendar, UserCheck,
-  Search, X, Link as LinkIcon, Image as ImageIcon, ExternalLink, Download, Plus, Loader2
+  ArrowLeft, Edit3, Trash2, Copy, Users,
+  FileText, Check, ChevronRight, UserCheck,
+  Search, X, Link as LinkIcon, Image as ImageIcon, ExternalLink, Download, Loader2
 } from 'lucide-react';
 import {
   TypeChip, StatusBadge, formatDate, formatDateTime,

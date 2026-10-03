@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, Plus, Link as LinkIcon, FileText, Image as ImageIcon,
-  Trash2, X, Upload, ExternalLink, Paperclip, Calendar, Search, Send
+  Trash2, ExternalLink, Calendar, Search, Send
 } from 'lucide-react';
 import { uid } from '../../utils/helpers.jsx';
 import { createTaskTemplate, addTaskAttachment } from '../../lib/supabase/tasks.js';
@@ -29,7 +29,7 @@ function formatFileSize(bytes) {
 }
 
 export default function CreateTask() {
-  const { data, setData, session, profile, refreshData } = useData();
+  const { data, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
 

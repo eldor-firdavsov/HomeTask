@@ -4,7 +4,7 @@ import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Clock, Send,
   Link as LinkIcon, FileText, Image as ImageIcon, ExternalLink, Download, X,
-  Paperclip, Upload, Trash2, Loader2, Timer
+  Paperclip, Loader2, Timer
 } from 'lucide-react';
 import { TypeChip, StatusBadge, formatDateTime, isOverdue } from '../../utils/helpers.jsx';
 import { createSubmission, addSubmissionAttachment, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
