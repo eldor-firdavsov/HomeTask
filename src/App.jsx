@@ -17,7 +17,6 @@ import TeacherSettings from './pages/teacher/Settings';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentTasks from './pages/student/Tasks';
 import StudentTaskDetail from './pages/student/TaskDetail';
-import StudentPomodoro from './pages/student/Pomodoro';
 
 /* ── Route Guards ─────────────────────────────── */
 function TeacherRoute({ children }) {
@@ -106,7 +105,7 @@ function AppRoutes() {
           <StudentRoute><StudentTaskDetail /></StudentRoute>
         } />
         <Route path="student/pomodoro" element={
-          <StudentRoute><StudentPomodoro /></StudentRoute>
+          <Navigate to="/student/dashboard" replace />
         } />
       </Route>
 

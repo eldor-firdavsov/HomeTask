@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings, Timer } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings } from 'lucide-react';
 import LoadingScreen from '../common/LoadingScreen';
 
 export default function Layout() {
@@ -155,7 +155,6 @@ export default function Layout() {
                 <>
                   {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
                   {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
-                  {navItem('/student/pomodoro',  Timer,           'Pomodoro Focus')}
                 </>
               )}
             </div>
@@ -225,7 +224,6 @@ export default function Layout() {
             <>
               {navItem('/student/dashboard', LayoutDashboard, 'Dashboard')}
               {navItem('/student/tasks',     ClipboardList,   'My Tasks')}
-              {navItem('/student/pomodoro',  Timer,           'Pomodoro')}
             </>
           )}
         </nav>
@@ -338,14 +336,6 @@ export default function Layout() {
             >
               <ClipboardList size={19} />
               <span>Tasks</span>
-            </Link>
-
-            <Link
-              to="/student/pomodoro"
-              className={`g-mobile-nav-btn${location.pathname === '/student/pomodoro' ? ' active' : ''}`}
-            >
-              <Timer size={19} />
-              <span>Pomodoro</span>
             </Link>
 
             <button

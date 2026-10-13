@@ -4,7 +4,7 @@ import { useData, useToast } from '../../context/DataContext';
 import {
   ArrowLeft, CheckCircle2, AlertCircle, Clock, Send,
   Link as LinkIcon, FileText, Image as ImageIcon, ExternalLink, Download, X,
-  Paperclip, Upload, Trash2, Loader2, Timer
+  Paperclip, Upload, Trash2, Loader2
 } from 'lucide-react';
 import { TypeChip, StatusBadge, formatDateTime, isOverdue } from '../../utils/helpers.jsx';
 import { createSubmission, addSubmissionAttachment, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
@@ -309,16 +309,6 @@ export default function StudentTaskDetail() {
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {assignment.status !== 'DONE' && (
-              <Link
-                to={`/student/pomodoro?taskId=${assignment.id}`}
-                className="g-btn g-btn-secondary"
-                style={{ padding: '6px 12px', fontSize: 12, gap: 6, display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
-              >
-                <Timer size={14} color="var(--accent-text)" />
-                <span>Focus Sprint</span>
-              </Link>
-            )}
             <StatusBadge assignment={assignment} />
           </div>
         </div>

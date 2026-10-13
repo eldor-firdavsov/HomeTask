@@ -111,7 +111,7 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
         }}>
           {activeRole === 'teacher'
             ? 'Effortlessly curate homework assignments, grade submissions with personalized audio & text feedback, and track student mastery in real time.'
-            : 'Track today’s assignments, launch focused 25-minute Pomodoro study sprints, and submit your work seamlessly to receive instant feedback.'}
+            : 'Track today’s assignments, submit your work seamlessly, and receive instant teacher feedback and grades.'}
         </p>
       </div>
 

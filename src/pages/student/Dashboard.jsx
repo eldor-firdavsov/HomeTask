@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import {
   Sparkles, Flame, Clock, AlertTriangle, CheckCircle2, ArrowRight,
-  RefreshCw, BookOpen, Target, Award, Play, Pause, RotateCcw,
+  RefreshCw, BookOpen, Award,
   Search, ChevronRight, Check, Trophy
 } from 'lucide-react';
 import {
@@ -138,166 +138,6 @@ function getGreeting(name) {
   else if (hour >= 22 || hour < 5) timeGreeting = 'Night focus';
 
   return `${timeGreeting}, ${name || 'Student'}! 👋`;
-}
-
-/* ── Focus Timer Component ───────────────────── */
-function FocusTimer({ tasks }) {
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState('');
-  const [completedSessions, setCompletedSessions] = useState(0);
-
-  const activeTaskId = selectedTaskId || tasks[0]?.id || '';
-
-  useEffect(() => {
-    let interval = null;
-    if (isRunning) {
-      interval = setInterval(() => {
-        if (seconds > 0) {
-          setSeconds(s => s - 1);
-        } else if (minutes > 0) {
-          setMinutes(m => m - 1);
-          setSeconds(59);
-        } else {
-          setIsRunning(false);
-          setCompletedSessions(c => c + 1);
-          setMinutes(25);
-          setSeconds(0);
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning, minutes, seconds]);
-
-  const toggleTimer = () => setIsRunning(!isRunning);
-  const resetTimer = () => {
-    setIsRunning(false);
-    setMinutes(25);
-    setSeconds(0);
-  };
-
-  const selectedTask = tasks.find(t => t.id === activeTaskId);
-  const timeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  const totalSeconds = 25 * 60;
-  const currentSeconds = minutes * 60 + seconds;
-  const progressPercent = Math.round(((totalSeconds - currentSeconds) / totalSeconds) * 100);
-
-  return (
-    <div
-      className="glass-card"
-      style={{
-        padding: '20px 22px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 14,
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{
-            width: 28, height: 28, borderRadius: 8,
-            background: isRunning ? 'rgba(99,102,241,0.20)' : 'rgba(99,102,241,0.10)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--accent-text)',
-          }}>
-            <Target size={15} />
-          </div>
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--txt-primary)' }}>Focus Sprint</div>
-            <div style={{ fontSize: 11, color: 'var(--txt-secondary)' }}>25-min study block</div>
-          </div>
-        </div>
-        {completedSessions > 0 && (
-          <span className="g-chip" style={{ fontSize: 10.5, color: '#059669', borderColor: 'rgba(5,150,105,0.25)', background: 'rgba(5,150,105,0.08)' }}>
-            🔥 {completedSessions} done
-          </span>
-        )}
-      </div>
-
-      {/* Timer Display */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        background: 'rgba(255,255,255,0.40)',
-        border: '1px solid rgba(255,255,255,0.65)',
-        borderRadius: 'var(--r-md)',
-        padding: '12px 18px',
-      }}>
-        <div>
-          <div style={{ fontSize: 28, fontWeight: 800, fontFamily: 'monospace', letterSpacing: '0.05em', color: isRunning ? 'var(--accent-text)' : 'var(--txt-primary)' }}>
-            {timeFormatted}
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 2 }}>
-            {isRunning ? 'Locked in · Keep focus' : 'Ready to start'}
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button
-            onClick={toggleTimer}
-            className={`g-btn ${isRunning ? 'g-btn-secondary' : 'g-btn-primary'}`}
-            style={{ padding: '8px 14px', fontSize: 12.5 }}
-            title={isRunning ? 'Pause' : 'Start Focus'}
-          >
-            {isRunning ? <Pause size={14} /> : <Play size={14} />}
-            {isRunning ? 'Pause' : 'Start'}
-          </button>
-          <button
-            onClick={resetTimer}
-            className="g-btn g-btn-ghost"
-            style={{ padding: '8px 10px' }}
-            title="Reset timer"
-          >
-            <RotateCcw size={13} />
-          </button>
-        </div>
-      </div>
-
-      {/* Progress Line */}
-      <div style={{ height: 4, background: 'rgba(99,102,241,0.12)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ width: `${progressPercent}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.5s' }} />
-      </div>
-
-      {/* Select task to focus on */}
-      {tasks.length > 0 && (
-        <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)' }}>
-          Focusing on:{' '}
-          <select
-            value={activeTaskId}
-            onChange={e => setSelectedTaskId(e.target.value)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              fontWeight: 600,
-              color: 'var(--accent-text)',
-              cursor: 'pointer',
-              outline: 'none',
-              maxWidth: 180,
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {tasks.map(t => (
-              <option key={t.id} value={t.id} style={{ color: '#1e2235' }}>
-                {t.title}
-              </option>
-            ))}
-          </select>
-          {selectedTask && (
-            <Link
-              to={`/student/pomodoro?taskId=${selectedTask.id}`}
-              style={{ marginLeft: 8, color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 600, fontSize: 11.5 }}
-            >
-              Launch Dark Mode ⏱
-            </Link>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 /* ── Main Student Dashboard Page ──────────────── */
@@ -1107,11 +947,8 @@ export default function StudentDashboard() {
           )}
         </div>
 
-        {/* Right Column: Focus Timer & Teacher Feedback */}
+        {/* Right Column: Study Mindset & Teacher Feedback */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Focus Timer Widget */}
-          <FocusTimer tasks={nowTasks.length > 0 ? nowTasks : myAssignments.filter(a => a.status !== 'DONE')} />
-
           {/* Quick Study Motivation Card */}
           <div className="glass-card" style={{ padding: '18px 20px', background: 'rgba(255,255,255,0.48)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
@@ -1128,7 +965,7 @@ export default function StudentDashboard() {
               </h3>
             </div>
             <p style={{ fontSize: 12, color: 'var(--txt-secondary)', margin: '0 0 10px', lineHeight: 1.45 }}>
-              Break complex tasks into 20-minute chunks. When you finish one task today, check it off and take a brief 5-minute break to recharge!
+              Review your teacher's instructions carefully, complete your work step by step, and submit before the deadline!
             </p>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-text)' }}>
               Tip: Start with the most urgent task first! ⚡
