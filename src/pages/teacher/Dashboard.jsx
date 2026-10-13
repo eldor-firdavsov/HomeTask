@@ -396,24 +396,25 @@ export default function Dashboard() {
   const [taskStatusFilter,  setTaskStatusFilter]  = useState('all');
   const [taskTypeFilter,    setTaskTypeFilter]    = useState('All Types');
   const [taskSortBy,        setTaskSortBy]        = useState('newest');
+  const [assigningTemplate, setAssigningTemplate] = useState(null);
 
-  const students = useMemo(() => data.users.filter(u => u.role === 'STUDENT'), [data.users]);
+  const students = useMemo(() => (data?.users || []).filter(u => u.role === 'STUDENT'), [data?.users]);
 
   const assignmentCountMap = useMemo(() => {
     const map = {};
-    (data.assignments || []).forEach(a => {
+    (data?.assignments || []).forEach(a => {
       if (a.templateId) map[a.templateId] = (map[a.templateId] || 0) + 1;
     });
     return map;
-  }, [data.assignments]);
+  }, [data?.assignments]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return q
       ? students.filter(s =>
-          s.firstName.toLowerCase().includes(q) ||
-          s.lastName.toLowerCase().includes(q)  ||
-          s.email.toLowerCase().includes(q)
+          (s.firstName || '').toLowerCase().includes(q) ||
+          (s.lastName || '').toLowerCase().includes(q)  ||
+          (s.email || '').toLowerCase().includes(q)
         )
       : students;
   }, [students, search]);
@@ -624,7 +625,7 @@ export default function Dashboard() {
           {filteredTasks.length > 0 ? (
             <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
               {filteredTasks.map((tpl, i) => {
-                const assignedCount = data.assignments.filter(a => a.templateId === tpl.id).length;
+                const assignedCount = (data?.assignments || []).filter(a => a.templateId === tpl.id).length;
                 return (
                   <div
                     key={tpl.id}
@@ -695,9 +696,9 @@ export default function Dashboard() {
 
       {tab === 'review' && (
         <ReviewQueue
-          submissions={data.submissions}
-          assignments={data.assignments}
-          users={data.users}
+          submissions={data?.submissions || []}
+          assignments={data?.assignments || []}
+          users={data?.users || []}
         />
       )}
 

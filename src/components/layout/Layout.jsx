@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Outlet, Navigate, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { LayoutDashboard, BookOpen, Plus, LogOut, ClipboardList, Menu, X, User, ChevronRight, Settings, Timer } from 'lucide-react';
+import LoadingScreen from '../common/LoadingScreen';
 
 export default function Layout() {
   const { session, logout, loading } = useData();
@@ -16,8 +17,19 @@ export default function Layout() {
     mainContentRef.current?.scrollTo({ top: 0, behavior: 'instant' });
   }, [location.pathname]);
 
-  if (loading) return null;
-  if (!session) return <Navigate to="/teacher/login" replace />;
+  if (loading) return <LoadingScreen message="Loading dashboard…" />;
+  if (!session) {
+    const isStudentPath = location.pathname.startsWith('/student');
+    return <Navigate to={isStudentPath ? "/student/login" : "/teacher/login"} replace />;
+  }
+
+  // Role routing guard
+  if (session.role === 'TEACHER' && location.pathname.startsWith('/student')) {
+    return <Navigate to="/teacher/dashboard" replace />;
+  }
+  if (session.role === 'STUDENT' && location.pathname.startsWith('/teacher')) {
+    return <Navigate to="/student/dashboard" replace />;
+  }
 
   const isActive = (path) => {
     if (path === '/teacher/tasks') {
@@ -25,8 +37,8 @@ export default function Layout() {
     }
     return location.pathname.startsWith(path);
   };
-  const user = session.user;
-  const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
+  const user = session?.user || {};
+  const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase() || 'U';
 
   const handleLogout = async () => {
     setLoggingOut(true);

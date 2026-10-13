@@ -251,6 +251,8 @@ export const DataProvider = ({ children }) => {
           setupRealtime(prof);
         } catch (err) {
           console.error('Auth change profile error:', err);
+        } finally {
+          if (mounted) setLoading(false);
         }
       } else if (event === 'SIGNED_OUT') {
         setSession(null);
@@ -258,10 +260,10 @@ export const DataProvider = ({ children }) => {
         setData({ users: [], templates: [], assignments: [], submissions: [] });
         subscriptionsRef.current.forEach(sub => sub.unsubscribe());
         subscriptionsRef.current = [];
+        setLoading(false);
       } else if (event === 'TOKEN_REFRESHED') {
         setSession(newSession);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -294,10 +296,33 @@ export const DataProvider = ({ children }) => {
     }
   }, [loadData]);
 
+  // ── High-level login with credentials that loads profile and data before resolving ──
+  const signInWithCredentials = useCallback(async (email, password) => {
+    setLoading(true);
+    try {
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      if (!authData?.user) throw new Error('No user returned from login');
+
+      setSession(authData.session);
+      const prof = await getProfile(authData.user.id);
+      if (!prof) throw new Error('User profile record not found');
+      setProfile(prof);
+      await loadData(prof);
+      setupRealtime(prof);
+      setLoading(false);
+      return prof.role === 'teacher' ? 'TEACHER' : 'STUDENT';
+    } catch (err) {
+      setLoading(false);
+      throw err;
+    }
+  }, [loadData, setupRealtime]);
+
   // ── Login / Logout ─────────────────────────
   const login = (role, user) => {
-    // This is now handled by onAuthStateChange
-    // But we keep a compatible interface for any components that still call it
     const sess = { role, user };
     setSession(sess);
   };
@@ -327,6 +352,7 @@ export const DataProvider = ({ children }) => {
       setData,
       session: sessionCompat,
       login,
+      signInWithCredentials,
       logout,
       loading,
       profile,

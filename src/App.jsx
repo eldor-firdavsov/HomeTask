@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { DataProvider, useData } from './context/DataContext';
 import Layout from './components/layout/Layout';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingScreen from './components/common/LoadingScreen';
 import Login from './pages/auth/Login';
 import TeacherLogin from './pages/auth/TeacherLogin';
 import StudentLogin from './pages/auth/StudentLogin';
@@ -16,36 +18,6 @@ import StudentDashboard from './pages/student/Dashboard';
 import StudentTasks from './pages/student/Tasks';
 import StudentTaskDetail from './pages/student/TaskDetail';
 import StudentPomodoro from './pages/student/Pomodoro';
-
-/* ── Loading Screen ──────────────────────────── */
-function LoadingScreen() {
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      gap: 16,
-    }}>
-      <div style={{
-        width: 40, height: 40, borderRadius: 12,
-        background: 'rgba(99,102,241,0.14)',
-        border: '1px solid rgba(99,102,241,0.24)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'pulse 1.5s ease-in-out infinite',
-      }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-        </svg>
-      </div>
-      <div style={{ fontSize: 14, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-        Loading…
-      </div>
-    </div>
-  );
-}
 
 /* ── Route Guards ─────────────────────────────── */
 function TeacherRoute({ children }) {
@@ -142,12 +114,12 @@ function AppRoutes() {
       <Route path="/" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
-          : <Navigate to="/teacher/login" replace />
+          : <Navigate to="/login" replace />
       } />
       <Route path="*" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
-          : <Navigate to="/teacher/login" replace />
+          : <Navigate to="/login" replace />
       } />
     </Routes>
   );
@@ -155,11 +127,13 @@ function AppRoutes() {
 
 function App() {
   return (
-    <DataProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </DataProvider>
+    <ErrorBoundary>
+      <DataProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </DataProvider>
+    </ErrorBoundary>
   );
 }
 

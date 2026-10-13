@@ -14,12 +14,12 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
-import { signIn } from '../../lib/supabase/auth.js';
-import { useToast } from '../../context/DataContext';
+import { useToast, useData } from '../../context/DataContext';
 
 export default function AuthCard({ initialRole = 'teacher' }) {
   const navigate = useNavigate();
   const toast = useToast();
+  const { signInWithCredentials } = useData();
 
   const [role, setRole] = useState(initialRole);
   const [email, setEmail] = useState('');
@@ -86,13 +86,13 @@ export default function AuthCard({ initialRole = 'teacher' }) {
         localStorage.removeItem('hw_remembered_email');
       }
 
-      await signIn(email.trim(), password);
-      toast(`Signed in as ${role === 'teacher' ? 'Teacher' : 'Student'} successfully`);
+      const userRole = await signInWithCredentials(email.trim(), password);
+      toast(`Signed in as ${userRole === 'TEACHER' ? 'Teacher' : 'Student'} successfully`);
 
-      if (role === 'teacher') {
-        navigate('/teacher/dashboard');
+      if (userRole === 'TEACHER') {
+        navigate('/teacher/dashboard', { replace: true });
       } else {
-        navigate('/student/dashboard');
+        navigate('/student/dashboard', { replace: true });
       }
     } catch (err) {
       const msg = err?.message || 'Login failed';
@@ -474,7 +474,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
             }}>
               <button
                 type="button"
-                onClick={() => quickFill('teacher@example.com', 'teacher')}
+                onClick={() => quickFill('teacher@ilmla.uz', 'teacher')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -489,13 +489,13 @@ export default function AuthCard({ initialRole = 'teacher' }) {
                   textAlign: 'left',
                 }}
               >
-                <span><strong>Teacher:</strong> Sarah Mitchell</span>
+                <span><strong>Teacher:</strong> teacher@ilmla.uz</span>
                 <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => quickFill('student@example.com', 'student')}
+                onClick={() => quickFill('eldor@ilmla.uz', 'student')}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -510,7 +510,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
                   textAlign: 'left',
                 }}
               >
-                <span><strong>Student:</strong> Ahmadjon Karimov</span>
+                <span><strong>Student:</strong> eldor@ilmla.uz</span>
                 <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
               </button>
             </div>
