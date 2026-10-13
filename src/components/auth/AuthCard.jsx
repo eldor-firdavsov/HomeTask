@@ -104,6 +104,8 @@ export default function AuthCard({ initialRole = 'teacher' }) {
         );
       } else if (msg.includes('Email not confirmed')) {
         triggerErrorShake('Account email has not been activated. Please check your confirmation link.');
+      } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.toLowerCase().includes('fetch')) {
+        triggerErrorShake('Cannot reach Supabase. If your free-tier project is paused, please click "Restore" in your Supabase Dashboard.');
       } else {
         triggerErrorShake(msg);
       }

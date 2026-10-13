@@ -89,6 +89,10 @@ export const DataProvider = ({ children }) => {
       addToast('You do not have permission to perform this action.', 'error');
       return;
     }
+    if (msg.includes('Failed to fetch') || msg.toLowerCase().includes('fetch')) {
+      addToast('Cannot connect to database. Supabase may be paused or offline.', 'error');
+      return;
+    }
     addToast(msg, 'error');
   }, [addToast]);
 
