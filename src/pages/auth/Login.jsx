@@ -6,7 +6,7 @@ import AuthCard from '../../components/auth/AuthCard';
 export default function Login() {
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('role');
-  const role = roleParam === 'student' ? 'student' : 'teacher';
+  const role = roleParam === 'teacher' ? 'teacher' : 'student';
 
   return (
     <AuthLayout role={role}>

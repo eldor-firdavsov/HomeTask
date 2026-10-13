@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useToast, useData } from '../../context/DataContext';
 
-export default function AuthCard({ initialRole = 'teacher' }) {
+export default function AuthCard({ initialRole = 'student' }) {
   const navigate = useNavigate();
   const toast = useToast();
   const { signInWithCredentials } = useData();
@@ -134,68 +134,6 @@ export default function AuthCard({ initialRole = 'teacher' }) {
           position: 'relative',
         }}
       >
-        {/* Segmented Role Switcher Tab */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          padding: 4,
-          background: 'rgba(235, 238, 250, 0.7)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: 'var(--r-md)',
-          border: '1px solid rgba(255, 255, 255, 0.7)',
-          marginBottom: 28,
-          gap: 4,
-        }}>
-          <button
-            type="button"
-            onClick={() => handleRoleSwitch('teacher')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '9px 12px',
-              borderRadius: 'calc(var(--r-md) - 3px)',
-              fontSize: 13,
-              fontWeight: role === 'teacher' ? 700 : 500,
-              color: role === 'teacher' ? '#4f46e5' : 'var(--txt-secondary)',
-              background: role === 'teacher' ? '#ffffff' : 'transparent',
-              border: role === 'teacher' ? '1px solid rgba(255,255,255,0.9)' : 'none',
-              boxShadow: role === 'teacher' ? '0 2px 8px rgba(99,102,241,0.12)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.18s ease',
-              fontFamily: 'inherit',
-            }}
-          >
-            <GraduationCap size={16} strokeWidth={role === 'teacher' ? 2.5 : 2} />
-            Teacher
-          </button>
-          <button
-            type="button"
-            onClick={() => handleRoleSwitch('student')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '9px 12px',
-              borderRadius: 'calc(var(--r-md) - 3px)',
-              fontSize: 13,
-              fontWeight: role === 'student' ? 700 : 500,
-              color: role === 'student' ? '#4f46e5' : 'var(--txt-secondary)',
-              background: role === 'student' ? '#ffffff' : 'transparent',
-              border: role === 'student' ? '1px solid rgba(255,255,255,0.9)' : 'none',
-              boxShadow: role === 'student' ? '0 2px 8px rgba(99,102,241,0.12)' : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.18s ease',
-              fontFamily: 'inherit',
-            }}
-          >
-            <BookOpen size={15} strokeWidth={role === 'student' ? 2.5 : 2} />
-            Student
-          </button>
-        </div>
-
         {/* Portal Greeting */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -234,7 +172,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
             {role === 'teacher'
               ? 'Access your assignment manager, student submissions & grading analytics.'
-              : 'Log in with credentials from your teacher to view assignments & start sprints.'}
+              : 'Log in with credentials from your teacher to view assignments and progress.'}
           </p>
         </div>
 
@@ -472,48 +410,74 @@ export default function AuthCard({ initialRole = 'teacher' }) {
               borderRadius: 'var(--r-sm)',
               border: '1px solid rgba(255,255,255,0.6)',
             }}>
-              <button
-                type="button"
-                onClick={() => quickFill('teacher@ilmla.uz', 'teacher')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'rgba(255,255,255,0.65)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: 'var(--txt-primary)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <span><strong>Teacher:</strong> teacher@ilmla.uz</span>
-                <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => quickFill('eldor@ilmla.uz', 'student')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '7px 10px',
-                  background: 'rgba(255,255,255,0.65)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  color: 'var(--txt-primary)',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                }}
-              >
-                <span><strong>Student:</strong> eldor@ilmla.uz</span>
-                <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
-              </button>
+              {role === 'teacher' ? (
+                <button
+                  type="button"
+                  onClick={() => quickFill('teacher@ilmla.uz', 'teacher')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '7px 10px',
+                    background: 'rgba(255,255,255,0.65)',
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    color: 'var(--txt-primary)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span><strong>Teacher Demo:</strong> teacher@ilmla.uz</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => quickFill('eldor@ilmla.uz', 'student')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '7px 10px',
+                    background: 'rgba(255,255,255,0.65)',
+                    border: '1px solid rgba(99,102,241,0.2)',
+                    borderRadius: 6,
+                    fontSize: 12,
+                    color: 'var(--txt-primary)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span><strong>Student Demo:</strong> eldor@ilmla.uz</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
+                </button>
+              )}
             </div>
+          )}
+        </div>
+
+        {/* Portal Switch Link */}
+        <div style={{
+          marginTop: 18,
+          textAlign: 'center',
+          fontSize: 12,
+          color: 'var(--txt-secondary)',
+        }}>
+          {role === 'student' ? (
+            <span>
+              Are you an educator?{' '}
+              <Link to="/teacher/login" style={{ color: '#4f46e5', fontWeight: 600, textDecoration: 'none' }}>
+                Go to Teacher Portal →
+              </Link>
+            </span>
+          ) : (
+            <span>
+              Are you a student?{' '}
+              <Link to="/student/login" style={{ color: '#4f46e5', fontWeight: 600, textDecoration: 'none' }}>
+                Go to Student Login →
+              </Link>
+            </span>
           )}
         </div>
 
@@ -523,7 +487,7 @@ export default function AuthCard({ initialRole = 'teacher' }) {
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          marginTop: 18,
+          marginTop: 14,
           fontSize: 11,
           color: 'var(--txt-tertiary)',
         }}>

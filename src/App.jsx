@@ -67,7 +67,7 @@ function AppRoutes() {
           ? <Navigate to="/teacher/dashboard" replace />
           : session?.role === 'STUDENT'
             ? <Navigate to="/student/dashboard" replace />
-            : <Login />
+            : <Navigate to="/student/login" replace />
       } />
 
       {/* Teacher routes */}
@@ -113,12 +113,12 @@ function AppRoutes() {
       <Route path="/" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
-          : <Navigate to="/login" replace />
+          : <Navigate to="/student/login" replace />
       } />
       <Route path="*" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
-          : <Navigate to="/login" replace />
+          : <Navigate to="/student/login" replace />
       } />
     </Routes>
   );
