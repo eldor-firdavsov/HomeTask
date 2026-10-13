@@ -19,8 +19,8 @@ export default function Layout() {
 
   if (loading) return <LoadingScreen message="Loading dashboard…" />;
   if (!session) {
-    const isStudentPath = location.pathname.startsWith('/student');
-    return <Navigate to={isStudentPath ? "/student/login" : "/teacher/login"} replace />;
+    const isTeacherPath = location.pathname.startsWith('/teacher');
+    return <Navigate to={isTeacherPath ? "/teacher/login" : "/student/login"} replace />;
   }
 
   // Role routing guard

@@ -43,6 +43,13 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Root route: always defaults to student login when unauthenticated */}
+      <Route path="/" element={
+        session
+          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
+          : <Navigate to="/student/login" replace />
+      } />
+
       {/* Auth routes */}
       <Route path="/teacher/login" element={
         session?.role === 'TEACHER'
@@ -61,7 +68,7 @@ function AppRoutes() {
       <Route path="/teacher/forgot-password" element={<ForgotPassword role="teacher" />} />
       <Route path="/student/forgot-password" element={<ForgotPassword role="student" />} />
 
-      {/* Login routes */}
+      {/* Fallback login route */}
       <Route path="/login" element={
         session?.role === 'TEACHER'
           ? <Navigate to="/teacher/dashboard" replace />
@@ -70,8 +77,9 @@ function AppRoutes() {
             : <Navigate to="/student/login" replace />
       } />
 
-      {/* Teacher routes */}
-      <Route path="/" element={<Layout />}>
+      {/* Protected routes wrapped in Layout */}
+      <Route element={<Layout />}>
+        {/* Teacher routes */}
         <Route path="teacher/dashboard" element={
           <TeacherRoute><TeacherDashboard /></TeacherRoute>
         } />
@@ -109,12 +117,7 @@ function AppRoutes() {
         } />
       </Route>
 
-      {/* Root redirects */}
-      <Route path="/" element={
-        session
-          ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
-          : <Navigate to="/student/login" replace />
-      } />
+      {/* Catch-all unknown routes */}
       <Route path="*" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
