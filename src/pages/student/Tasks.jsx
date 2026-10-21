@@ -333,7 +333,9 @@ export default function StudentTasks() {
             return (
               <Link
                 key={a.id}
-                to={`/student/tasks/${a.id}`}
+                to={a.isReadingTest
+                  ? (a.status === 'DONE' && a.submissionId ? `/student/reading-results/${a.submissionId}` : `/student/reading/${a.id}`)
+                  : `/student/tasks/${a.id}`}
                 style={{ textDecoration: 'none', display: 'block' }}
               >
                 <div
@@ -348,13 +350,23 @@ export default function StudentTasks() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--color-text)' }}>{a.title}</span>
                       <TypeChip type={a.type} />
+                      {a.isReadingTest && (
+                        <span style={{
+                          fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                          background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
+                        }}>
+                          IELTS Academic
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 12, color: overdueA ? 'var(--color-danger)' : 'var(--color-text-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {dlStr
                         ? <span>{overdueA ? '⚠ Overdue · was due ' : 'Due '}{dlStr}</span>
                         : <span>No deadline set</span>
                       }
-                      {typeof a.grade === 'number' && (
+                      {a.isReadingTest && a.bandScore != null ? (
+                        <span style={{ fontWeight: 700, color: 'var(--color-success)', marginLeft: 4 }}>· Band {a.bandScore}</span>
+                      ) : typeof a.grade === 'number' && (
                         <span style={{ fontWeight: 700, color: 'var(--color-success)', marginLeft: 4 }}>· Grade: {a.grade}/100</span>
                       )}
                     </div>

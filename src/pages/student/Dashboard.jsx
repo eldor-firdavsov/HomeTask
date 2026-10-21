@@ -896,7 +896,9 @@ export default function StudentDashboard() {
                     </div>
 
                     <Link
-                      to={`/student/tasks/${task.id}`}
+                      to={task.isReadingTest
+                        ? (task.status === 'DONE' && task.submissionId ? `/student/reading-results/${task.submissionId}` : `/student/reading/${task.id}`)
+                        : `/student/tasks/${task.id}`}
                       className="g-btn g-btn-primary"
                       style={{
                         padding: '7px 14px',
@@ -909,7 +911,9 @@ export default function StudentDashboard() {
                             : 'var(--accent)',
                       }}
                     >
-                      {isRevision ? 'Revise Task' : task.status === 'IN_PROGRESS' ? 'Resume Task' : 'Start Task'}
+                      {task.isReadingTest
+                        ? (task.status === 'DONE' ? 'View Band' : 'Start Exam')
+                        : (isRevision ? 'Revise Task' : task.status === 'IN_PROGRESS' ? 'Resume Task' : 'Start Task')}
                       <ArrowRight size={13} />
                     </Link>
                   </div>
@@ -1009,7 +1013,9 @@ export default function StudentDashboard() {
                 return (
                   <Link
                     key={task.id}
-                    to={`/student/tasks/${task.id}`}
+                    to={task.isReadingTest
+                      ? (task.status === 'DONE' && task.submissionId ? `/student/reading-results/${task.submissionId}` : `/student/reading/${task.id}`)
+                      : `/student/tasks/${task.id}`}
                     style={{ textDecoration: 'none', display: 'block' }}
                   >
                     <div
@@ -1048,6 +1054,14 @@ export default function StudentDashboard() {
                             {task.title}
                           </span>
                           <TypeChip type={task.type} />
+                          {task.isReadingTest && (
+                            <span style={{
+                              fontSize: 10.5, padding: '1px 7px', borderRadius: 4,
+                              background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
+                            }}>
+                              IELTS Academic
+                            </span>
+                          )}
                         </div>
 
                         <div style={{ fontSize: 11.5, color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -1056,7 +1070,9 @@ export default function StudentDashboard() {
                           ) : (
                             <span>No deadline set</span>
                           )}
-                          {typeof task.grade === 'number' && (
+                          {task.isReadingTest && task.bandScore != null ? (
+                            <span style={{ fontWeight: 700, color: '#059669' }}>· Band {task.bandScore}</span>
+                          ) : typeof task.grade === 'number' && (
                             <span style={{ fontWeight: 700, color: '#059669' }}>· Grade: {task.grade}/100</span>
                           )}
                         </div>

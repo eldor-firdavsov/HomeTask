@@ -12,6 +12,7 @@ import {
 } from '../../lib/supabase/readingTests';
 import { getBandColor, getBandLabel } from '../../lib/supabase/aiGrading';
 import Breadcrumbs from '../../components/common/Breadcrumbs';
+import { CAMBRIDGE_20_READING_TEST_2 } from '../../data/cambridge20Test';
 
 export default function ReadingSubmissionReview() {
   const { submissionId } = useParams();
@@ -36,13 +37,23 @@ export default function ReadingSubmissionReview() {
           const st = (data?.users || []).find(u => u.id === sub.studentId);
           setStudent(st);
 
-          // Find assignment & test
-          const assignments = await getTeacherReadingAssignments();
-          const assignment = assignments.find(a => a.id === sub.assignmentId);
-          if (assignment?.readingTestId) {
-            const t = await getReadingTest(assignment.readingTestId);
-            setTest(t);
+          if (sub.test?.passages?.length) {
+            setTest(sub.test);
+          } else {
+            // Find assignment & test
+            try {
+              const assignments = await getTeacherReadingAssignments();
+              const assignment = assignments.find(a => a.id === sub.assignmentId);
+              if (assignment?.readingTestId) {
+                const t = await getReadingTest(assignment.readingTestId);
+                setTest(t);
+              }
+            } catch (err) {
+              console.warn('Teacher reading assignment lookup error:', err);
+            }
           }
+
+          setTest(prev => prev || CAMBRIDGE_20_READING_TEST_2);
         }
       } catch (err) {
         console.error('Error loading submission details:', err);

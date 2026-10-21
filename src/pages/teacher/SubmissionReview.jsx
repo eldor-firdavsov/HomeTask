@@ -24,6 +24,12 @@ export default function SubmissionReview() {
   const [busy,     setBusy]     = useState(false);
 
   useEffect(() => {
+    if (submission?.isReadingTest || assignment?.isReadingTest) {
+      navigate(`/teacher/reading-submissions/${submission?.id || submissionId}`, { replace: true });
+    }
+  }, [submission, assignment, submissionId, navigate]);
+
+  useEffect(() => {
     if (submission?.id) {
       getSubmissionAttachments(submission.id)
         .then(async (atts) => {

@@ -6,6 +6,7 @@ import { getTaskTemplates } from '../lib/supabase/tasks.js';
 import { getTeacherAssignments, getMyAssignments } from '../lib/supabase/assignments.js';
 import { getTeacherSubmissions } from '../lib/supabase/submissions.js';
 import { transformProfile, transformSubmission } from '../lib/supabase/transforms.js';
+import { getUnifiedReadingAssignments, getUnifiedReadingSubmissions } from '../lib/supabase/readingTests.js';
 
 /* ── Toast Context ─────────────────────────── */
 const ToastContext = createContext(() => {});
@@ -100,11 +101,13 @@ export const DataProvider = ({ children }) => {
   const loadData = useCallback(async (userProfile) => {
     try {
       if (userProfile.role === 'teacher') {
-        const [students, templates, assignments, submissions] = await Promise.all([
+        const [students, templates, assignments, submissions, rAssignments, rSubmissions] = await Promise.all([
           getStudents(),
           getTaskTemplates(),
           getTeacherAssignments(),
           getTeacherSubmissions(),
+          getUnifiedReadingAssignments({ role: 'teacher' }),
+          getUnifiedReadingSubmissions(),
         ]);
         setData({
           users: [
@@ -112,23 +115,28 @@ export const DataProvider = ({ children }) => {
             ...students.map(transformProfile),
           ],
           templates,
-          assignments,
-          submissions,
+          assignments: [...assignments, ...(rAssignments || [])],
+          submissions: [...submissions, ...(rSubmissions || [])],
         });
       } else {
-        // Student: load only own assignments
-        const assignments = await getMyAssignments();
-        // Load submissions for each assignment
-        const { data: subs } = await supabase
-          .from('submissions')
-          .select('*')
-          .order('submitted_at', { ascending: false });
+        // Student: load both regular and reading assignments
+        const [assignments, subs, rAssignments, rSubmissions] = await Promise.all([
+          getMyAssignments(),
+          supabase
+            .from('submissions')
+            .select('*')
+            .order('submitted_at', { ascending: false })
+            .then(res => (res.data || []).map(transformSubmission))
+            .catch(() => []),
+          getUnifiedReadingAssignments({ role: 'student', studentId: userProfile.id }),
+          getUnifiedReadingSubmissions(),
+        ]);
 
         setData({
           users: [transformProfile(userProfile)],
           templates: [],
-          assignments,
-          submissions: (subs || []).map(transformSubmission),
+          assignments: [...assignments, ...(rAssignments || [])],
+          submissions: [...subs, ...(rSubmissions || [])],
         });
       }
     } catch (err) {
@@ -152,12 +160,34 @@ export const DataProvider = ({ children }) => {
           table: 'assignments',
           filter: `teacher_id=eq.${userProfile.id}`,
         }, async () => {
-          // Reload assignments on any change
           try {
-            const assignments = await getTeacherAssignments();
-            setData(prev => ({ ...prev, assignments }));
+            const [assignments, rAssignments] = await Promise.all([
+              getTeacherAssignments(),
+              getUnifiedReadingAssignments({ role: 'teacher' }),
+            ]);
+            setData(prev => ({ ...prev, assignments: [...assignments, ...(rAssignments || [])] }));
           } catch (err) {
             console.error('Realtime assignment reload error:', err);
+          }
+        })
+        .subscribe();
+
+      // Teacher subscribes to reading test assignments
+      const readingAssignmentSub = supabase
+        .channel('teacher-reading-assignments')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'reading_test_assignments',
+        }, async () => {
+          try {
+            const [assignments, rAssignments] = await Promise.all([
+              getTeacherAssignments(),
+              getUnifiedReadingAssignments({ role: 'teacher' }),
+            ]);
+            setData(prev => ({ ...prev, assignments: [...assignments, ...(rAssignments || [])] }));
+          } catch (err) {
+            console.error('Realtime reading assignment reload error:', err);
           }
         })
         .subscribe();
@@ -171,15 +201,18 @@ export const DataProvider = ({ children }) => {
           table: 'submissions',
         }, async () => {
           try {
-            const submissions = await getTeacherSubmissions();
-            setData(prev => ({ ...prev, submissions }));
+            const [submissions, rSubmissions] = await Promise.all([
+              getTeacherSubmissions(),
+              getUnifiedReadingSubmissions(),
+            ]);
+            setData(prev => ({ ...prev, submissions: [...submissions, ...(rSubmissions || [])] }));
           } catch (err) {
             console.error('Realtime submission reload error:', err);
           }
         })
         .subscribe();
 
-      subscriptionsRef.current = [assignmentSub, submissionSub];
+      subscriptionsRef.current = [assignmentSub, readingAssignmentSub, submissionSub];
     } else {
       // Student subscribes to their own assignment changes
       const assignmentSub = supabase
@@ -191,15 +224,38 @@ export const DataProvider = ({ children }) => {
           filter: `student_id=eq.${userProfile.id}`,
         }, async () => {
           try {
-            const assignments = await getMyAssignments();
-            setData(prev => ({ ...prev, assignments }));
+            const [assignments, rAssignments] = await Promise.all([
+              getMyAssignments(),
+              getUnifiedReadingAssignments({ role: 'student', studentId: userProfile.id }),
+            ]);
+            setData(prev => ({ ...prev, assignments: [...assignments, ...(rAssignments || [])] }));
           } catch (err) {
             console.error('Realtime assignment reload error:', err);
           }
         })
         .subscribe();
 
-      subscriptionsRef.current = [assignmentSub];
+      const readingAssignmentSub = supabase
+        .channel('student-reading-assignments')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'reading_test_assignments',
+          filter: `student_id=eq.${userProfile.id}`,
+        }, async () => {
+          try {
+            const [assignments, rAssignments] = await Promise.all([
+              getMyAssignments(),
+              getUnifiedReadingAssignments({ role: 'student', studentId: userProfile.id }),
+            ]);
+            setData(prev => ({ ...prev, assignments: [...assignments, ...(rAssignments || [])] }));
+          } catch (err) {
+            console.error('Realtime reading assignment reload error:', err);
+          }
+        })
+        .subscribe();
+
+      subscriptionsRef.current = [assignmentSub, readingAssignmentSub];
     }
   }, []);
 

@@ -1,6 +1,7 @@
 import { supabase } from './client.js';
 import { gradeWithGemini } from '../gemini.js';
 import { gradeReadingTest, calculateBandScore } from './aiGrading.js';
+import { CAMBRIDGE_20_READING_TEST_2 } from '../../data/cambridge20Test.js';
 
 // ═══════════════════════════════════════════════════════════
 // READING TESTS — CRUD
@@ -394,4 +395,82 @@ export function transformReadingSubmission(dbRow) {
     createdAt: dbRow.created_at,
     updatedAt: dbRow.updated_at,
   };
+}
+
+// ── Unified Assignment Integration ───────────────────────
+// Transforms IELTS reading test assignments into standardized homework assignments
+export async function getUnifiedReadingAssignments({ role = 'student', studentId = null } = {}) {
+  try {
+    const [rawAssignments, tests, submissions] = await Promise.all([
+      role === 'teacher'
+        ? getTeacherReadingAssignments().catch(() => [])
+        : (studentId ? getStudentReadingAssignments(studentId).catch(() => []) : getMyReadingAssignments().catch(() => [])),
+      getReadingTests().catch(() => []),
+      getTeacherReadingSubmissions().catch(() => []),
+    ]);
+
+    const testMap = new Map((tests || []).map(t => [t.id, t]));
+    const subMap = new Map((submissions || []).map(s => [s.assignmentId, s]));
+
+    return (rawAssignments || []).map(ra => {
+      const test = testMap.get(ra.readingTestId) || CAMBRIDGE_20_READING_TEST_2;
+      const sub = subMap.get(ra.id);
+      const isGraded = ra.status === 'graded' || ra.status === 'completed' || !!sub;
+      const isSubmitted = ra.status === 'submitted';
+      const band = sub?.bandScore != null ? Number(sub.bandScore) : null;
+
+      return {
+        id: ra.id,
+        readingTestId: ra.readingTestId,
+        isReadingTest: true,
+        templateId: null,
+        teacherId: ra.teacherId,
+        studentId: ra.studentId,
+        title: test?.title || 'Cambridge IELTS 20 - Academic Reading Test 2',
+        type: 'READING',
+        instructions: test?.title
+          ? `Computer-Delivered IELTS Academic Reading Exam (${test.passages?.length || 3} passages, ${test.totalQuestions || 40} questions, ${test.timeLimitMins || 60} mins). Full CD IELTS simulation with auto AI band scoring.`
+          : 'Official IELTS Academic Reading Exam with 40 questions and instant AI band scoring.',
+        submissionTypes: ['IELTS CD Exam'],
+        deadline: ra.deadline,
+        status: isGraded ? 'DONE' : (isSubmitted ? 'SUBMITTED' : 'IN_PROGRESS'),
+        originalStatus: ra.status,
+        grade: band != null ? Math.round(band * 10) : null,
+        bandScore: band,
+        percentage: sub?.percentage,
+        correctCount: sub?.correctCount,
+        totalQuestions: sub?.totalQuestions || test?.totalQuestions || 40,
+        submissionId: sub?.id,
+        feedback: sub?.aiFeedback || (band != null ? `Official IELTS Band Score: ${band}` : null),
+        createdAt: ra.createdAt,
+        updatedAt: ra.updatedAt,
+      };
+    });
+  } catch (err) {
+    console.warn('Error fetching unified reading assignments:', err);
+    return [];
+  }
+}
+
+export async function getUnifiedReadingSubmissions() {
+  try {
+    const submissions = await getTeacherReadingSubmissions().catch(() => []);
+    return (submissions || []).map(s => ({
+      id: s.id,
+      assignedTaskId: s.assignmentId,
+      studentId: s.studentId,
+      isReadingTest: true,
+      content: `IELTS Academic Reading Exam Submission — Band ${s.bandScore} (${s.correctCount}/${s.totalQuestions} correct)`,
+      bandScore: s.bandScore,
+      grade: s.bandScore != null ? Math.round(Number(s.bandScore) * 10) : null,
+      feedback: s.aiFeedback,
+      detailedResults: s.detailedResults,
+      timeSpentSecs: s.timeSpentSecs,
+      submittedAt: s.submittedAt || s.createdAt,
+      createdAt: s.createdAt,
+    }));
+  } catch (err) {
+    console.warn('Error fetching unified reading submissions:', err);
+    return [];
+  }
 }

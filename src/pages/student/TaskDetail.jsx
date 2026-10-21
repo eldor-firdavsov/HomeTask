@@ -35,7 +35,16 @@ export default function StudentTaskDetail() {
   const [savedAttachments, setSavedAttachments] = useState([]);
   const [taskAttachments, setTaskAttachments] = useState([]);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
-  const [busy, setBusy] = useState(false);
+  // If this assignment is an IELTS Academic Reading test, redirect to the CD exam / result interface
+  useEffect(() => {
+    if (assignment?.isReadingTest) {
+      if (assignment.status === 'DONE' && assignment.submissionId) {
+        navigate(`/student/reading-results/${assignment.submissionId}`, { replace: true });
+      } else {
+        navigate(`/student/reading/${assignment.id}`, { replace: true });
+      }
+    }
+  }, [assignment, navigate]);
 
   // Load reference materials & task attachments provided by teacher
   useEffect(() => {
