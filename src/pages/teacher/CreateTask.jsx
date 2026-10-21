@@ -60,9 +60,13 @@ export default function CreateTask() {
   }, [students, studentSearch]);
 
   const toggleStudent = (id) => {
-    setSelectedStudentIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSelectedStudentIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      if (next.length > 0 && !deadline) {
+        setQuickDeadline(1);
+      }
+      return next;
+    });
   };
 
   const toggleSelectAll = () => {
@@ -70,6 +74,7 @@ export default function CreateTask() {
       setSelectedStudentIds([]);
     } else {
       setSelectedStudentIds(filteredStudents.map(s => s.id));
+      if (!deadline) setQuickDeadline(1);
     }
   };
 

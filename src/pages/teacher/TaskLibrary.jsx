@@ -150,9 +150,19 @@ export default function TaskLibrary() {
             Reusable task templates and curriculum assignments for your students
           </p>
         </div>
-        <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
-          + New task
-        </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setAssigningTemplate({})}
+            className="g-btn g-btn-secondary"
+            style={{ fontSize: 13, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <UserCheck size={14} /> Quick assign
+          </button>
+          <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ fontSize: 13, padding: '8px 14px' }}>
+            + New task
+          </Link>
+        </div>
       </div>
 
       {/* Filter Toolbar — Glass container */}
