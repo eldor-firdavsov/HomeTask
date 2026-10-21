@@ -216,16 +216,45 @@ export const DataProvider = ({ children }) => {
         if (initialSession?.user) {
           setSession(initialSession);
           try {
-            const prof = await getProfile(initialSession.user.id);
+            let prof = null;
+            try {
+              prof = await getProfile(initialSession.user.id);
+            } catch (fetchErr) {
+              console.warn('Initial getProfile attempt failed, retrying...', fetchErr);
+              await new Promise(r => setTimeout(r, 400));
+              prof = await getProfile(initialSession.user.id);
+            }
+
             if (!mounted) return;
-            setProfile(prof);
-            await loadData(prof);
-            setupRealtime(prof);
+            if (prof) {
+              setProfile(prof);
+              await loadData(prof);
+              setupRealtime(prof);
+            } else {
+              throw new Error('Profile is null');
+            }
           } catch (err) {
-            // Profile might not exist yet or user is invalid
-            console.error('Failed to load profile:', err);
-            setSession(null);
-            setProfile(null);
+            console.warn('Profile load error in initAuth, applying metadata fallback:', err);
+            // Construct safe fallback profile from auth user metadata to avoid logging user out on refresh
+            const meta = initialSession.user.user_metadata || {};
+            const email = initialSession.user.email || '';
+            const fallbackRole = meta.role || (email.toLowerCase().includes('teacher') ? 'teacher' : 'student');
+            const fallbackProf = {
+              id: initialSession.user.id,
+              first_name: meta.first_name || (fallbackRole === 'teacher' ? 'Teacher' : 'Student'),
+              last_name: meta.last_name || '',
+              email,
+              role: fallbackRole,
+              is_active: true,
+            };
+            if (!mounted) return;
+            setProfile(fallbackProf);
+            try {
+              await loadData(fallbackProf);
+              setupRealtime(fallbackProf);
+            } catch (ldErr) {
+              console.warn('Failed loading data with fallback profile:', ldErr);
+            }
           }
         }
       } catch (err) {
@@ -241,16 +270,43 @@ export const DataProvider = ({ children }) => {
     const { data: { subscription } } = onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
-      if (event === 'SIGNED_IN' && newSession?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && newSession?.user) {
         setSession(newSession);
         try {
-          const prof = await getProfile(newSession.user.id);
+          let prof = null;
+          try {
+            prof = await getProfile(newSession.user.id);
+          } catch {
+            await new Promise(r => setTimeout(r, 400));
+            prof = await getProfile(newSession.user.id);
+          }
           if (!mounted) return;
-          setProfile(prof);
-          await loadData(prof);
-          setupRealtime(prof);
+          if (prof) {
+            setProfile(prof);
+            await loadData(prof);
+            setupRealtime(prof);
+          }
         } catch (err) {
-          console.error('Auth change profile error:', err);
+          console.warn('Auth change profile error, using fallback:', err);
+          const meta = newSession.user.user_metadata || {};
+          const email = newSession.user.email || '';
+          const fallbackRole = meta.role || (email.toLowerCase().includes('teacher') ? 'teacher' : 'student');
+          const fallbackProf = {
+            id: newSession.user.id,
+            first_name: meta.first_name || (fallbackRole === 'teacher' ? 'Teacher' : 'Student'),
+            last_name: meta.last_name || '',
+            email,
+            role: fallbackRole,
+            is_active: true,
+          };
+          if (!mounted) return;
+          setProfile(fallbackProf);
+          try {
+            await loadData(fallbackProf);
+            setupRealtime(fallbackProf);
+          } catch (ldErr) {
+            console.warn('Failed loading data with fallback profile on auth change:', ldErr);
+          }
         } finally {
           if (mounted) setLoading(false);
         }
@@ -258,18 +314,20 @@ export const DataProvider = ({ children }) => {
         setSession(null);
         setProfile(null);
         setData({ users: [], templates: [], assignments: [], submissions: [] });
-        subscriptionsRef.current.forEach(sub => sub.unsubscribe());
+        subscriptionsRef.current.forEach(sub => {
+          try { sub?.unsubscribe?.(); } catch {}
+        });
         subscriptionsRef.current = [];
         setLoading(false);
-      } else if (event === 'TOKEN_REFRESHED') {
-        setSession(newSession);
       }
     });
 
     return () => {
       mounted = false;
       subscription?.unsubscribe();
-      subscriptionsRef.current.forEach(sub => sub.unsubscribe());
+      subscriptionsRef.current.forEach(sub => {
+        try { sub?.unsubscribe?.(); } catch {}
+      });
     };
   }, [loadData, setupRealtime]);
 
@@ -301,15 +359,35 @@ export const DataProvider = ({ children }) => {
     setLoading(true);
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
       if (error) throw error;
       if (!authData?.user) throw new Error('No user returned from login');
 
       setSession(authData.session);
-      const prof = await getProfile(authData.user.id);
-      if (!prof) throw new Error('User profile record not found');
+      let prof = null;
+      try {
+        prof = await getProfile(authData.user.id);
+      } catch (pErr) {
+        console.warn('Initial profile get failed during sign in, retrying...', pErr);
+        await new Promise(r => setTimeout(r, 400));
+        prof = await getProfile(authData.user.id);
+      }
+
+      if (!prof) {
+        const meta = authData.user.user_metadata || {};
+        const fallbackRole = meta.role || (email.toLowerCase().includes('teacher') ? 'teacher' : 'student');
+        prof = {
+          id: authData.user.id,
+          first_name: meta.first_name || (fallbackRole === 'teacher' ? 'Teacher' : 'Student'),
+          last_name: meta.last_name || '',
+          email: authData.user.email,
+          role: fallbackRole,
+          is_active: true,
+        };
+      }
+
       setProfile(prof);
       await loadData(prof);
       setupRealtime(prof);

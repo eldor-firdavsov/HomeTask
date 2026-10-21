@@ -1,11 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
-import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck, X } from 'lucide-react';
+import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck, X, Plus, ArrowLeft } from 'lucide-react';
 import { TypeChip, formatDate } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
+import ActionMenu from '../../components/common/ActionMenu';
 import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/tasks.js';
 import { deleteAssignmentsByTemplate } from '../../lib/supabase/assignments.js';
+import { CreateTaskForm } from './CreateTask.jsx';
 
 const TYPES = ['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
 const STATUS_TABS = [
@@ -14,14 +16,39 @@ const STATUS_TABS = [
   { id: 'unassigned', label: 'Unassigned / Drafts' },
 ];
 
-export default function TaskLibrary() {
+export default function TaskLibrary({ defaultMode = null }) {
   const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const isCreateIntent = defaultMode === 'create' || location.pathname.endsWith('/new') || searchParams.get('mode') === 'create' || searchParams.get('tab') === 'create';
+
+  const [viewMode, setViewMode] = useState(isCreateIntent ? 'create' : 'library');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('All Types');
   const [sortBy, setSortBy] = useState('newest');
   const [assigningTemplate, setAssigningTemplate] = useState(null);
+
+  useEffect(() => {
+    if (defaultMode === 'create' || location.pathname.endsWith('/new') || location.search.includes('create')) {
+      setViewMode('create');
+    }
+  }, [defaultMode, location.pathname, location.search]);
+
+  const switchToLibrary = () => {
+    setViewMode('library');
+    if (location.pathname.endsWith('/new') || location.search) {
+      navigate('/teacher/tasks', { replace: true });
+    }
+  };
+
+  const switchToCreate = () => {
+    setViewMode('create');
+    navigate('/teacher/tasks?mode=create', { replace: true });
+  };
 
   // Template assignment counts map
   const assignmentCountMap = useMemo(() => {
@@ -141,247 +168,332 @@ export default function TaskLibrary() {
   return (
     <div className="g-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-            Task Library
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+            {viewMode === 'create' ? 'Add New Task' : 'Tasks & Library'}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            Reusable task templates and curriculum assignments for your students
+            {viewMode === 'create'
+              ? 'Create a new task template and optionally assign it directly to your students'
+              : 'Reusable task templates and curriculum assignments for your students'}
           </p>
         </div>
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setAssigningTemplate({})}
-            className="g-btn g-btn-secondary"
-            style={{ fontSize: 13, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
-          >
-            <UserCheck size={14} /> Quick assign
-          </button>
-          <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ fontSize: 13, padding: '8px 14px' }}>
-            + New task
-          </Link>
-        </div>
-      </div>
-
-      {/* Filter Toolbar — Glass container */}
-      <div
-        className="glass-2"
-        style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 16 }}
-      >
-        {/* Top Filter Controls: Status Tabs & Search */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 14 }}>
-          {/* Status Tabs with counts */}
-          <div className="g-tabs" style={{ gap: 4 }}>
-            {STATUS_TABS.map(tab => {
-              const count = tabCounts[tab.id] ?? 0;
-              return (
-                <button
-                  key={tab.id}
-                  className={`g-tab${statusFilter === tab.id ? ' active' : ''}`}
-                  onClick={() => setStatusFilter(tab.id)}
-                  style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <span>{tab.label}</span>
-                  <span style={{
-                    fontSize: 10.5,
-                    padding: '1px 6px',
-                    borderRadius: 99,
-                    background: statusFilter === tab.id ? 'var(--accent)' : 'rgba(0,0,0,0.06)',
-                    color: statusFilter === tab.id ? '#fff' : 'var(--txt-secondary)',
-                    fontWeight: 600,
-                  }}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Box */}
-          <div className="g-search-wrap" style={{ minWidth: 220 }}>
-            <span className="g-search-icon"><Search size={13} /></span>
-            <input
-              className="g-search"
-              placeholder="Search tasks…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Secondary Filter Controls: Type Dropdown, Sort Dropdown, Clear button */}
-        <div style={{
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          borderTop: '1px solid rgba(255,255,255,0.40)',
-          paddingTop: 12,
-        }}>
-          {/* Task Type Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
-            <select
-              value={typeFilter}
-              onChange={e => setTypeFilter(e.target.value)}
-              className="g-select"
-              style={{ fontSize: 12.5, padding: '5px 10px' }}
+          {viewMode === 'create' ? (
+            <button
+              type="button"
+              onClick={switchToLibrary}
+              className="g-btn g-btn-secondary"
+              style={{ fontSize: 13, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
             >
-              {TYPES.map(t => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sort By Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
-            <select
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-              className="g-select"
-              style={{ fontSize: 12.5, padding: '5px 10px' }}
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="most_assigned">Most Assigned Students</option>
-              <option value="title">Title (A-Z)</option>
-            </select>
-          </div>
-
-          {/* Result Count and Reset Button */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 11.5, color: 'var(--txt-tertiary)' }}>
-              Showing {filtered.length} of {(data.templates || []).length} templates
-            </span>
-            {hasActiveFilters && (
+              <ArrowLeft size={14} /> Back to Library
+            </button>
+          ) : (
+            <>
               <button
-                onClick={resetFilters}
-                className="g-btn g-btn-ghost"
-                style={{ fontSize: 11.5, padding: '4px 8px', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', gap: 4 }}
+                type="button"
+                onClick={() => setAssigningTemplate({})}
+                className="g-btn g-btn-secondary"
+                style={{ fontSize: 13, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 6 }}
               >
-                <X size={12} />
-                Reset filters
+                <UserCheck size={14} /> Quick assign
               </button>
-            )}
-          </div>
+              <button
+                type="button"
+                onClick={switchToCreate}
+                className="g-btn g-btn-primary"
+                style={{ fontSize: 13, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 6 }}
+              >
+                <Plus size={15} /> Add New Task
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* List */}
-      {filtered.length === 0 ? (
-        <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
-          <div className="g-empty" style={{ padding: '48px 20px' }}>
-            <div className="g-empty-icon"><BookOpen size={20} strokeWidth={1.8} /></div>
-            <h3>{hasActiveFilters ? 'No matching tasks found' : 'No tasks yet'}</h3>
-            <p>
-              {hasActiveFilters
-                ? 'Try adjusting your search query, status tab, or subject type filter.'
-                : 'Create your first reusable task template.'}
-            </p>
-            {hasActiveFilters ? (
-              <button onClick={resetFilters} className="g-btn g-btn-secondary" style={{ marginTop: 8 }}>
-                Clear filters
-              </button>
-            ) : (
-              <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ marginTop: 8 }}>
-                + New task
-              </Link>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
-          {filtered.map((tpl, i) => {
-            const assignedCount = assignmentCountMap[tpl.id] || 0;
-            return (
-              <div
-                key={tpl.id}
-                className="glass-row"
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 16, padding: '17px 24px',
-                  borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.40)' : 'none',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                    <Link
-                      to={`/teacher/tasks/${tpl.id}`}
-                      style={{
-                        fontSize: 14.5, fontWeight: 600, color: 'var(--txt-primary)',
-                        textDecoration: 'none', transition: 'color 0.15s',
-                      }}
-                      onMouseEnter={e => e.target.style.color = 'var(--accent-text)'}
-                      onMouseLeave={e => e.target.style.color = 'var(--txt-primary)'}
-                    >
-                      {tpl.title}
-                    </Link>
-                    <TypeChip type={tpl.type} />
-                    {assignedCount > 0 ? (
-                      <span className="g-badge g-badge-progress" style={{ fontSize: 10 }}>
-                        {assignedCount} active
-                      </span>
-                    ) : (
-                      <span className="g-chip" style={{ fontSize: 10, opacity: 0.7 }}>
-                        Draft
-                      </span>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 12.5, color: 'var(--txt-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 500 }}>
-                    {(tpl.instructions || '').slice(0, 100)}{tpl.instructions?.length > 100 ? '…' : ''}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 5 }}>
-                    {assignedCount} {assignedCount === 1 ? 'student' : 'students'} assigned · Updated {formatDate(tpl.createdAt)}
-                  </div>
-                </div>
+      {/* Primary View Switcher: Task Library vs Add New Task */}
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: 4,
+        background: 'var(--color-surface-muted)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-md)',
+        marginBottom: 22,
+      }}>
+        <button
+          type="button"
+          onClick={switchToLibrary}
+          className={`g-btn ${viewMode === 'library' ? 'g-btn-primary' : 'g-btn-ghost'}`}
+          style={{
+            padding: '7px 16px',
+            fontSize: 12.5,
+            fontWeight: 600,
+            borderRadius: 'var(--radius-sm)',
+            gap: 7,
+          }}
+        >
+          <BookOpen size={14} /> Task Library ({data.templates?.length || 0})
+        </button>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                  <button
-                    onClick={() => setAssigningTemplate(tpl)}
-                    className="g-btn g-btn-primary"
-                    style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
-                    title="Assign to one or several students"
-                  >
-                    <UserCheck size={13} /> Assign
-                  </button>
-                  <button
-                    onClick={() => handleDuplicate(tpl)}
-                    className="g-btn g-btn-ghost"
-                    style={{ padding: '7px 9px', fontSize: 12 }}
-                    title="Duplicate"
-                  >
-                    <Copy size={13} />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(tpl.id)}
-                    className="g-btn g-btn-ghost"
-                    style={{ padding: '7px 9px', fontSize: 12, color: 'var(--clr-overdue-txt)' }}
-                    title="Delete"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                  <Link
-                    to={`/teacher/tasks/${tpl.id}`}
-                    className="g-btn g-btn-ghost"
-                    style={{ padding: '7px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 3 }}
-                  >
-                    View <ChevronRight size={12} />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={switchToCreate}
+          className={`g-btn ${viewMode === 'create' ? 'g-btn-primary' : 'g-btn-ghost'}`}
+          style={{
+            padding: '7px 16px',
+            fontSize: 12.5,
+            fontWeight: 600,
+            borderRadius: 'var(--radius-sm)',
+            gap: 7,
+          }}
+        >
+          <Plus size={14} /> Add New Task
+        </button>
+      </div>
 
-      {assigningTemplate && (
-        <AssignStudentsModal
-          template={assigningTemplate}
-          onClose={() => setAssigningTemplate(null)}
+      {/* View 1: Add New Task Form */}
+      {viewMode === 'create' ? (
+        <CreateTaskForm
+          hideBreadcrumbs={true}
+          onCancel={switchToLibrary}
+          onSuccess={() => {
+            switchToLibrary();
+            if (refreshData) refreshData();
+          }}
         />
+      ) : (
+        /* View 2: Task Library List */
+        <>
+          {/* Filter Toolbar — Glass container */}
+          <div
+            className="glass-2"
+            style={{ borderRadius: 'var(--r-lg)', padding: '16px 20px', marginBottom: 16 }}
+          >
+            {/* Top Filter Controls: Status Tabs & Search */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14, marginBottom: 14 }}>
+              {/* Status Tabs with counts */}
+              <div className="g-tabs" style={{ gap: 4 }}>
+                {STATUS_TABS.map(tab => {
+                  const count = tabCounts[tab.id] ?? 0;
+                  return (
+                    <button
+                      key={tab.id}
+                      className={`g-tab${statusFilter === tab.id ? ' active' : ''}`}
+                      onClick={() => setStatusFilter(tab.id)}
+                      style={{ fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 6 }}
+                    >
+                      <span>{tab.label}</span>
+                      <span style={{
+                        fontSize: 10.5,
+                        padding: '1px 6px',
+                        borderRadius: 99,
+                        background: statusFilter === tab.id ? 'var(--accent)' : 'rgba(0,0,0,0.06)',
+                        color: statusFilter === tab.id ? '#fff' : 'var(--txt-secondary)',
+                        fontWeight: 600,
+                      }}>
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search Box */}
+              <div className="g-search-wrap" style={{ minWidth: 220 }}>
+                <span className="g-search-icon"><Search size={13} /></span>
+                <input
+                  className="g-search"
+                  placeholder="Search tasks…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Secondary Filter Controls: Type Dropdown, Sort Dropdown, Clear button */}
+            <div style={{
+              display: 'flex',
+              gap: 12,
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              borderTop: '1px solid rgba(255,255,255,0.40)',
+              paddingTop: 12,
+            }}>
+              {/* Task Type Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
+                <select
+                  value={typeFilter}
+                  onChange={e => setTypeFilter(e.target.value)}
+                  className="g-select"
+                  style={{ fontSize: 12.5, padding: '5px 10px' }}
+                >
+                  {TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sort By Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--txt-secondary)' }}>Sort:</span>
+                <select
+                  value={sortBy}
+                  onChange={e => setSortBy(e.target.value)}
+                  className="g-select"
+                  style={{ fontSize: 12.5, padding: '5px 10px' }}
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="most_assigned">Most Assigned Students</option>
+                  <option value="title">Title (A-Z)</option>
+                </select>
+              </div>
+
+              {/* Result Count and Reset Button */}
+              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11.5, color: 'var(--txt-tertiary)' }}>
+                  Showing {filtered.length} of {(data.templates || []).length} templates
+                </span>
+                {hasActiveFilters && (
+                  <button
+                    onClick={resetFilters}
+                    className="g-btn g-btn-ghost"
+                    style={{ fontSize: 11.5, padding: '4px 8px', color: 'var(--accent-text)', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    <X size={12} />
+                    Reset filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* List */}
+          {filtered.length === 0 ? (
+            <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
+              <div className="g-empty" style={{ padding: '48px 20px' }}>
+                <div className="g-empty-icon"><BookOpen size={20} strokeWidth={1.8} /></div>
+                <h3>{hasActiveFilters ? 'No matching tasks found' : 'No tasks yet'}</h3>
+                <p>
+                  {hasActiveFilters
+                    ? 'Try adjusting your search query, status tab, or subject type filter.'
+                    : 'Create your first reusable task template.'}
+                </p>
+                {hasActiveFilters ? (
+                  <button onClick={resetFilters} className="g-btn g-btn-secondary" style={{ marginTop: 8 }}>
+                    Clear filters
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={switchToCreate}
+                    className="g-btn g-btn-primary"
+                    style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Plus size={14} /> Add new task
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
+              {filtered.map((tpl, i) => {
+                const assignedCount = assignmentCountMap[tpl.id] || 0;
+                return (
+                  <div
+                    key={tpl.id}
+                    className="glass-row"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 16, padding: '17px 24px',
+                      borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.40)' : 'none',
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                        <Link
+                          to={`/teacher/tasks/${tpl.id}`}
+                          style={{
+                            fontSize: 14.5, fontWeight: 600, color: 'var(--txt-primary)',
+                            textDecoration: 'none', transition: 'color 0.15s',
+                          }}
+                          onMouseEnter={e => e.target.style.color = 'var(--accent-text)'}
+                          onMouseLeave={e => e.target.style.color = 'var(--txt-primary)'}
+                        >
+                          {tpl.title}
+                        </Link>
+                        <TypeChip type={tpl.type} />
+                        {assignedCount > 0 ? (
+                          <span className="g-badge g-badge-progress" style={{ fontSize: 10 }}>
+                            {assignedCount} active
+                          </span>
+                        ) : (
+                          <span className="g-chip" style={{ fontSize: 10, opacity: 0.7 }}>
+                            Draft
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: 'var(--txt-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 500 }}>
+                        {(tpl.instructions || '').slice(0, 100)}{tpl.instructions?.length > 100 ? '…' : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 5 }}>
+                        {assignedCount} {assignedCount === 1 ? 'student' : 'students'} assigned · Updated {formatDate(tpl.createdAt)}
+                      </div>
+                    </div>
+
+                    {/* Actions: Primary, Secondary, Contextual */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => setAssigningTemplate(tpl)}
+                        className="g-btn g-btn-primary"
+                        style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+                        title="Assign to students"
+                      >
+                        <UserCheck size={13} /> Assign
+                      </button>
+                      <Link
+                        to={`/teacher/tasks/${tpl.id}`}
+                        className="g-btn g-btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: 12 }}
+                      >
+                        View
+                      </Link>
+                      <ActionMenu
+                        align="right"
+                        ariaLabel="Task actions"
+                        items={[
+                          {
+                            label: 'Duplicate Task',
+                            icon: Copy,
+                            onClick: () => handleDuplicate(tpl),
+                          },
+                          {
+                            label: 'Delete Task',
+                            icon: Trash2,
+                            danger: true,
+                            onClick: () => handleDelete(tpl.id),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {assigningTemplate && (
+            <AssignStudentsModal
+              template={assigningTemplate}
+              onClose={() => setAssigningTemplate(null)}
+            />
+          )}
+        </>
       )}
     </div>
   );

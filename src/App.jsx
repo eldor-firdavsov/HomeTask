@@ -17,6 +17,11 @@ import TeacherSettings from './pages/teacher/Settings';
 import StudentDashboard from './pages/student/Dashboard';
 import StudentTasks from './pages/student/Tasks';
 import StudentTaskDetail from './pages/student/TaskDetail';
+import ReadingTests from './pages/teacher/ReadingTests';
+import CreateReadingTest from './pages/teacher/CreateReadingTest';
+import ReadingSubmissionReview from './pages/teacher/ReadingSubmissionReview';
+import StudentReadingExam from './pages/student/StudentReadingExam';
+import StudentReadingResult from './pages/student/StudentReadingResult';
 
 /* ── Route Guards ─────────────────────────────── */
 function TeacherRoute({ children }) {
@@ -31,7 +36,8 @@ function StudentRoute({ children }) {
   const { session, loading } = useData();
   if (loading) return <LoadingScreen />;
   if (!session) return <Navigate to="/student/login" replace />;
-  if (session.role !== 'STUDENT') return <Navigate to="/teacher/dashboard" replace />;
+  // Allow teachers to also preview student interfaces & exam environments
+  if (session.role !== 'STUDENT' && session.role !== 'TEACHER') return <Navigate to="/teacher/dashboard" replace />;
   return children;
 }
 
@@ -54,16 +60,12 @@ function AppRoutes() {
       <Route path="/teacher/login" element={
         session?.role === 'TEACHER'
           ? <Navigate to="/teacher/dashboard" replace />
-          : session?.role === 'STUDENT'
-            ? <Navigate to="/student/dashboard" replace />
-            : <TeacherLogin />
+          : <TeacherLogin />
       } />
       <Route path="/student/login" element={
         session?.role === 'STUDENT'
           ? <Navigate to="/student/dashboard" replace />
-          : session?.role === 'TEACHER'
-            ? <Navigate to="/teacher/dashboard" replace />
-            : <StudentLogin />
+          : <StudentLogin />
       } />
       <Route path="/teacher/forgot-password" element={<ForgotPassword role="teacher" />} />
       <Route path="/student/forgot-password" element={<ForgotPassword role="student" />} />
@@ -77,6 +79,14 @@ function AppRoutes() {
             : <Navigate to="/student/login" replace />
       } />
 
+      {/* Fullscreen IELTS CD Exam (standalone simulation without sidebar) */}
+      <Route path="/student/reading/:assignmentId" element={
+        <StudentRoute><StudentReadingExam /></StudentRoute>
+      } />
+      <Route path="/student/reading-exam/:assignmentId" element={
+        <StudentRoute><StudentReadingExam /></StudentRoute>
+      } />
+
       {/* Protected routes wrapped in Layout */}
       <Route element={<Layout />}>
         {/* Teacher routes */}
@@ -87,10 +97,19 @@ function AppRoutes() {
           <TeacherRoute><TaskLibrary /></TeacherRoute>
         } />
         <Route path="teacher/tasks/new" element={
-          <TeacherRoute><CreateTask /></TeacherRoute>
+          <TeacherRoute><TaskLibrary defaultMode="create" /></TeacherRoute>
         } />
         <Route path="teacher/tasks/:templateId" element={
           <TeacherRoute><TaskDetail /></TeacherRoute>
+        } />
+        <Route path="teacher/reading-tests" element={
+          <TeacherRoute><ReadingTests /></TeacherRoute>
+        } />
+        <Route path="teacher/reading-tests/new" element={
+          <TeacherRoute><CreateReadingTest /></TeacherRoute>
+        } />
+        <Route path="teacher/reading-submissions/:submissionId" element={
+          <TeacherRoute><ReadingSubmissionReview /></TeacherRoute>
         } />
         <Route path="teacher/students/:studentId" element={
           <TeacherRoute><StudentDetail /></TeacherRoute>
@@ -111,6 +130,9 @@ function AppRoutes() {
         } />
         <Route path="student/tasks/:assignmentId" element={
           <StudentRoute><StudentTaskDetail /></StudentRoute>
+        } />
+        <Route path="student/reading-results/:submissionId" element={
+          <StudentRoute><StudentReadingResult /></StudentRoute>
         } />
         <Route path="student/pomodoro" element={
           <Navigate to="/student/dashboard" replace />

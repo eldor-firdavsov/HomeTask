@@ -6,6 +6,7 @@ import { TypeChip, StatusBadge, formatDateTime, gradeColor } from '../../utils/h
 import { gradeSubmission, requestRevision, getSubmissionAttachments } from '../../lib/supabase/submissions.js';
 import { updateAssignment } from '../../lib/supabase/assignments.js';
 import { getSignedUrl, formatFileSize } from '../../lib/supabase/storage.js';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 export default function SubmissionReview() {
   const { submissionId } = useParams();
@@ -41,23 +42,23 @@ export default function SubmissionReview() {
   }, [submission?.id]);
 
   const onFocus = e => {
-    e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-    e.target.style.boxShadow   = '0 0 0 4px rgba(99,102,241,0.10)';
-    e.target.style.background  = 'rgba(255,255,255,0.62)';
+    e.target.style.borderColor = 'var(--color-primary, #244A3A)';
+    e.target.style.boxShadow   = '0 0 0 3px rgba(36, 74, 58, 0.12)';
+    e.target.style.background  = '#ffffff';
   };
   const onBlur = e => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-    e.target.style.boxShadow   = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-    e.target.style.background  = 'rgba(255,255,255,0.40)';
+    e.target.style.borderColor = 'var(--color-border, #DDE3DC)';
+    e.target.style.boxShadow   = '0 1px 2px rgba(0,0,0,0.03)';
+    e.target.style.background  = '#ffffff';
   };
 
   const inputStyle = {
-    width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-    borderRadius: 'var(--r-sm)', padding: '10px 13px', fontSize: 14,
-    color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
+    width: '100%', background: '#ffffff',
+    border: '1px solid var(--color-border, #DDE3DC)',
+    borderRadius: 'var(--radius-sm, 6px)', padding: '10px 13px', fontSize: 14,
+    color: 'var(--color-text, #202923)', fontFamily: 'inherit', outline: 'none',
     boxSizing: 'border-box', transition: 'all 0.15s',
-    boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
   };
   const labelStyle = {
     display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: '0.05em',
@@ -146,14 +147,14 @@ export default function SubmissionReview() {
 
   return (
     <div className="g-page" style={{ paddingBottom: 40 }}>
-      {/* Back */}
-      <Link to="/teacher/dashboard"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--txt-secondary)', textDecoration: 'none', marginBottom: 24, transition: 'color 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
-      >
-        <ArrowLeft size={13} /> Dashboard
-      </Link>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', to: '/teacher/dashboard' },
+          { label: 'Task Library', to: '/teacher/tasks' },
+          { label: `${student.firstName} ${student.lastName} – Review Submission`, current: true },
+        ]}
+      />
 
       {/* Page header — glass banner */}
       <div className="glass-1" style={{ borderRadius: 'var(--r-xl)', padding: '22px 28px', marginBottom: 24 }}>

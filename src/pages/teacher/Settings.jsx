@@ -2,17 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useData, useToast } from '../../context/DataContext';
 import {
   KeyRound, Mail, User, Lock, Eye, EyeOff, CheckCircle2,
-  AlertCircle, ShieldCheck, Loader2, Save, Check
+  AlertCircle, ShieldCheck, Loader2, Save, Check, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { updateEmail, updatePassword, updateProfile, verifyPassword } from '../../lib/supabase/auth.js';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 export default function TeacherSettings() {
   const { session, profile, refreshProfile } = useData();
   const toast = useToast();
   const user = session?.user;
 
-  // ── Tab state: 'security' | 'profile' ───────────
-  const [activeTab, setActiveTab] = useState('security');
+  // ── Progressive disclosure for advanced security settings ──
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // ── Profile Form State ─────────────────────────
   const [firstName, setFirstName] = useState('');
@@ -193,6 +194,8 @@ export default function TeacherSettings() {
 
   return (
     <div className="g-page ts-page">
+      <Breadcrumbs items={[{ label: 'Home', to: '/teacher/dashboard' }, { label: 'Settings' }]} />
+
       {/* ── Header ── */}
       <div className="ts-header">
         <div className="ts-header-badge">
@@ -226,345 +229,352 @@ export default function TeacherSettings() {
         </div>
       </div>
 
-      {/* ── Segmented Tab Navigation ── */}
-      <div className="ts-tabs">
-        <button
-          className={`ts-tab${activeTab === 'security' ? ' active' : ''}`}
-          onClick={() => setActiveTab('security')}
-        >
-          <KeyRound size={14} />
-          <span>Email & Password</span>
-        </button>
-        <button
-          className={`ts-tab${activeTab === 'profile' ? ' active' : ''}`}
-          onClick={() => setActiveTab('profile')}
-        >
-          <User size={14} />
-          <span>Profile Details</span>
-        </button>
+      {/* ── 1. PRIMARY SECTION: PERSONAL PROFILE ── */}
+      <div className="ts-card">
+        <div className="ts-card-header">
+          <div className="ts-card-icon">
+            <User size={16} />
+          </div>
+          <div>
+            <h2 className="ts-card-title">Personal Profile</h2>
+            <p className="ts-card-desc">Your display name and account information visible to your students</p>
+          </div>
+        </div>
+
+        {profileError && (
+          <div className="ts-alert ts-alert-error" key={profileError}>
+            <AlertCircle size={15} />
+            <span>{profileError}</span>
+          </div>
+        )}
+        {profileSuccess && (
+          <div className="ts-alert ts-alert-success">
+            <CheckCircle2 size={15} />
+            <span>Profile information updated successfully!</span>
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateProfile}>
+          <div className="ts-form-row" style={{ marginBottom: 18 }}>
+            <div>
+              <label className="ts-label">First Name</label>
+              <input
+                className="ts-input"
+                type="text"
+                value={firstName}
+                onChange={e => setFirstName(e.target.value)}
+                placeholder="e.g. Sarah"
+                disabled={profileSaving}
+                required
+              />
+            </div>
+            <div>
+              <label className="ts-label">Last Name</label>
+              <input
+                className="ts-input"
+                type="text"
+                value={lastName}
+                onChange={e => setLastName(e.target.value)}
+                placeholder="e.g. Mitchell"
+                disabled={profileSaving}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label className="ts-label">Current Account Email</label>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', background: 'var(--color-surface-muted)',
+              border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
+              fontSize: 13.5, color: 'var(--color-text)', fontWeight: 500
+            }}>
+              <span>{user?.email}</span>
+              <span className="ts-verified-badge" style={{ margin: 0 }}>✓ Verified</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="submit"
+              disabled={profileSaving || !firstName.trim() || !lastName.trim()}
+              className="g-btn g-btn-primary"
+              style={{ minWidth: 140 }}
+            >
+              {profileSaving ? (
+                <>
+                  <Loader2 size={14} className="ts-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  <span>Save Changes</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* ════════════════════════════════════════════
-          TAB 1: SECURITY (EMAIL & PASSWORD)
-      ════════════════════════════════════════════ */}
-      {activeTab === 'security' && (
-        <div className="ts-tab-content" key="security">
-
-          {/* ── Change Email Card ── */}
-          <div className="ts-card">
-            <div className="ts-card-header">
-              <div className="ts-card-icon">
-                <Mail size={16} />
-              </div>
-              <div>
-                <h2 className="ts-card-title">Change Email Address</h2>
-                <p className="ts-card-desc">Update the primary email used for login and notifications</p>
-              </div>
+      {/* ── 2. PROGRESSIVE DISCLOSURE: ADVANCED SECURITY SETTINGS ── */}
+      <div className="ts-card" style={{ padding: 0, overflow: 'hidden' }}>
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          style={{
+            width: '100%',
+            padding: '18px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--color-surface-muted)',
+            border: 'none',
+            cursor: 'pointer',
+            textAlign: 'left',
+            transition: 'background 0.15s ease',
+          }}
+          aria-expanded={showAdvanced}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="ts-card-icon" style={{ width: 34, height: 34 }}>
+              <KeyRound size={16} />
             </div>
-
-            {/* Current email display */}
-            <div className="ts-current-value">
-              <div>
-                <div className="ts-current-label">Current Email</div>
-                <div className="ts-current-val">{user?.email}</div>
-              </div>
-              <span className="ts-verified-badge">✓ Verified</span>
+            <div>
+              <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                Advanced Security & Credentials
+              </h2>
+              <p style={{ fontSize: 12.5, color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>
+                Change your account password or update your login email
+              </p>
             </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-secondary)', fontSize: 13, fontWeight: 600 }}>
+            <span>{showAdvanced ? 'Hide options' : 'Configure options'}</span>
+            {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </div>
+        </button>
 
-            {emailError && (
-              <div className="ts-alert ts-alert-error" key={emailError}>
-                <AlertCircle size={15} />
-                <span>{emailError}</span>
+        {showAdvanced && (
+          <div style={{ padding: '24px', borderTop: '1px solid var(--color-border)' }}>
+            {/* Change Password Sub-card */}
+            <div style={{ marginBottom: 28, paddingBottom: 24, borderBottom: '1px solid var(--color-border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Lock size={15} style={{ color: 'var(--color-primary)' }} />
+                <h3 style={{ fontSize: 14.5, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                  Change Password
+                </h3>
               </div>
-            )}
-            {emailSuccess && (
-              <div className="ts-alert ts-alert-success" key={emailSuccess}>
-                <CheckCircle2 size={15} />
-                <span>{emailSuccess}</span>
-              </div>
-            )}
 
-            <form onSubmit={handleChangeEmail}>
-              <div className="ts-form-row">
-                <div>
-                  <label className="ts-label">New Email Address</label>
-                  <input
-                    className="ts-input"
-                    type="email"
-                    value={newEmail}
-                    onChange={e => setNewEmail(e.target.value)}
-                    placeholder="new.email@school.edu"
-                    disabled={emailSaving}
-                    required
-                  />
+              {pwError && (
+                <div className="ts-alert ts-alert-error" key={pwError}>
+                  <AlertCircle size={15} />
+                  <span>{pwError}</span>
                 </div>
-                <div>
-                  <label className="ts-label">Current Password (verify)</label>
+              )}
+              {pwSuccess && (
+                <div className="ts-alert ts-alert-success" key={pwSuccess}>
+                  <CheckCircle2 size={15} />
+                  <span>{pwSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangePassword}>
+                <div className="ts-form-group" style={{ marginBottom: 14 }}>
+                  <label className="ts-label">Current Password</label>
                   <div className="ts-input-pw-wrap">
                     <input
                       className="ts-input"
-                      type={showEmailPw ? 'text' : 'password'}
-                      value={emailCurrentPassword}
-                      onChange={e => setEmailCurrentPassword(e.target.value)}
-                      placeholder="Enter current password"
+                      type={showCurrentPw ? 'text' : 'password'}
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                      placeholder="Enter your current password"
+                      disabled={pwSaving}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="ts-pw-toggle"
+                      onClick={() => setShowCurrentPw(!showCurrentPw)}
+                      tabIndex={-1}
+                    >
+                      {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="ts-form-row" style={{ marginBottom: 12 }}>
+                  <div>
+                    <label className="ts-label">New Password</label>
+                    <div className="ts-input-pw-wrap">
+                      <input
+                        className="ts-input"
+                        type={showNewPw ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="Minimum 6 characters"
+                        disabled={pwSaving}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="ts-pw-toggle"
+                        onClick={() => setShowNewPw(!showNewPw)}
+                        tabIndex={-1}
+                      >
+                        {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="ts-label">Confirm New Password</label>
+                    <div className="ts-input-pw-wrap">
+                      <input
+                        className="ts-input"
+                        type={showConfirmPw ? 'text' : 'password'}
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        placeholder="Repeat new password"
+                        disabled={pwSaving}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="ts-pw-toggle"
+                        onClick={() => setShowConfirmPw(!showConfirmPw)}
+                        tabIndex={-1}
+                      >
+                        {showConfirmPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Password strength checks */}
+                <div className="ts-pw-checks" style={{ marginBottom: 16 }}>
+                  <span className={`ts-pw-check${pwLengthOk ? ' pass' : ''}`}>
+                    {pwLengthOk ? <Check size={13} strokeWidth={2.5} /> : '○'} At least 6 characters
+                  </span>
+                  <span className={`ts-pw-check${pwMatchOk ? ' pass' : ''}`}>
+                    {pwMatchOk ? <Check size={13} strokeWidth={2.5} /> : '○'} Passwords match
+                  </span>
+                  <span className={`ts-pw-check${pwDiffOk ? ' pass' : ''}`}>
+                    {pwDiffOk ? <Check size={13} strokeWidth={2.5} /> : '○'} Different from current
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="submit"
+                    disabled={pwSaving || !currentPassword || !pwLengthOk || !pwMatchOk}
+                    className="g-btn g-btn-primary"
+                    style={{ minWidth: 150 }}
+                  >
+                    {pwSaving ? (
+                      <>
+                        <Loader2 size={14} className="ts-spin" />
+                        <span>Updating…</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound size={14} />
+                        <span>Update Password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Change Email Sub-card */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Mail size={15} style={{ color: 'var(--color-primary)' }} />
+                <h3 style={{ fontSize: 14.5, fontWeight: 700, margin: 0, color: 'var(--color-text)' }}>
+                  Change Email Address
+                </h3>
+              </div>
+
+              {emailError && (
+                <div className="ts-alert ts-alert-error" key={emailError}>
+                  <AlertCircle size={15} />
+                  <span>{emailError}</span>
+                </div>
+              )}
+              {emailSuccess && (
+                <div className="ts-alert ts-alert-success" key={emailSuccess}>
+                  <CheckCircle2 size={15} />
+                  <span>{emailSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleChangeEmail}>
+                <div className="ts-form-row" style={{ marginBottom: 14 }}>
+                  <div>
+                    <label className="ts-label">New Email Address</label>
+                    <input
+                      className="ts-input"
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder="new.email@school.edu"
                       disabled={emailSaving}
                       required
                     />
-                    <button
-                      type="button"
-                      className="ts-pw-toggle"
-                      onClick={() => setShowEmailPw(!showEmailPw)}
-                      tabIndex={-1}
-                    >
-                      {showEmailPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
+                  </div>
+                  <div>
+                    <label className="ts-label">Current Password (verification)</label>
+                    <div className="ts-input-pw-wrap">
+                      <input
+                        className="ts-input"
+                        type={showEmailPw ? 'text' : 'password'}
+                        value={emailCurrentPassword}
+                        onChange={e => setEmailCurrentPassword(e.target.value)}
+                        placeholder="Enter password"
+                        disabled={emailSaving}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="ts-pw-toggle"
+                        onClick={() => setShowEmailPw(!showEmailPw)}
+                        tabIndex={-1}
+                      >
+                        {showEmailPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="ts-form-footer">
-                <span className="ts-form-footer-hint">
-                  A confirmation email will be sent to verify your new address.
-                </span>
-                <button
-                  type="submit"
-                  disabled={emailSaving || !newEmail.trim() || !emailCurrentPassword}
-                  className="g-btn g-btn-primary"
-                  style={{ minWidth: 130 }}
-                >
-                  {emailSaving ? (
-                    <>
-                      <Loader2 size={14} className="ts-spin" />
-                      <span>Updating…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save size={14} />
-                      <span>Update Email</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* ── Change Password Card ── */}
-          <div className="ts-card">
-            <div className="ts-card-header">
-              <div className="ts-card-icon">
-                <Lock size={16} />
-              </div>
-              <div>
-                <h2 className="ts-card-title">Change Password</h2>
-                <p className="ts-card-desc">Keep your account secure with a strong, unique password</p>
-              </div>
-            </div>
-
-            {pwError && (
-              <div className="ts-alert ts-alert-error" key={pwError}>
-                <AlertCircle size={15} />
-                <span>{pwError}</span>
-              </div>
-            )}
-            {pwSuccess && (
-              <div className="ts-alert ts-alert-success" key={pwSuccess}>
-                <CheckCircle2 size={15} />
-                <span>{pwSuccess}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleChangePassword}>
-              {/* Current Password */}
-              <div className="ts-form-group">
-                <label className="ts-label">Current Password</label>
-                <div className="ts-input-pw-wrap">
-                  <input
-                    className="ts-input"
-                    type={showCurrentPw ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                    placeholder="Enter your current password"
-                    disabled={pwSaving}
-                    required
-                  />
+                <div className="ts-form-footer">
+                  <span className="ts-form-footer-hint">
+                    A confirmation email will be sent to verify your new email.
+                  </span>
                   <button
-                    type="button"
-                    className="ts-pw-toggle"
-                    onClick={() => setShowCurrentPw(!showCurrentPw)}
-                    tabIndex={-1}
+                    type="submit"
+                    disabled={emailSaving || !newEmail.trim() || !emailCurrentPassword}
+                    className="g-btn g-btn-primary"
+                    style={{ minWidth: 140 }}
                   >
-                    {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                    {emailSaving ? (
+                      <>
+                        <Loader2 size={14} className="ts-spin" />
+                        <span>Updating…</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail size={14} />
+                        <span>Update Email</span>
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
-
-              {/* New Password & Confirm */}
-              <div className="ts-form-row" style={{ marginBottom: 12 }}>
-                <div>
-                  <label className="ts-label">New Password</label>
-                  <div className="ts-input-pw-wrap">
-                    <input
-                      className="ts-input"
-                      type={showNewPw ? 'text' : 'password'}
-                      value={newPassword}
-                      onChange={e => setNewPassword(e.target.value)}
-                      placeholder="Minimum 6 characters"
-                      disabled={pwSaving}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="ts-pw-toggle"
-                      onClick={() => setShowNewPw(!showNewPw)}
-                      tabIndex={-1}
-                    >
-                      {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="ts-label">Confirm New Password</label>
-                  <div className="ts-input-pw-wrap">
-                    <input
-                      className="ts-input"
-                      type={showConfirmPw ? 'text' : 'password'}
-                      value={confirmPassword}
-                      onChange={e => setConfirmPassword(e.target.value)}
-                      placeholder="Repeat new password"
-                      disabled={pwSaving}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="ts-pw-toggle"
-                      onClick={() => setShowConfirmPw(!showConfirmPw)}
-                      tabIndex={-1}
-                    >
-                      {showConfirmPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Password strength checks */}
-              <div className="ts-pw-checks">
-                <span className={`ts-pw-check${pwLengthOk ? ' pass' : ''}`}>
-                  {pwLengthOk ? <Check size={13} strokeWidth={2.5} /> : '○'} At least 6 characters
-                </span>
-                <span className={`ts-pw-check${pwMatchOk ? ' pass' : ''}`}>
-                  {pwMatchOk ? <Check size={13} strokeWidth={2.5} /> : '○'} Passwords match
-                </span>
-                <span className={`ts-pw-check${pwDiffOk ? ' pass' : ''}`}>
-                  {pwDiffOk ? <Check size={13} strokeWidth={2.5} /> : '○'} Different from current
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="submit"
-                  disabled={pwSaving || !currentPassword || !pwLengthOk || !pwMatchOk}
-                  className="g-btn g-btn-primary"
-                  style={{ minWidth: 160 }}
-                >
-                  {pwSaving ? (
-                    <>
-                      <Loader2 size={14} className="ts-spin" />
-                      <span>Changing…</span>
-                    </>
-                  ) : (
-                    <>
-                      <KeyRound size={14} />
-                      <span>Change Password</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ════════════════════════════════════════════
-          TAB 2: PROFILE DETAILS
-      ════════════════════════════════════════════ */}
-      {activeTab === 'profile' && (
-        <div className="ts-tab-content" key="profile">
-          <div className="ts-card">
-            <div className="ts-card-header">
-              <div className="ts-card-icon">
-                <User size={16} />
-              </div>
-              <div>
-                <h2 className="ts-card-title">Personal Information</h2>
-                <p className="ts-card-desc">Update your display name visible to your students</p>
-              </div>
+              </form>
             </div>
-
-            {profileError && (
-              <div className="ts-alert ts-alert-error" key={profileError}>
-                <AlertCircle size={15} />
-                <span>{profileError}</span>
-              </div>
-            )}
-            {profileSuccess && (
-              <div className="ts-alert ts-alert-success">
-                <CheckCircle2 size={15} />
-                <span>Profile information updated successfully!</span>
-              </div>
-            )}
-
-            <form onSubmit={handleUpdateProfile}>
-              <div className="ts-form-row" style={{ marginBottom: 20 }}>
-                <div>
-                  <label className="ts-label">First Name</label>
-                  <input
-                    className="ts-input"
-                    type="text"
-                    value={firstName}
-                    onChange={e => setFirstName(e.target.value)}
-                    placeholder="e.g. Sarah"
-                    disabled={profileSaving}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="ts-label">Last Name</label>
-                  <input
-                    className="ts-input"
-                    type="text"
-                    value={lastName}
-                    onChange={e => setLastName(e.target.value)}
-                    placeholder="e.g. Mitchell"
-                    disabled={profileSaving}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="submit"
-                  disabled={profileSaving || !firstName.trim() || !lastName.trim()}
-                  className="g-btn g-btn-primary"
-                  style={{ minWidth: 130 }}
-                >
-                  {profileSaving ? (
-                    <>
-                      <Loader2 size={14} className="ts-spin" />
-                      <span>Saving…</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save size={14} />
-                      <span>Save Changes</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

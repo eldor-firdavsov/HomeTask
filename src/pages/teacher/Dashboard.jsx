@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus,
@@ -10,8 +10,10 @@ import {
   calcAverageGrade, gradeColor, studentTaskCounts,
   StatusBadge, formatDateTime, formatDate, TypeChip,
 } from '../../utils/helpers.jsx';
+import ActionMenu from '../../components/common/ActionMenu';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import EditPasswordModal from '../../components/teacher/EditPasswordModal';
+import StudentCredentialsModal from '../../components/teacher/StudentCredentialsModal';
 import { createStudent } from '../../lib/supabase/students.js';
 import {
   getStudentPassword, saveStudentPassword, formatStudentInvite,
@@ -20,17 +22,16 @@ import {
 
 /* ── Shared inline styles ──────────────────── */
 const labelStyle = {
-  display: 'block', fontSize: 11, fontWeight: 600,
-  letterSpacing: '0.05em', textTransform: 'uppercase',
-  color: 'var(--txt-secondary)', marginBottom: 6,
+  display: 'block', fontSize: 11.5, fontWeight: 600,
+  letterSpacing: '0.04em', textTransform: 'uppercase',
+  color: 'var(--color-text-secondary)', marginBottom: 6,
 };
 const inputStyle = {
-  width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-  borderRadius: 'var(--r-sm)', padding: '10px 12px', fontSize: 13.5,
-  color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
-  boxSizing: 'border-box', transition: 'all 0.15s',
-  boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+  width: '100%', background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)', padding: '10px 12px', fontSize: 13.5,
+  color: 'var(--color-text)', fontFamily: 'inherit', outline: 'none',
+  boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s',
 };
 
 const generatePassword = () => {
@@ -60,14 +61,14 @@ function AddStudentModal({ onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleFocus = e => {
-    e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-    e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.10), 0 2px 8px rgba(30,40,100,0.04)';
-    e.target.style.background = 'rgba(255,255,255,0.62)';
+    e.target.style.borderColor = 'var(--color-primary)';
+    e.target.style.boxShadow = '0 0 0 3px var(--color-primary-soft)';
+    e.target.style.background = 'var(--color-surface)';
   };
   const handleBlur = e => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-    e.target.style.boxShadow = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-    e.target.style.background = 'rgba(255,255,255,0.40)';
+    e.target.style.borderColor = 'var(--color-border)';
+    e.target.style.boxShadow = 'none';
+    e.target.style.background = 'var(--color-surface)';
   };
 
   const handleSave = async (e) => {
@@ -272,42 +273,31 @@ function AddStudentModal({ onClose }) {
 }
 
 /* ── Student Card (Grid View) ────────────────── */
-function StudentCard({ student, assignments, onAssign, onEditPassword }) {
+function StudentCard({ student, assignments, onAssign, onEditPassword, onViewCredentials }) {
+  const navigate = useNavigate();
   const avg = calcAverageGrade(student.id, assignments);
   const counts = studentTaskCounts(student.id, assignments);
   const initials = `${student.firstName?.[0] ?? ''}${student.lastName?.[0] ?? ''}`.toUpperCase();
   const toast = useToast();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedPw, setCopiedPw] = useState(false);
-  const [copiedInvite, setCopiedInvite] = useState(false);
-
   const password = getStudentPassword(student);
 
-  const handleCopyPassword = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCopyPassword = () => {
     navigator.clipboard.writeText(password);
-    setCopiedPw(true);
     toast(`Password copied for ${student.firstName}`);
-    setTimeout(() => setCopiedPw(false), 2000);
   };
 
-  const handleCopyInvite = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleCopyInvite = () => {
     const invite = formatStudentInvite(student, password);
     navigator.clipboard.writeText(invite);
-    setCopiedInvite(true);
     toast(`Credentials invite copied for ${student.firstName}`);
-    setTimeout(() => setCopiedInvite(false), 2000);
   };
 
   return (
     <div
       className="glass-card"
       style={{
-        padding: '20px 20px 18px',
+        padding: '20px 20px 16px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
@@ -317,14 +307,14 @@ function StudentCard({ student, assignments, onAssign, onEditPassword }) {
     >
       <div>
         {/* Top row */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
             <div style={{
-              width: 40, height: 40, borderRadius: 12, flexShrink: 0,
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(168,85,247,0.18) 100%)',
-              border: '1px solid rgba(99,102,241,0.25)',
+              width: 42, height: 42, borderRadius: 'var(--radius-md)', flexShrink: 0,
+              background: 'var(--color-primary-soft)',
+              border: '1px solid rgba(24, 106, 68, 0.2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13.5, fontWeight: 700, color: 'var(--accent-text)',
+              fontSize: 14, fontWeight: 700, color: 'var(--color-primary)',
             }}>
               {initials}
             </div>
@@ -332,142 +322,101 @@ function StudentCard({ student, assignments, onAssign, onEditPassword }) {
               <Link
                 to={`/teacher/students/${student.id}`}
                 style={{
-                  fontSize: 15, fontWeight: 600, color: 'var(--txt-primary)',
+                  fontSize: 15, fontWeight: 600, color: 'var(--color-text)',
                   textDecoration: 'none', display: 'block',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   transition: 'color 0.15s',
                 }}
-                onMouseEnter={e => e.target.style.color = 'var(--accent-text)'}
-                onMouseLeave={e => e.target.style.color = 'var(--txt-primary)'}
+                onMouseEnter={e => e.target.style.color = 'var(--color-primary)'}
+                onMouseLeave={e => e.target.style.color = 'var(--color-text)'}
               >
                 {student.firstName} {student.lastName}
               </Link>
-              <div style={{ fontSize: 12, color: 'var(--txt-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {student.email}
               </div>
             </div>
           </div>
 
-          {/* Average grade pill */}
-          <div style={{
-            padding: '4px 10px', borderRadius: 'var(--r-sm)',
-            background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
-            textAlign: 'center', flexShrink: 0
-          }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--txt-secondary)', letterSpacing: '0.04em' }}>
-              Avg
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: avg != null ? gradeColor(avg) : 'var(--txt-tertiary)' }}>
-              {avg != null ? avg : '—'}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Student Password Box (Highlighted Feature) ── */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.45)',
-          border: '1px solid rgba(99, 102, 241, 0.22)',
-          borderRadius: 'var(--r-sm)',
-          padding: '8px 10px',
-          marginBottom: 14,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 8,
-        }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 9.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <KeyRound size={10} style={{ color: 'var(--accent-text)' }} /> Password
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            {/* Average grade pill */}
             <div style={{
-              fontSize: 13,
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: 'var(--txt-primary)',
-              letterSpacing: showPassword ? '0.02em' : '0.18em',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              marginTop: 1,
+              padding: '4px 8px', borderRadius: 'var(--radius-sm)',
+              background: 'var(--color-surface-muted)', border: '1px solid var(--color-border)',
+              textAlign: 'center', minWidth: 40
             }}>
-              {showPassword ? password : '••••••••'}
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.04em' }}>
+                Avg
+              </div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: avg != null ? gradeColor(avg) : 'var(--color-text-muted)' }}>
+                {avg != null ? avg : '—'}
+              </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-            {/* Show / Hide toggle */}
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '4px 6px', color: 'var(--txt-secondary)' }}
-              title={showPassword ? 'Hide password' : 'Show password'}
-            >
-              {showPassword ? <EyeOff size={13} /> : <Eye size={13} />}
-            </button>
-
-            {/* Copy Password */}
-            <button
-              type="button"
-              onClick={handleCopyPassword}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '4px 6px', color: copiedPw ? 'var(--clr-done-txt)' : 'var(--accent-text)' }}
-              title="Copy password"
-            >
-              {copiedPw ? <Check size={13} /> : <Copy size={13} />}
-            </button>
-
-            {/* Copy Full Invite */}
-            <button
-              type="button"
-              onClick={handleCopyInvite}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '4px 6px', color: copiedInvite ? 'var(--clr-done-txt)' : 'var(--txt-secondary)' }}
-              title="Copy login invite (Telegram/WhatsApp)"
-            >
-              {copiedInvite ? <Check size={13} /> : <Share2 size={13} />}
-            </button>
-
-            {/* Edit Password */}
-            <button
-              type="button"
-              onClick={() => onEditPassword(student)}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '4px 6px', color: 'var(--txt-secondary)' }}
-              title="Edit / Reset password"
-            >
-              <RefreshCw size={12} />
-            </button>
+            {/* Contextual Actions Menu */}
+            <ActionMenu
+              ariaLabel={`Actions for ${student.firstName}`}
+              items={[
+                {
+                  label: 'View Login Credentials',
+                  icon: KeyRound,
+                  onClick: () => onViewCredentials && onViewCredentials(student),
+                },
+                {
+                  label: 'Copy Login Invite',
+                  icon: Share2,
+                  onClick: handleCopyInvite,
+                },
+                {
+                  label: 'Copy Password',
+                  icon: Copy,
+                  onClick: handleCopyPassword,
+                },
+                {
+                  label: 'Reset / Edit Password',
+                  icon: RefreshCw,
+                  onClick: () => onEditPassword(student),
+                },
+                {
+                  separator: true,
+                },
+                {
+                  label: 'View Student Details',
+                  icon: ChevronRight,
+                  onClick: () => navigate(`/teacher/students/${student.id}`),
+                },
+              ]}
+            />
           </div>
         </div>
 
         {/* Task Counts summary */}
         <div style={{
-          display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14,
-          padding: '6px 10px', background: 'rgba(255,255,255,0.25)',
-          borderRadius: 'var(--r-sm)', fontSize: 11.5,
+          display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16,
+          padding: '8px 12px', background: 'var(--color-surface-muted)',
+          borderRadius: 'var(--radius-sm)', fontSize: 12,
         }}>
           {counts.total === 0 ? (
-            <span style={{ color: 'var(--txt-tertiary)' }}>No active tasks</span>
+            <span style={{ color: 'var(--color-text-muted)' }}>No active tasks</span>
           ) : (
             <>
               {counts.inProgress > 0 && (
-                <span style={{ color: 'var(--clr-progress-txt)', fontWeight: 600 }}>
+                <span style={{ color: 'var(--color-info)', fontWeight: 600 }}>
                   {counts.inProgress} active
                 </span>
               )}
               {counts.review > 0 && (
-                <span style={{ color: 'var(--clr-submitted-txt)', fontWeight: 600 }}>
+                <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                   · {counts.review} in review
                 </span>
               )}
               {counts.done > 0 && (
-                <span style={{ color: 'var(--clr-done-txt)', fontWeight: 600 }}>
+                <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>
                   · {counts.done} done
                 </span>
               )}
               {counts.overdue > 0 && (
-                <span style={{ color: 'var(--clr-overdue-txt)', fontWeight: 600 }}>
+                <span style={{ color: 'var(--color-danger)', fontWeight: 600 }}>
                   · {counts.overdue} overdue
                 </span>
               )}
@@ -479,28 +428,28 @@ function StudentCard({ student, assignments, onAssign, onEditPassword }) {
       {/* Action buttons bottom */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        borderTop: '1px solid rgba(255,255,255,0.45)',
+        borderTop: '1px solid var(--color-border)',
         paddingTop: 12,
       }}>
-        {/* Quick Assign Task to this student */}
+        {/* Primary Action: Assign Task */}
         <button
           type="button"
           onClick={() => onAssign(student)}
           className="g-btn g-btn-primary"
-          style={{ flex: 1, padding: '6px 10px', fontSize: 12, justifyContent: 'center', gap: 5 }}
+          style={{ flex: 1, padding: '7px 12px', fontSize: 12.5, justifyContent: 'center', gap: 6 }}
           title={`Assign a task to ${student.firstName}`}
         >
-          <Send size={12} /> Assign task
+          <Send size={13} /> Assign Task
         </button>
 
-        {/* View Profile */}
+        {/* Secondary Action: Details */}
         <Link
           to={`/teacher/students/${student.id}`}
           className="g-btn g-btn-secondary"
-          style={{ padding: '6px 10px', fontSize: 12 }}
+          style={{ padding: '7px 12px', fontSize: 12.5 }}
           title="View student profile & assignments"
         >
-          Details <ChevronRight size={12} />
+          Details
         </Link>
       </div>
     </div>
@@ -508,13 +457,8 @@ function StudentCard({ student, assignments, onAssign, onEditPassword }) {
 }
 
 /* ── Student Table View ──────────────────────── */
-function StudentTableView({ students, assignments, onAssign, onEditPassword }) {
+function StudentTableView({ students, assignments, onAssign, onEditPassword, onViewCredentials }) {
   const toast = useToast();
-  const [visiblePasswords, setVisiblePasswords] = useState({});
-
-  const togglePasswordVisibility = (id) => {
-    setVisiblePasswords(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleCopyPassword = (student) => {
     const pw = getStudentPassword(student);
@@ -529,17 +473,16 @@ function StudentTableView({ students, assignments, onAssign, onEditPassword }) {
   };
 
   return (
-    <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
+    <div className="glass-section" style={{ borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
           <thead>
             <tr style={{
-              background: 'rgba(255,255,255,0.40)', borderBottom: '1px solid rgba(255,255,255,0.60)',
-              color: 'var(--txt-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em'
+              background: 'var(--color-surface-muted)', borderBottom: '1px solid var(--color-border)',
+              color: 'var(--color-text-secondary)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em'
             }}>
               <th style={{ padding: '12px 18px' }}>Student</th>
               <th style={{ padding: '12px 14px' }}>Email</th>
-              <th style={{ padding: '12px 14px' }}>Password</th>
               <th style={{ padding: '12px 14px', textAlign: 'center' }}>Avg Grade</th>
               <th style={{ padding: '12px 14px', textAlign: 'center' }}>Tasks</th>
               <th style={{ padding: '12px 18px', textAlign: 'right' }}>Actions</th>
@@ -550,15 +493,13 @@ function StudentTableView({ students, assignments, onAssign, onEditPassword }) {
               const avg = calcAverageGrade(student.id, assignments);
               const counts = studentTaskCounts(student.id, assignments);
               const initials = `${student.firstName?.[0] ?? ''}${student.lastName?.[0] ?? ''}`.toUpperCase();
-              const pw = getStudentPassword(student);
-              const isVisible = !!visiblePasswords[student.id];
 
               return (
                 <tr
                   key={student.id}
                   className="glass-row"
                   style={{
-                    borderBottom: idx < students.length - 1 ? '1px solid rgba(255,255,255,0.35)' : 'none',
+                    borderBottom: idx < students.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
                     transition: 'background 0.12s',
                   }}
                 >
@@ -566,17 +507,17 @@ function StudentTableView({ students, assignments, onAssign, onEditPassword }) {
                   <td style={{ padding: '14px 18px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
-                        width: 32, height: 32, borderRadius: 9,
-                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                        width: 32, height: 32, borderRadius: 8,
+                        background: 'var(--color-primary-soft)', border: '1px solid var(--color-border-subtle)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11.5, fontWeight: 700, color: 'var(--accent-text)', flexShrink: 0
+                        fontSize: 11.5, fontWeight: 700, color: 'var(--color-primary)', flexShrink: 0
                       }}>
                         {initials}
                       </div>
                       <Link
                         to={`/teacher/students/${student.id}`}
                         style={{
-                          fontWeight: 600, color: 'var(--txt-primary)',
+                          fontWeight: 600, color: 'var(--color-text)',
                           textDecoration: 'none', whiteSpace: 'nowrap'
                         }}
                       >
@@ -586,105 +527,77 @@ function StudentTableView({ students, assignments, onAssign, onEditPassword }) {
                   </td>
 
                   {/* Email */}
-                  <td style={{ padding: '14px 14px', color: 'var(--txt-secondary)' }}>
+                  <td style={{ padding: '14px 14px', color: 'var(--color-text-secondary)' }}>
                     {student.email}
-                  </td>
-
-                  {/* Password with View / Copy / Edit */}
-                  <td style={{ padding: '14px 14px' }}>
-                    <div style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(99,102,241,0.20)',
-                      borderRadius: 'var(--r-sm)', padding: '3px 8px',
-                    }}>
-                      <span style={{
-                        fontFamily: 'monospace', fontWeight: 700, fontSize: 13,
-                        color: 'var(--txt-primary)', letterSpacing: isVisible ? '0.02em' : '0.16em',
-                        minWidth: 80, display: 'inline-block'
-                      }}>
-                        {isVisible ? pw : '••••••••'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => togglePasswordVisibility(student.id)}
-                        className="g-btn g-btn-ghost"
-                        style={{ padding: '2px 4px', color: 'var(--txt-secondary)' }}
-                        title={isVisible ? 'Hide' : 'Show'}
-                      >
-                        {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyPassword(student)}
-                        className="g-btn g-btn-ghost"
-                        style={{ padding: '2px 4px', color: 'var(--accent-text)' }}
-                        title="Copy password"
-                      >
-                        <Copy size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleCopyInvite(student)}
-                        className="g-btn g-btn-ghost"
-                        style={{ padding: '2px 4px', color: 'var(--txt-secondary)' }}
-                        title="Copy login invite"
-                      >
-                        <Share2 size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onEditPassword(student)}
-                        className="g-btn g-btn-ghost"
-                        style={{ padding: '2px 4px', color: 'var(--txt-secondary)' }}
-                        title="Change password"
-                      >
-                        <RefreshCw size={11} />
-                      </button>
-                    </div>
                   </td>
 
                   {/* Avg Grade */}
                   <td style={{ padding: '14px 14px', textAlign: 'center' }}>
                     <span style={{
-                      fontWeight: 700, fontSize: 14,
-                      color: avg != null ? gradeColor(avg) : 'var(--txt-tertiary)'
+                      fontWeight: 700, fontSize: 13.5,
+                      color: avg != null ? gradeColor(avg) : 'var(--color-text-muted)'
                     }}>
                       {avg != null ? `${avg}%` : '—'}
                     </span>
                   </td>
 
                   {/* Tasks count */}
-                  <td style={{ padding: '14px 14px', textAlign: 'center', color: 'var(--txt-secondary)' }}>
+                  <td style={{ padding: '14px 14px', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
                     {counts.total === 0 ? (
-                      <span style={{ color: 'var(--txt-tertiary)' }}>0</span>
+                      <span style={{ color: 'var(--color-text-muted)' }}>0</span>
                     ) : (
                       <div style={{ display: 'inline-flex', gap: 6, fontSize: 12 }}>
-                        {counts.inProgress > 0 && <span style={{ color: 'var(--clr-progress-txt)', fontWeight: 600 }}>{counts.inProgress} active</span>}
-                        {counts.review > 0 && <span style={{ color: 'var(--clr-submitted-txt)', fontWeight: 600 }}>{counts.review} review</span>}
-                        {counts.done > 0 && <span style={{ color: 'var(--clr-done-txt)', fontWeight: 600 }}>{counts.done} done</span>}
+                        {counts.inProgress > 0 && <span style={{ color: 'var(--color-info)', fontWeight: 600 }}>{counts.inProgress} active</span>}
+                        {counts.review > 0 && <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{counts.review} review</span>}
+                        {counts.done > 0 && <span style={{ color: 'var(--color-success)', fontWeight: 600 }}>{counts.done} done</span>}
                       </div>
                     )}
                   </td>
 
                   {/* Actions */}
                   <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
                       <button
                         type="button"
                         onClick={() => onAssign(student)}
                         className="g-btn g-btn-primary"
-                        style={{ padding: '5px 10px', fontSize: 11.5 }}
+                        style={{ padding: '5px 12px', fontSize: 12, gap: 5 }}
                         title="Assign task"
                       >
-                        <Send size={11} /> Assign
+                        <Send size={12} /> Assign
                       </button>
                       <Link
                         to={`/teacher/students/${student.id}`}
                         className="g-btn g-btn-secondary"
-                        style={{ padding: '5px 10px', fontSize: 11.5 }}
+                        style={{ padding: '5px 12px', fontSize: 12 }}
                       >
                         Details
                       </Link>
+                      <ActionMenu
+                        align="right"
+                        items={[
+                          {
+                            label: 'View Login Credentials',
+                            icon: KeyRound,
+                            onClick: () => onViewCredentials && onViewCredentials(student),
+                          },
+                          {
+                            label: 'Copy Login Invite',
+                            icon: Share2,
+                            onClick: () => handleCopyInvite(student),
+                          },
+                          {
+                            label: 'Copy Password',
+                            icon: Copy,
+                            onClick: () => handleCopyPassword(student),
+                          },
+                          {
+                            label: 'Reset Password',
+                            icon: KeyRound,
+                            onClick: () => onEditPassword(student),
+                          },
+                        ]}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -769,6 +682,7 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [showAdd, setShowAdd] = useState(false);
   const [editingPasswordStudent, setEditingPasswordStudent] = useState(null);
+  const [viewingCredentialsStudent, setViewingCredentialsStudent] = useState(null);
 
   // Assignment Modal states
   const [assignModalOpen, setAssignModalOpen] = useState(false);
@@ -896,7 +810,7 @@ export default function Dashboard() {
           >
             <Send size={14} /> Quick assign task
           </button>
-          <Link to="/teacher/tasks/new" className="g-btn g-btn-secondary" style={{ padding: '8px 14px', fontSize: 13 }}>
+          <Link to="/teacher/tasks?mode=create" className="g-btn g-btn-secondary" style={{ padding: '8px 14px', fontSize: 13, gap: 6 }}>
             <Plus size={14} /> New template
           </Link>
         </div>
@@ -905,61 +819,61 @@ export default function Dashboard() {
       {/* Quick Stats Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-        gap: 12,
-        marginBottom: 24,
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: 16,
+        marginBottom: 28,
       }}>
         {[
           {
-            label: 'Students',
+            label: 'Total Students',
             value: students.length,
-            color: 'var(--accent-text)',
-            bg: 'rgba(99,102,241,0.09)',
-            desc: 'Registered learners',
+            accent: 'var(--color-primary)',
+            desc: 'Active learners enrolled',
           },
           {
-            label: 'To Review',
+            label: 'Awaiting Review',
             value: reviewQueueCount,
-            color: 'var(--clr-submitted-txt)',
-            bg: 'var(--clr-submitted)',
-            desc: 'Submissions waiting',
+            accent: 'var(--color-warning)',
+            desc: 'Submissions in queue',
           },
           {
-            label: 'Active Tasks',
+            label: 'In-Flight Tasks',
             value: (data?.assignments || []).filter(a => a.status !== 'DONE').length,
-            color: 'var(--clr-progress-txt)',
-            bg: 'var(--clr-progress)',
-            desc: 'In-flight homework',
+            accent: 'var(--color-info)',
+            desc: 'Assignments active',
           },
           {
-            label: 'Templates',
+            label: 'Task Templates',
             value: (data?.templates || []).length,
-            color: 'var(--clr-done-txt)',
-            bg: 'var(--clr-done)',
-            desc: 'Reusable assignments',
+            accent: 'var(--color-success)',
+            desc: 'Library assignments',
           },
         ].map(stat => (
           <div
             key={stat.label}
             className="glass-card"
             style={{
-              padding: '16px 18px',
+              padding: '18px 20px',
               cursor: 'default',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              background: stat.bg,
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderTop: `3px solid ${stat.accent}`,
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-card)',
             }}
           >
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
                 {stat.label}
               </div>
-              <div style={{ fontSize: 26, fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+              <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--color-text)', lineHeight: 1 }}>
                 {stat.value}
               </div>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginTop: 8 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 10 }}>
               {stat.desc}
             </div>
           </div>
@@ -1051,29 +965,40 @@ export default function Dashboard() {
                 </button>
               </div>
 
-              {/* Roster Passwords actions */}
+              {/* Roster tools menu */}
+              <ActionMenu
+                align="right"
+                ariaLabel="Roster tools and export"
+                trigger={
+                  <span
+                    className="g-btn g-btn-secondary"
+                    style={{ fontSize: 12, padding: '6px 11px', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                    title="Roster credentials and export options"
+                  >
+                    <Download size={13} /> Roster Tools
+                  </span>
+                }
+                items={[
+                  {
+                    label: 'Copy all credentials',
+                    icon: Copy,
+                    onClick: handleCopyAllRoster,
+                  },
+                  {
+                    label: 'Export credentials CSV',
+                    icon: Download,
+                    onClick: handleExportCsv,
+                  },
+                ]}
+              />
+
+              {/* Add Student button (Primary Action) */}
               <button
                 type="button"
-                onClick={handleCopyAllRoster}
-                className="g-btn g-btn-ghost"
-                style={{ fontSize: 12, padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 5 }}
-                title="Copy all student credentials to clipboard"
+                onClick={() => setShowAdd(true)}
+                className="g-btn g-btn-primary"
+                style={{ fontSize: 12.5, padding: '7px 14px', gap: 6 }}
               >
-                <Copy size={13} /> Copy passwords
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExportCsv}
-                className="g-btn g-btn-ghost"
-                style={{ fontSize: 12, padding: '7px 11px', display: 'flex', alignItems: 'center', gap: 5 }}
-                title="Download CSV roster with passwords"
-              >
-                <Download size={13} /> Export CSV
-              </button>
-
-              {/* Add Student button */}
-              <button onClick={() => setShowAdd(true)} className="g-btn g-btn-primary" style={{ fontSize: 12.5, padding: '7px 14px' }}>
                 <UserPlus size={14} /> Add student
               </button>
             </div>
@@ -1090,6 +1015,7 @@ export default function Dashboard() {
                     assignments={data.assignments || []}
                     onAssign={handleAssignToStudent}
                     onEditPassword={setEditingPasswordStudent}
+                    onViewCredentials={setViewingCredentialsStudent}
                   />
                 ))}
               </div>
@@ -1099,6 +1025,7 @@ export default function Dashboard() {
                 assignments={data.assignments || []}
                 onAssign={handleAssignToStudent}
                 onEditPassword={setEditingPasswordStudent}
+                onViewCredentials={setViewingCredentialsStudent}
               />
             )
           ) : (
@@ -1145,7 +1072,7 @@ export default function Dashboard() {
                 <Link to="/teacher/tasks" className="g-btn g-btn-secondary" style={{ fontSize: 12, padding: '6px 12px' }}>
                   Task Library <ChevronRight size={13} />
                 </Link>
-                <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 12px' }}>
+                <Link to="/teacher/tasks?mode=create" className="g-btn g-btn-primary" style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}>
                   <Plus size={14} /> New task
                 </Link>
               </div>
@@ -1278,7 +1205,7 @@ export default function Dashboard() {
                 <div className="g-empty-icon"><BookOpen size={20} strokeWidth={1.8} /></div>
                 <h3>{search ? 'No tasks found' : 'No tasks yet'}</h3>
                 <p>{search ? 'Try a different search keyword.' : 'Create your first task template to start assigning homework.'}</p>
-                <Link to="/teacher/tasks/new" className="g-btn g-btn-primary" style={{ marginTop: 8 }}>
+                <Link to="/teacher/tasks?mode=create" className="g-btn g-btn-primary" style={{ marginTop: 8 }}>
                   + Create task
                 </Link>
               </div>
@@ -1305,6 +1232,19 @@ export default function Dashboard() {
           student={editingPasswordStudent}
           onClose={() => setEditingPasswordStudent(null)}
           onUpdated={() => {}}
+        />
+      )}
+
+      {/* Student Credentials Modal */}
+      {viewingCredentialsStudent && (
+        <StudentCredentialsModal
+          student={viewingCredentialsStudent}
+          onClose={() => setViewingCredentialsStudent(null)}
+          onChangePassword={() => {
+            const st = viewingCredentialsStudent;
+            setViewingCredentialsStudent(null);
+            setEditingPasswordStudent(st);
+          }}
         />
       )}
 

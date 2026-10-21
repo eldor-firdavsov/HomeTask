@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
-import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar } from 'lucide-react';
+import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar, BookOpen } from 'lucide-react';
 import { StatusBadge, TypeChip, isOverdue } from '../../utils/helpers.jsx';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 const STATUS_FILTERS = ['All', 'In Progress', 'Submitted', 'Review', 'Done', 'Overdue'];
 
@@ -145,13 +146,21 @@ export default function StudentTasks() {
 
   return (
     <div className="g-page">
+      <Breadcrumbs items={[{ label: 'Home', to: '/student/dashboard' }, { label: 'My Tasks' }]} />
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span className="badge-academic" style={{ fontSize: 11, padding: '2px 8px' }}>
+              <BookOpen size={11} style={{ marginRight: 4 }} />
+              Coursework
+            </span>
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--color-text)', margin: 0, letterSpacing: '-0.02em' }}>
             My Tasks
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
+          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>
             {mine.length} {mine.length === 1 ? 'task' : 'tasks'} assigned to you
           </p>
         </div>
@@ -171,7 +180,7 @@ export default function StudentTasks() {
       </div>
 
       {/* Filter Toolbar Container */}
-      <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '16px 18px', marginBottom: 20 }}>
+      <div className="g-card" style={{ padding: '16px 18px', marginBottom: 20 }}>
         {/* Primary Status Tabs with Counts */}
         <div className="g-tabs" style={{ marginBottom: 14, overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: 4 }}>
           {STATUS_FILTERS.map(f => {
@@ -188,8 +197,8 @@ export default function StudentTasks() {
                   fontSize: 10.5,
                   padding: '1px 6px',
                   borderRadius: 99,
-                  background: statusFilter === f ? 'var(--accent)' : 'rgba(0,0,0,0.06)',
-                  color: statusFilter === f ? '#fff' : 'var(--txt-secondary)',
+                  background: statusFilter === f ? 'var(--color-primary)' : 'var(--color-surface-subtle)',
+                  color: statusFilter === f ? '#fff' : 'var(--color-text-secondary)',
                   fontWeight: 600,
                 }}>
                   {count}
@@ -205,7 +214,7 @@ export default function StudentTasks() {
           gap: 10,
           alignItems: 'center',
           flexWrap: 'wrap',
-          borderTop: '1px solid rgba(255,255,255,0.40)',
+          borderTop: '1px solid var(--color-border)',
           paddingTop: 12,
         }}>
           {/* Subject / Type Filter */}
@@ -289,11 +298,15 @@ export default function StudentTasks() {
 
       {/* Task list */}
       {filtered.length === 0 ? (
-        <div className="glass-section" style={{ borderRadius: 'var(--r-xl)' }}>
-          <div className="g-empty" style={{ padding: '48px 20px' }}>
-            <div className="g-empty-icon"><ClipboardList size={22} strokeWidth={1.8} /></div>
-            <h3>{hasActiveFilters ? 'No tasks match your filters' : 'No tasks yet'}</h3>
-            <p>
+        <div className="g-card" style={{ padding: '48px 20px', textAlign: 'center' }}>
+          <div className="g-empty" style={{ padding: 0 }}>
+            <div className="g-empty-icon" style={{ background: 'var(--color-primary-soft)', color: 'var(--color-primary)' }}>
+              <ClipboardList size={22} strokeWidth={1.8} />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginTop: 12 }}>
+              {hasActiveFilters ? 'No tasks match your filters' : 'No tasks yet'}
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', maxWidth: 380, margin: '6px auto 16px' }}>
               {hasActiveFilters
                 ? 'Try adjusting your status, subject type, or deadline filter criteria.'
                 : "Your teacher hasn't assigned any tasks yet."}
@@ -302,7 +315,6 @@ export default function StudentTasks() {
               <button
                 onClick={resetFilters}
                 className="g-btn g-btn-secondary"
-                style={{ marginTop: 8 }}
               >
                 Clear all filters
               </button>
@@ -310,7 +322,7 @@ export default function StudentTasks() {
           </div>
         </div>
       ) : (
-        <div className="glass-section" style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
+        <div className="g-card" style={{ padding: 0, overflow: 'hidden' }}>
           {filtered.map((a, i) => {
             const overdueA = isOverdue(a);
             const dl = a.deadline ? new Date(a.deadline) : null;
@@ -327,29 +339,29 @@ export default function StudentTasks() {
                 <div
                   className="glass-row"
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px',
-                    borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.40)' : 'none',
-                    borderLeft: `3px solid ${overdueA ? 'rgba(248,113,113,0.70)' : ['REVIEW', 'NEEDS_REVISION'].includes(a.status) ? 'rgba(251,146,60,0.70)' : 'transparent'}`,
+                    display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px',
+                    borderBottom: i < filtered.length - 1 ? '1px solid var(--color-border)' : 'none',
+                    borderLeft: `3px solid ${overdueA ? 'var(--color-danger)' : ['REVIEW', 'NEEDS_REVISION'].includes(a.status) ? 'var(--color-warning)' : 'transparent'}`,
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--txt-primary)' }}>{a.title}</span>
+                      <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--color-text)' }}>{a.title}</span>
                       <TypeChip type={a.type} />
                     </div>
-                    <div style={{ fontSize: 12, color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 12, color: overdueA ? 'var(--color-danger)' : 'var(--color-text-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       {dlStr
                         ? <span>{overdueA ? '⚠ Overdue · was due ' : 'Due '}{dlStr}</span>
                         : <span>No deadline set</span>
                       }
                       {typeof a.grade === 'number' && (
-                        <span style={{ fontWeight: 700, color: '#059669', marginLeft: 4 }}>· Grade: {a.grade}/100</span>
+                        <span style={{ fontWeight: 700, color: 'var(--color-success)', marginLeft: 4 }}>· Grade: {a.grade}/100</span>
                       )}
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                     <StatusBadge assignment={a} />
-                    <ChevronRight size={14} style={{ color: 'var(--txt-tertiary)' }} />
+                    <ChevronRight size={14} style={{ color: 'var(--color-text-tertiary)' }} />
                   </div>
                 </div>
               </Link>

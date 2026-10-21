@@ -11,24 +11,24 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-  borderRadius: 'var(--r-sm)', padding: '10px 12px', fontSize: 13.5,
-  color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
+  width: '100%', background: '#ffffff',
+  border: '1px solid var(--color-border, #DDE3DC)',
+  borderRadius: 'var(--radius-sm, 6px)', padding: '10px 12px', fontSize: 13.5,
+  color: 'var(--color-text, #202923)', fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box', transition: 'all 0.15s',
-  boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
 };
 
 const handleFocus = e => {
-  e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-  e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.10)';
-  e.target.style.background = 'rgba(255,255,255,0.62)';
+  e.target.style.borderColor = 'var(--color-primary, #244A3A)';
+  e.target.style.boxShadow = '0 0 0 3px rgba(36, 74, 58, 0.12)';
+  e.target.style.background = '#ffffff';
 };
 
 const handleBlur = e => {
-  e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-  e.target.style.boxShadow = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-  e.target.style.background = 'rgba(255,255,255,0.40)';
+  e.target.style.borderColor = 'var(--color-border, #DDE3DC)';
+  e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
+  e.target.style.background = '#ffffff';
 };
 
 export default function AssignStudentsModal({
@@ -196,9 +196,9 @@ export default function AssignStudentsModal({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: 9,
-                background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--accent-text)',
+                color: 'var(--color-primary, #244A3A)',
               }}>
                 <Send size={15} />
               </div>
@@ -375,8 +375,8 @@ export default function AssignStudentsModal({
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px',
                         borderRadius: 'var(--r-sm)', cursor: 'pointer', transition: 'all 0.12s',
-                        background: isSelected ? 'rgba(99,102,241,0.12)' : 'transparent',
-                        border: isSelected ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
+                        background: isSelected ? 'var(--color-primary-soft, #E6EEE8)' : 'transparent',
+                        border: isSelected ? '1px solid var(--color-border, #DDE3DC)' : '1px solid transparent',
                         marginBottom: 3,
                       }}
                     >
@@ -384,13 +384,13 @@ export default function AssignStudentsModal({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => {}}
-                        style={{ cursor: 'pointer', accentColor: 'var(--accent-text)', width: 15, height: 15 }}
+                        style={{ cursor: 'pointer', accentColor: 'var(--color-primary, #244A3A)', width: 15, height: 15 }}
                       />
                       <div style={{
                         width: 26, height: 26, borderRadius: 7,
-                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.20)',
+                        background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 10.5, fontWeight: 700, color: 'var(--accent-text)', flexShrink: 0
+                        fontSize: 10.5, fontWeight: 700, color: 'var(--color-primary, #244A3A)', flexShrink: 0
                       }}>
                         {initials}
                       </div>

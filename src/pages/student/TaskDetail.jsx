@@ -11,6 +11,7 @@ import { createSubmission, addSubmissionAttachment, getSubmissionAttachments } f
 import { updateAssignmentStatus, getAssignmentAttachments } from '../../lib/supabase/assignments.js';
 import { getTaskAttachments } from '../../lib/supabase/tasks.js';
 import { uploadSubmissionFile, getSignedUrl, validateFile, formatFileSize } from '../../lib/supabase/storage.js';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 export default function StudentTaskDetail() {
   const { assignmentId } = useParams();
@@ -157,14 +158,14 @@ export default function StudentTaskDetail() {
   }, [submission?.id]);
 
   const onFocus = e => {
-    e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-    e.target.style.boxShadow   = '0 0 0 4px rgba(99,102,241,0.10)';
-    e.target.style.background  = 'rgba(255,255,255,0.62)';
+    e.target.style.borderColor = 'var(--color-primary, #244A3A)';
+    e.target.style.boxShadow   = '0 0 0 3px rgba(36, 74, 58, 0.12)';
+    e.target.style.background  = '#ffffff';
   };
   const onBlur = e => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-    e.target.style.boxShadow   = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-    e.target.style.background  = 'rgba(255,255,255,0.40)';
+    e.target.style.borderColor = 'var(--color-border, #DDE3DC)';
+    e.target.style.boxShadow   = '0 1px 2px rgba(0,0,0,0.03)';
+    e.target.style.background  = '#ffffff';
   };
 
   if (!assignment) return (
@@ -274,15 +275,15 @@ export default function StudentTaskDetail() {
   };
 
   return (
-    <div className="g-page" style={{ maxWidth: 720, margin: '0 auto', paddingBottom: 48 }}>
-      {/* Back */}
-      <Link to="/student/tasks"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--txt-secondary)', textDecoration: 'none', marginBottom: 24, transition: 'color 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.color='var(--txt-primary)'}
-        onMouseLeave={e => e.currentTarget.style.color='var(--txt-secondary)'}
-      >
-        <ArrowLeft size={13} /> My Tasks
-      </Link>
+    <div className="g-page" style={{ maxWidth: 740, margin: '0 auto', paddingBottom: 48 }}>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', to: '/student/dashboard' },
+          { label: 'My Homework', to: '/student/tasks' },
+          { label: assignment.title || 'Assignment Details', current: true },
+        ]}
+      />
 
       {/* Header glass banner */}
       <div className="glass-1" style={{ borderRadius: 'var(--r-xl)', padding: '24px 28px', marginBottom: 24 }}>
@@ -439,9 +440,9 @@ export default function StudentTaskDetail() {
                     <>
                       <div style={{
                         width: 40, height: 40, borderRadius: 10,
-                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                        background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'var(--accent-text)', flexShrink: 0
+                        color: 'var(--color-primary, #244A3A)', flexShrink: 0
                       }}>
                         <FileText size={20} />
                       </div>
@@ -472,9 +473,9 @@ export default function StudentTaskDetail() {
                     <>
                       <div style={{
                         width: 40, height: 40, borderRadius: 10,
-                        background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                        background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'var(--accent-text)', flexShrink: 0
+                        color: 'var(--color-primary, #244A3A)', flexShrink: 0
                       }}>
                         <LinkIcon size={20} />
                       </div>

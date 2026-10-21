@@ -114,15 +114,15 @@ export default function ForgotPassword({ role = 'teacher' }) {
               width: 44,
               height: 44,
               borderRadius: 14,
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.18) 0%, rgba(139,92,246,0.2) 100%)',
-              border: '1px solid rgba(99,102,241,0.25)',
+              background: 'var(--color-primary-soft, #E6EEE8)',
+              border: '1px solid var(--color-border, #DDE3DC)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 14,
-              boxShadow: '0 4px 14px rgba(99,102,241,0.15)',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
             }}>
-              <KeyRound size={22} color="#4f46e5" />
+              <KeyRound size={22} color="var(--color-primary, #244A3A)" />
             </div>
 
             <h1 style={{
@@ -146,8 +146,8 @@ export default function ForgotPassword({ role = 'teacher' }) {
               {/* Success Card */}
               <div style={{
                 padding: '20px',
-                background: 'rgba(52, 211, 153, 0.12)',
-                border: '1px solid rgba(52, 211, 153, 0.35)',
+                background: 'var(--color-success-soft, #E7F3EA)',
+                border: '1px solid var(--color-border, #DDE3DC)',
                 borderRadius: 'var(--r-md)',
                 marginBottom: 22,
               }}>
@@ -156,7 +156,7 @@ export default function ForgotPassword({ role = 'teacher' }) {
                     width: 28,
                     height: 28,
                     borderRadius: '50%',
-                    background: '#10b981',
+                    background: 'var(--color-success, #27734B)',
                     color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
@@ -165,7 +165,7 @@ export default function ForgotPassword({ role = 'teacher' }) {
                   }}>
                     <CheckCircle2 size={16} />
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--clr-done-txt)' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-success, #27734B)' }}>
                     Reset Email Dispatched
                   </span>
                 </div>
@@ -181,9 +181,9 @@ export default function ForgotPassword({ role = 'teacher' }) {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 14px',
-                background: 'rgba(255, 255, 255, 0.4)',
+                background: 'var(--color-surface-muted, #F0F3EE)',
                 borderRadius: 'var(--r-sm)',
-                border: '1px solid rgba(255, 255, 255, 0.65)',
+                border: '1px solid var(--color-border, #DDE3DC)',
                 marginBottom: 20,
               }}>
                 <span style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
@@ -196,7 +196,7 @@ export default function ForgotPassword({ role = 'teacher' }) {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: cooldown > 0 ? 'var(--txt-tertiary)' : 'var(--accent-text)',
+                    color: cooldown > 0 ? 'var(--txt-tertiary)' : 'var(--color-primary, #244A3A)',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: cooldown > 0 ? 'default' : 'pointer',
@@ -222,6 +222,7 @@ export default function ForgotPassword({ role = 'teacher' }) {
                     padding: '12px',
                     fontSize: 13.5,
                     fontWeight: 700,
+                    background: 'var(--color-primary, #244A3A)',
                   }}
                 >
                   Return to Sign In
@@ -286,15 +287,15 @@ export default function ForgotPassword({ role = 'teacher' }) {
                   alignItems: 'flex-start',
                   gap: 10,
                   padding: '11px 14px',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.28)',
+                  background: 'var(--color-danger-soft, #FBEAEA)',
+                  border: '1px solid var(--color-danger, #B33C3C)',
                   borderRadius: 'var(--r-sm)',
                   fontSize: 12.5,
-                  color: '#991b1b',
+                  color: 'var(--color-danger, #B33C3C)',
                   marginBottom: 18,
                   lineHeight: 1.45,
                 }}>
-                  <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1, color: '#dc2626' }} />
+                  <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1, color: 'var(--color-danger, #B33C3C)' }} />
                   <div>{error}</div>
                 </div>
               )}
@@ -303,9 +304,9 @@ export default function ForgotPassword({ role = 'teacher' }) {
               {role === 'student' && (
                 <div style={{
                   padding: '10px 12px',
-                  background: 'rgba(99, 102, 241, 0.08)',
+                  background: 'var(--color-surface-muted, #F0F3EE)',
                   borderRadius: 'var(--r-sm)',
-                  border: '1px solid rgba(99, 102, 241, 0.18)',
+                  border: '1px solid var(--color-border, #DDE3DC)',
                   fontSize: 11.5,
                   color: 'var(--txt-secondary)',
                   marginBottom: 18,
@@ -326,8 +327,8 @@ export default function ForgotPassword({ role = 'teacher' }) {
                   padding: '12px 20px',
                   fontSize: 14,
                   fontWeight: 700,
-                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                  boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)',
+                  background: 'var(--color-primary, #244A3A)',
+                  boxShadow: '0 2px 8px rgba(36, 74, 58, 0.25)',
                   opacity: loading ? 0.75 : 1,
                   cursor: loading ? 'not-allowed' : 'pointer',
                   marginBottom: 16,

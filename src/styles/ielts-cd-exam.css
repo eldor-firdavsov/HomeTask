@@ -1,0 +1,1222 @@
+/* ═════════════════════════════════════════════════════════════════════════
+   OFFICIAL COMPUTER-DELIVERED (CD) IELTS EXAM INTERFACE STYLESHEET
+   Accurately replicates the Cambridge Computer-Delivered IELTS Test UI
+   (Reference: Engnovate / Cambridge CD Academic Reading Test)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Root Layout Container ── */
+.cd-ielts-exam-root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  color: #212121;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: text;
+}
+
+/* ── Top Header (.ielts-reading-site-header) ── */
+.cd-ielts-header {
+  height: 48px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 40;
+  user-select: none;
+}
+
+.cd-ielts-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cd-ielts-header-center {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cd-ielts-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Focus mode button */
+.cd-ielts-btn-focus {
+  background-color: #ffffff;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+  padding: 5px 11px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.cd-ielts-btn-focus:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+/* Brand badge in top bar */
+.cd-ielts-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.cd-ielts-brand-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.cd-ielts-brand-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.01em;
+}
+
+.cd-ielts-cd-tag {
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cd-ielts-test-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Timer in Top Header */
+.cd-ielts-timer-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.2s ease;
+}
+
+.cd-ielts-timer-box.timer-warning-amber {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.cd-ielts-timer-box.timer-warning-red {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  animation: timer-pulse 1.5s infinite;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+.cd-ielts-timer-toggle {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cd-ielts-timer-toggle:hover {
+  color: #111827;
+}
+
+/* Header utility buttons */
+.cd-ielts-btn-header {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+
+.cd-ielts-btn-header:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+.cd-ielts-btn-finish-top {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: 1px solid #15803d;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s;
+}
+
+.cd-ielts-btn-finish-top:hover {
+  background-color: #15803d;
+}
+
+/* ── Part Announcement Bar (.ielts-reading-part-announcement-container) ── */
+.cd-ielts-announcement-bar {
+  height: 38px;
+  padding: 4px 16px;
+  margin: 4px 12px 6px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background-color: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14.5px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.cd-ielts-announcement-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cd-ielts-announcement-part-label {
+  font-weight: 700;
+  font-size: 15px;
+  color: #111827;
+}
+
+.cd-ielts-announcement-range-text {
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.cd-ielts-announcement-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Review Checkbox in Announcement Bar */
+.cd-ielts-review-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #374151;
+  padding: 2px 8px;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.cd-ielts-review-checkbox-label:hover {
+  background-color: #f3f4f6;
+}
+
+.cd-ielts-review-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #d97706;
+  cursor: pointer;
+}
+
+.cd-ielts-review-flag-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #d97706;
+  font-weight: 700;
+}
+
+/* Zoom / Skim Controls */
+.cd-ielts-zoom-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cd-ielts-zoom-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 7px;
+  color: #4b5563;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.cd-ielts-zoom-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* ── Main Split View (.ielts-reading-page-content) ── */
+.cd-ielts-split-view {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
+  background-color: #ffffff;
+}
+
+/* Left Column: Passage Text (.ielts-reading-test-transcripts) */
+.cd-ielts-passage-pane {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 28px 40px;
+  background-color: #ffffff;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Center Draggable Resizer (.ielts-reading-resize-handle) */
+.cd-ielts-resizer {
+  width: 10px;
+  height: 100%;
+  background-color: #f3f4f6;
+  border-left: 1px solid #d1d5db;
+  border-right: 1px solid #d1d5db;
+  cursor: ew-resize;
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  z-index: 25;
+  transition: background-color 0.15s;
+}
+
+.cd-ielts-resizer:hover,
+.cd-ielts-resizer.is-dragging {
+  background-color: #e5e7eb;
+}
+
+.cd-ielts-resizer-handle-badge {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background-color: #ffffff;
+  border: 1px solid #374151;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1f2937;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Right Column: Questions (.ielts-reading-question-container) */
+.cd-ielts-questions-pane {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px 60px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Scrollbar styling for authentic CD IELTS look */
+.cd-ielts-passage-pane::-webkit-scrollbar,
+.cd-ielts-questions-pane::-webkit-scrollbar {
+  width: 12px;
+}
+
+.cd-ielts-passage-pane::-webkit-scrollbar-track,
+.cd-ielts-questions-pane::-webkit-scrollbar-track {
+  background-color: #ffffff;
+}
+
+.cd-ielts-passage-pane::-webkit-scrollbar-thumb,
+.cd-ielts-questions-pane::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border: 3px solid #ffffff;
+  border-radius: 6px;
+}
+
+.cd-ielts-passage-pane::-webkit-scrollbar-thumb:hover,
+.cd-ielts-questions-pane::-webkit-scrollbar-thumb:hover {
+  background-color: #9ca3af;
+}
+
+/* ── Passage Typography & Toolbar ── */
+.cd-ielts-passage-subhead {
+  margin: 6px 0 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.35;
+}
+
+.cd-ielts-passage-body {
+  line-height: 1.7;
+  color: #1f2937;
+  white-space: pre-wrap;
+  letter-spacing: 0.01em;
+}
+
+.cd-ielts-passage-body p {
+  margin-bottom: 16px;
+}
+
+/* Floating Highlight Popover & Toolbar */
+.cd-ielts-highlight-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  padding: 6px 0 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cd-ielts-highlight-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cd-ielts-tool-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+
+.cd-ielts-tool-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.cd-ielts-tool-btn.yellow-hl {
+  background: #fef9c3;
+  border-color: #facc15;
+  color: #854d0e;
+}
+
+.cd-ielts-tool-btn.yellow-hl:hover {
+  background: #fef08a;
+}
+
+/* Contextual Highlight Popover */
+.cd-ielts-selection-popover {
+  position: absolute;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  padding: 3px 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cd-ielts-popover-btn {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cd-ielts-popover-btn:hover {
+  background: #f9fafb;
+}
+
+/* Highlighted span */
+.ielts-highlight {
+  background-color: #fef08a;
+  border-radius: 2px;
+  padding: 1px 2px;
+  cursor: pointer;
+}
+
+.ielts-highlight:hover {
+  background-color: #fde047;
+}
+
+/* Sticky Note popup */
+.cd-ielts-note-box {
+  position: absolute;
+  background-color: #fef08a;
+  border: 1px solid #ca8a04;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  width: 220px;
+  z-index: 1001;
+  padding: 8px 10px;
+}
+
+.cd-ielts-note-textarea {
+  width: 100%;
+  height: 90px;
+  background: transparent;
+  border: none;
+  resize: vertical;
+  font-size: 13px;
+  font-family: inherit;
+  color: #713f12;
+  outline: none;
+}
+
+/* ── Questions Column Styling (Exact Cambridge / Engnovate CD IELTS) ── */
+.cd-ielts-questions-pane {
+  height: 100%;
+  overflow-y: auto;
+  padding: 24px 30px 80px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+}
+
+.ielts-reading-question-sections {
+  margin-bottom: 3rem;
+}
+
+.ielts-reading-question-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 20px !important;
+  font-weight: 700;
+  margin-top: 20px !important;
+  margin-bottom: 12px !important;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 6px;
+}
+
+.ielts-reading-practice-section-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #0d6efd;
+  background: rgba(13, 110, 253, 0.08);
+  border: 1px solid rgba(13, 110, 253, 0.28);
+  border-radius: 4px;
+  cursor: default;
+  text-decoration: none;
+}
+
+.ielts-reading-question-section-content {
+  line-height: 1.65;
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #1f2937;
+}
+
+.ielts-reading-question-section-content p {
+  margin: 0 0 10px !important;
+}
+
+.ielts-reading-section-content-wrapper {
+  line-height: 1.7;
+  font-size: 16px;
+  color: #1f2937;
+  margin-bottom: 20px;
+}
+
+.ielts-reading-category-heading {
+  font-weight: 700;
+  font-size: 16px;
+  color: #111827;
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+
+.ielts-reading-note-line {
+  margin: 8px 0 !important;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #1f2937;
+}
+
+.ielts-reading-question-inline {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+.ielts-reading-question-item {
+  margin-bottom: 1.25rem;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.ielts-reading-statement-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ielts-reading-statement-text {
+  font-size: 16px;
+  color: #1f2937;
+  line-height: 1.55;
+}
+
+.ielts-reading-question-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  margin-right: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  vertical-align: middle;
+  color: #000000;
+  flex-shrink: 0;
+  user-select: none;
+  transition: all 0.12s;
+}
+
+.ielts-reading-question-number.completed {
+  background-color: #4b5563;
+  color: #ffffff;
+  border-color: #374151;
+}
+
+.ielts-reading-question-number.active {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.ielts-reading-question-item input[type="text"],
+input[type="text"].ielts-reading-input {
+  padding: 0px 8px;
+  line-height: 1.5;
+  width: 8.5rem;
+  min-width: 130px;
+  height: 28px;
+  background-color: #ffffff;
+  border: 1px solid #718096;
+  border-radius: 2px;
+  color: #000000;
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+  margin-right: 4px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ielts-reading-question-item input[type="text"]:focus,
+input[type="text"].ielts-reading-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb;
+}
+
+.ielts-reading-options-group {
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.ielts-reading-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  margin-top: 0.6rem;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.ielts-reading-option-letter {
+  background-color: rgb(225, 224, 224);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  text-align: center;
+  margin-right: 10px;
+  margin-left: 20px;
+  font-weight: bold;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: #374151;
+}
+
+.ielts-reading-option.selected .ielts-reading-option-letter {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.ielts-reading-option input[type="radio"],
+.ielts-reading-option input[type="checkbox"] {
+  margin-right: 0.6rem;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.ielts-reading-option span {
+  font-size: 16px;
+  color: #212121;
+}
+
+.ielts-reading-matching-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  margin-bottom: 1.5rem;
+  font-size: 14.5px;
+}
+
+.ielts-reading-matching-table thead th {
+  text-align: center;
+  font-weight: bold;
+  padding: 8px 4px;
+  border: 1px solid #bbb;
+  background-color: #f0f0f0;
+  font-size: 15px;
+}
+
+.ielts-reading-matching-question-cell {
+  padding: 8px 10px;
+  line-height: 1.5;
+  vertical-align: middle;
+  border: 1px solid #bbb;
+}
+
+.ielts-reading-matching-option-cell {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 6px;
+  border: 1px solid #bbb;
+}
+
+.ielts-reading-matching-option-cell input[type="radio"] {
+  width: 17px;
+  height: 17px;
+  cursor: pointer;
+  accent-color: #2563eb;
+  margin: 0;
+}
+
+.cd-ielts-option-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  cursor: pointer;
+  background-color: #ffffff;
+  transition: all 0.12s ease;
+}
+
+.cd-ielts-option-row:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.cd-ielts-option-row.is-selected {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+}
+
+.cd-ielts-option-radio {
+  margin-right: 8px;
+  width: 17px;
+  height: 17px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.cd-ielts-option-letter {
+  background-color: #e5e7eb;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  text-align: center;
+  margin-right: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+
+.cd-ielts-option-row.is-selected .cd-ielts-option-letter {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.cd-ielts-option-text {
+  font-size: 14.5px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+/* 2. True / False / Not Given & Yes / No / Not Given */
+.cd-ielts-tf-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cd-ielts-tf-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  transition: all 0.12s;
+}
+
+.cd-ielts-tf-option:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.cd-ielts-tf-option.is-selected {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.cd-ielts-tf-option input[type="radio"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #2563eb;
+}
+
+/* 3. Fill in the Blank / Short Answer Input */
+.cd-ielts-inline-input-wrapper {
+  margin-top: 8px;
+}
+
+.cd-ielts-text-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 8px 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  background-color: #ffffff;
+  border: 1px solid #9ca3af;
+  border-radius: 3px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cd-ielts-text-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.cd-ielts-input-hint {
+  font-size: 11.5px;
+  color: #6b7280;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* 4. Dropdown / Matching Select */
+.cd-ielts-select-input {
+  width: 100%;
+  max-width: 360px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  background-color: #ffffff;
+  border: 1px solid #9ca3af;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.cd-ielts-select-input:focus {
+  border-color: #2563eb;
+}
+
+/* ── Bottom IELTS CD Navigation Panel (.ielts-reading-bottom-panel) ── */
+.cd-ielts-bottom-panel {
+  height: 52px;
+  background-color: #ffffff;
+  border-top: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  flex-shrink: 0;
+  z-index: 50;
+  user-select: none;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* Left controls: arrows */
+.cd-ielts-bottom-nav-arrows {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cd-ielts-nav-arrow-btn {
+  width: 32px;
+  height: 32px;
+  background-color: #1f2937;
+  color: #ffffff;
+  border: 1px solid #1f2937;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.12s;
+}
+
+.cd-ielts-nav-arrow-btn:hover:not(:disabled) {
+  background-color: #374151;
+}
+
+.cd-ielts-nav-arrow-btn:disabled {
+  background-color: #d1d5db;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Center controls: Question Palette Bar */
+.cd-ielts-palette-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+  max-width: calc(100vw - 360px);
+}
+
+.cd-ielts-palette-part-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 4px 8px;
+  background-color: #f9fafb;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.cd-ielts-palette-part-section:hover:not(.is-active-part) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.cd-ielts-palette-part-section.is-active-part {
+  border-color: #bfdbfe;
+  background-color: #eff6ff;
+  cursor: default;
+}
+
+.cd-ielts-palette-part-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-right: 3px;
+}
+
+.cd-ielts-palette-inactive-count {
+  font-size: 12.5px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Question Number Square Item */
+.cd-ielts-palette-num-btn {
+  position: relative;
+  width: 25px;
+  height: 25px;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  background-color: #ffffff;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  padding: 0;
+  line-height: 1;
+}
+
+.cd-ielts-palette-num-btn.is-answered {
+  background-color: #4b5563;
+  color: #ffffff;
+  border-color: #374151;
+}
+
+.cd-ielts-palette-num-btn.is-active {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  font-weight: 800;
+}
+
+/* Yellow flag dog-ear indicator on palette square */
+.cd-ielts-palette-num-btn.is-flagged::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 8px 0;
+  border-color: transparent #f59e0b transparent transparent;
+}
+
+/* Right controls: Review & Submit */
+.cd-ielts-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cd-ielts-btn-review {
+  background-color: #1a73e8;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s;
+}
+
+.cd-ielts-btn-review:hover {
+  background-color: #1558b0;
+}
+
+.cd-ielts-btn-submit {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.cd-ielts-btn-submit:hover {
+  background-color: #15803d;
+}
+
+/* ── Modals & Overlays ── */
+.cd-ielts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cd-ielts-modal-dialog {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cd-ielts-modal-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cd-ielts-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+}
+
+.cd-ielts-modal-body {
+  padding: 20px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.cd-ielts-modal-footer {
+  padding: 14px 24px;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Review Matrix Table */
+.cd-ielts-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.cd-ielts-review-table th {
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.cd-ielts-review-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.cd-ielts-review-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 840px) {
+  .cd-ielts-split-view {
+    flex-direction: column;
+  }
+  .cd-ielts-resizer {
+    display: none;
+  }
+  .cd-ielts-passage-pane,
+  .cd-ielts-questions-pane {
+    width: 100% !important;
+    height: 50% !important;
+  }
+  .cd-ielts-palette-container {
+    max-width: calc(100vw - 200px);
+  }
+}

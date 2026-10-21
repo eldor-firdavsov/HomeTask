@@ -17,9 +17,12 @@ import { useToast, useData } from '../../context/DataContext';
 export default function AuthCard({ initialRole = 'student' }) {
   const navigate = useNavigate();
   const toast = useToast();
-  const { signInWithCredentials } = useData();
+  const { signInWithCredentials, session, logout } = useData();
 
   const [role, setRole] = useState(initialRole);
+  const isStudent = role === 'student';
+  const storageKey = isStudent ? 'hw_remembered_student_email' : 'hw_remembered_teacher_email';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,25 +32,22 @@ export default function AuthCard({ initialRole = 'student' }) {
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
 
-  const isStudent = role === 'student';
-
-  // Sync role when initialRole changes
+  // Sync role and load remembered email when initialRole changes
   useEffect(() => {
     setRole(initialRole);
     setError('');
-  }, [initialRole]);
-
-  // Load remembered email on mount
-  useEffect(() => {
     try {
-      const savedEmail = localStorage.getItem('hw_remembered_email');
+      const key = initialRole === 'student' ? 'hw_remembered_student_email' : 'hw_remembered_teacher_email';
+      const savedEmail = localStorage.getItem(key);
       if (savedEmail) {
         setEmail(savedEmail);
+      } else {
+        setEmail('');
       }
     } catch {
-      // ignore storage errors
+      setEmail('');
     }
-  }, []);
+  }, [initialRole]);
 
   const handleKeyDetection = (e) => {
     if (e.getModifierState) {
@@ -73,12 +73,25 @@ export default function AuthCard({ initialRole = 'student' }) {
 
     try {
       if (rememberMe) {
-        localStorage.setItem('hw_remembered_email', email.trim());
+        localStorage.setItem(storageKey, email.trim());
       } else {
-        localStorage.removeItem('hw_remembered_email');
+        localStorage.removeItem(storageKey);
       }
 
       const userRole = await signInWithCredentials(email.trim(), password);
+
+      if (!isStudent && userRole === 'STUDENT') {
+        toast('Signed in with a Student account. Redirecting to Student Dashboard…', 'info');
+        navigate('/student/dashboard', { replace: true });
+        return;
+      }
+
+      if (isStudent && userRole === 'TEACHER') {
+        toast('Signed in with a Teacher account. Redirecting to Teacher Dashboard…', 'info');
+        navigate('/teacher/dashboard', { replace: true });
+        return;
+      }
+
       toast(`Signed in as ${userRole === 'TEACHER' ? 'Teacher' : 'Student'} successfully`);
 
       if (userRole === 'TEACHER') {
@@ -91,8 +104,8 @@ export default function AuthCard({ initialRole = 'student' }) {
       if (msg.includes('Invalid login credentials')) {
         triggerErrorShake(
           isStudent
-            ? 'Invalid student credentials. Please check the email and password provided by your teacher.'
-            : 'Invalid email or password. Please verify your credentials.'
+            ? 'Invalid student credentials. Please verify your email and password (Demo: eldor@ilmla.uz / password123).'
+            : 'Invalid teacher email or password. Please verify your credentials (Demo: teacher@ilmla.uz / password123).'
         );
       } else if (msg.includes('Email not confirmed')) {
         triggerErrorShake('Account email has not been confirmed yet. Please check your inbox.');
@@ -115,6 +128,29 @@ export default function AuthCard({ initialRole = 'student' }) {
       setPassword('password123');
     }
     setError('');
+  };
+
+  const handleInstantSignIn = async (targetRole) => {
+    const targetEmail = targetRole === 'student' ? 'eldor@ilmla.uz' : 'teacher@ilmla.uz';
+    const targetPassword = 'password123';
+    setEmail(targetEmail);
+    setPassword(targetPassword);
+    setError('');
+    setLoading(true);
+
+    try {
+      const userRole = await signInWithCredentials(targetEmail, targetPassword);
+      toast(`Signed in as ${userRole === 'TEACHER' ? 'Teacher' : 'Student'} successfully`);
+      if (userRole === 'TEACHER') {
+        navigate('/teacher/dashboard', { replace: true });
+      } else {
+        navigate('/student/dashboard', { replace: true });
+      }
+    } catch (err) {
+      triggerErrorShake(err.message || 'Quick login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -140,15 +176,19 @@ export default function AuthCard({ initialRole = 'student' }) {
             gap: 6,
             padding: '4px 10px',
             borderRadius: 999,
-            background: isStudent ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.08)',
-            color: '#4338ca',
+            background: 'var(--color-primary-soft)',
+            color: 'var(--color-primary)',
             fontSize: 12,
             fontWeight: 600,
             marginBottom: 12,
           }}
         >
-          {isStudent ? <BookOpen size={13} /> : <GraduationCap size={13} />}
-          <span>{isStudent ? 'Student Portal' : 'Educator Space'}</span>
+          <img
+            src="/assets/hometask-icon.png"
+            alt=""
+            style={{ width: 14, height: 14, objectFit: 'contain' }}
+          />
+          <span>{isStudent ? 'HomeTask Student Portal' : 'HomeTask Educator Space'}</span>
         </div>
 
         <h1
@@ -177,6 +217,68 @@ export default function AuthCard({ initialRole = 'student' }) {
         </p>
       </div>
 
+      {/* Active Session Notice Banner if user is logged into the opposite role */}
+      {session && session.role !== (isStudent ? 'STUDENT' : 'TEACHER') && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+            padding: '12px 14px',
+            background: 'var(--color-primary-soft)',
+            border: '1px solid rgba(36, 74, 58, 0.2)',
+            borderRadius: 10,
+            fontSize: 12.5,
+            color: 'var(--color-primary)',
+            marginBottom: 20,
+            lineHeight: 1.45,
+          }}
+        >
+          <div>
+            Signed in as <strong>{session.user?.firstName || 'User'}</strong> ({session.role === 'TEACHER' ? 'Teacher' : 'Student'}).
+            <div style={{ fontSize: 11.5, color: 'var(--color-text-secondary)' }}>Sign in below to switch, or continue to your dashboard.</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={() => navigate(session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard')}
+              style={{
+                background: 'var(--color-primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '5px 10px',
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Dashboard →
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await logout();
+                toast('Signed out');
+              }}
+              style={{
+                background: '#ffffff',
+                color: '#64748b',
+                border: '1px solid #cbd5e1',
+                borderRadius: 6,
+                padding: '5px 8px',
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Error message */}
       {error && (
         <div
@@ -204,11 +306,12 @@ export default function AuthCard({ initialRole = 'student' }) {
         {/* Email */}
         <div style={{ marginBottom: 18 }}>
           <label
+            htmlFor="login-email"
             style={{
               display: 'block',
               fontSize: 13,
               fontWeight: 600,
-              color: '#334155',
+              color: 'var(--color-text)',
               marginBottom: 7,
             }}
           >
@@ -219,7 +322,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               style={{
                 position: 'absolute',
                 left: 14,
-                color: '#94a3b8',
+                color: 'var(--color-text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 pointerEvents: 'none',
@@ -228,6 +331,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               <Mail size={16} />
             </span>
             <input
+              id="login-email"
               type="email"
               inputMode="email"
               autoCapitalize="none"
@@ -240,22 +344,20 @@ export default function AuthCard({ initialRole = 'student' }) {
                 width: '100%',
                 padding: '11px 40px 11px 40px',
                 fontSize: 14,
-                color: '#0f172a',
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
+                color: 'var(--color-text)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border)',
                 borderRadius: 10,
                 outline: 'none',
                 transition: 'all 0.15s ease',
                 boxSizing: 'border-box',
               }}
               onFocus={(e) => {
-                e.target.style.background = '#ffffff';
-                e.target.style.borderColor = '#6366f1';
-                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.15)';
+                e.target.style.borderColor = 'var(--color-primary)';
+                e.target.style.boxShadow = '0 0 0 3px var(--color-primary-focus)';
               }}
               onBlur={(e) => {
-                e.target.style.background = '#f8fafc';
-                e.target.style.borderColor = '#cbd5e1';
+                e.target.style.borderColor = 'var(--color-border)';
                 e.target.style.boxShadow = 'none';
               }}
             />
@@ -268,7 +370,7 @@ export default function AuthCard({ initialRole = 'student' }) {
                   right: 12,
                   background: 'transparent',
                   border: 'none',
-                  color: '#94a3b8',
+                  color: 'var(--color-text-muted)',
                   cursor: 'pointer',
                   padding: 4,
                   display: 'flex',
@@ -294,10 +396,11 @@ export default function AuthCard({ initialRole = 'student' }) {
             }}
           >
             <label
+              htmlFor="login-password"
               style={{
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#334155',
+                color: 'var(--color-text)',
               }}
             >
               Password
@@ -306,8 +409,8 @@ export default function AuthCard({ initialRole = 'student' }) {
               to={isStudent ? '/student/forgot-password' : '/teacher/forgot-password'}
               style={{
                 fontSize: 12.5,
-                fontWeight: 500,
-                color: '#4f46e5',
+                fontWeight: 600,
+                color: 'var(--color-primary)',
                 textDecoration: 'none',
               }}
             >
@@ -319,7 +422,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               style={{
                 position: 'absolute',
                 left: 14,
-                color: '#94a3b8',
+                color: 'var(--color-text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 pointerEvents: 'none',
@@ -328,6 +431,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               <Lock size={16} />
             </span>
             <input
+              id="login-password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               value={password}
@@ -340,22 +444,20 @@ export default function AuthCard({ initialRole = 'student' }) {
                 width: '100%',
                 padding: '11px 40px 11px 40px',
                 fontSize: 14,
-                color: '#0f172a',
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
+                color: 'var(--color-text)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border)',
                 borderRadius: 10,
                 outline: 'none',
                 transition: 'all 0.15s ease',
                 boxSizing: 'border-box',
               }}
               onFocus={(e) => {
-                e.target.style.background = '#ffffff';
-                e.target.style.borderColor = '#6366f1';
-                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.15)';
+                e.target.style.borderColor = 'var(--color-primary)';
+                e.target.style.boxShadow = '0 0 0 3px var(--color-primary-focus)';
               }}
               onBlur={(e) => {
-                e.target.style.background = '#f8fafc';
-                e.target.style.borderColor = '#cbd5e1';
+                e.target.style.borderColor = 'var(--color-border)';
                 e.target.style.boxShadow = 'none';
               }}
             />
@@ -367,7 +469,7 @@ export default function AuthCard({ initialRole = 'student' }) {
                 right: 12,
                 background: 'transparent',
                 border: 'none',
-                color: '#94a3b8',
+                color: 'var(--color-text-muted)',
                 cursor: 'pointer',
                 padding: 4,
                 display: 'flex',
@@ -403,7 +505,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               gap: 8,
               cursor: 'pointer',
               fontSize: 13,
-              color: '#475569',
+              color: 'var(--color-text-secondary)',
               userSelect: 'none',
             }}
           >
@@ -414,7 +516,7 @@ export default function AuthCard({ initialRole = 'student' }) {
               style={{
                 width: 16,
                 height: 16,
-                accentColor: '#4f46e5',
+                accentColor: 'var(--color-primary)',
                 cursor: 'pointer',
                 borderRadius: 4,
               }}
@@ -427,14 +529,12 @@ export default function AuthCard({ initialRole = 'student' }) {
         <button
           type="submit"
           disabled={loading}
+          className="g-btn g-btn-primary"
           style={{
             width: '100%',
             padding: '12px 20px',
             fontSize: 14,
             fontWeight: 600,
-            color: '#ffffff',
-            background: '#4f46e5',
-            border: 'none',
             borderRadius: 10,
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.8 : 1,
@@ -442,14 +542,6 @@ export default function AuthCard({ initialRole = 'student' }) {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
-            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
-            transition: 'background 0.15s ease, transform 0.05s ease',
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) e.currentTarget.style.background = '#4338ca';
-          }}
-          onMouseLeave={(e) => {
-            if (!loading) e.currentTarget.style.background = '#4f46e5';
           }}
         >
           {loading ? (
@@ -466,12 +558,12 @@ export default function AuthCard({ initialRole = 'student' }) {
       {/* Switch between Student and Teacher Auth */}
       <div
         style={{
-          marginTop: 24,
-          paddingTop: 20,
-          borderTop: '1px solid #f1f5f9',
+          marginTop: 22,
+          paddingTop: 18,
+          borderTop: '1px solid var(--color-border)',
           textAlign: 'center',
           fontSize: 13,
-          color: '#64748b',
+          color: 'var(--color-text-secondary)',
         }}
       >
         {isStudent ? (
@@ -480,7 +572,7 @@ export default function AuthCard({ initialRole = 'student' }) {
             <Link
               to="/teacher/login"
               style={{
-                color: '#4f46e5',
+                color: 'var(--color-primary)',
                 fontWeight: 600,
                 textDecoration: 'none',
               }}
@@ -494,7 +586,7 @@ export default function AuthCard({ initialRole = 'student' }) {
             <Link
               to="/student/login"
               style={{
-                color: '#4f46e5',
+                color: 'var(--color-primary)',
                 fontWeight: 600,
                 textDecoration: 'none',
               }}
@@ -505,36 +597,74 @@ export default function AuthCard({ initialRole = 'student' }) {
         )}
       </div>
 
-      {/* Subtle Demo Quick-Fill */}
+      {/* Demo Credentials Section (Clearly Labeled & Subordinate to Main Form) */}
       <div
         style={{
-          marginTop: 14,
-          textAlign: 'center',
+          marginTop: 20,
+          padding: '13px 16px',
+          borderRadius: 12,
+          background: 'var(--color-surface-muted)',
+          border: '1px dashed var(--color-border-strong)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          textAlign: 'left',
         }}
       >
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              color: 'var(--color-primary)',
+              letterSpacing: '0.04em',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+            }}
+          >
+            <Sparkles size={12} style={{ color: 'var(--color-primary)' }} />
+            <span>Demo Test Credentials</span>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginTop: 2 }}>
+            {isStudent ? 'eldor@ilmla.uz' : 'teacher@ilmla.uz'}
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--color-text-secondary)', marginTop: 1 }}>
+            Password:{' '}
+            <code
+              style={{
+                background: '#ffffff',
+                border: '1px solid var(--color-border)',
+                padding: '1px 5px',
+                borderRadius: 4,
+                fontFamily: 'monospace',
+                fontWeight: 600,
+                color: 'var(--color-text)',
+              }}
+            >
+              password123
+            </code>
+          </div>
+        </div>
+
         <button
           type="button"
           onClick={() => handleQuickFill(isStudent ? 'student' : 'teacher')}
+          disabled={loading}
+          className="g-btn g-btn-secondary"
           style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#94a3b8',
+            padding: '7px 12px',
             fontSize: 12,
-            cursor: 'pointer',
-            padding: '4px 8px',
-            borderRadius: 6,
-            transition: 'color 0.15s ease',
-            textDecoration: 'underline',
-            textUnderlineOffset: 3,
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            gap: 5,
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#4f46e5';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#94a3b8';
-          }}
+          title="Fill demo credentials into form"
         >
-          Click to auto-fill {isStudent ? 'student demo credentials' : 'teacher demo credentials'}
+          <Sparkles size={12} style={{ color: 'var(--color-primary)' }} />
+          <span>Fill Demo</span>
         </button>
       </div>
     </div>

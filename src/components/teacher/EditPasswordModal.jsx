@@ -19,12 +19,12 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-  borderRadius: 'var(--r-sm)', padding: '10px 12px', fontSize: 13.5,
-  color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
+  width: '100%', background: '#ffffff',
+  border: '1px solid var(--color-border, #DDE3DC)',
+  borderRadius: 'var(--radius-sm, 6px)', padding: '10px 12px', fontSize: 13.5,
+  color: 'var(--color-text, #202923)', fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box', transition: 'all 0.15s',
-  boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
 };
 
 export default function EditPasswordModal({ student, onClose, onUpdated }) {
@@ -71,6 +71,9 @@ export default function EditPasswordModal({ student, onClose, onUpdated }) {
     <div className="g-overlay" onClick={onClose} style={{ zIndex: 120 }}>
       <div
         className="glass-4 g-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-pw-title"
         onClick={e => e.stopPropagation()}
         style={{ padding: '28px 26px', maxWidth: 440, width: '100%' }}
       >
@@ -78,17 +81,17 @@ export default function EditPasswordModal({ student, onClose, onUpdated }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10,
-              background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+              background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--accent-text)'
+              color: 'var(--color-primary, #244A3A)'
             }}>
               <KeyRound size={18} />
             </div>
             <div>
-              <h2 style={{ fontSize: 16.5, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
+              <h2 id="edit-pw-title" style={{ fontSize: 16.5, fontWeight: 700, color: 'var(--color-text, #202923)', margin: 0 }}>
                 Manage Password
               </h2>
-              <div style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary, #5D685F)' }}>
                 {student.firstName} {student.lastName}
               </div>
             </div>
@@ -100,13 +103,13 @@ export default function EditPasswordModal({ student, onClose, onUpdated }) {
 
         {/* Student Email info */}
         <div style={{
-          background: 'rgba(255,255,255,0.40)', border: '1px solid rgba(255,255,255,0.60)',
-          borderRadius: 'var(--r-sm)', padding: '10px 14px', marginBottom: 16,
+          background: 'var(--color-surface-muted, #F0F3EE)', border: '1px solid var(--color-border, #DDE3DC)',
+          borderRadius: 'var(--radius-sm, 6px)', padding: '10px 14px', marginBottom: 16,
         }}>
-          <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--color-text-secondary, #5D685F)', textTransform: 'uppercase' }}>
             Student Email
           </div>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--txt-primary)', marginTop: 2 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text, #202923)', marginTop: 2 }}>
             {student.email}
           </div>
         </div>

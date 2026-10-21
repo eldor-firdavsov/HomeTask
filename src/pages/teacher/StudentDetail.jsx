@@ -12,9 +12,19 @@ import {
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import EditPasswordModal from '../../components/teacher/EditPasswordModal';
+import StudentCredentialsModal from '../../components/teacher/StudentCredentialsModal';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
+import ActionMenu from '../../components/common/ActionMenu';
 import { deactivateStudent } from '../../lib/supabase/students.js';
 import { deleteAssignment } from '../../lib/supabase/assignments.js';
 import { getStudentPassword, formatStudentInvite } from '../../utils/credentialsVault';
+import {
+  getStudentReadingAssignments,
+  getTeacherReadingSubmissions,
+  getReadingTests
+} from '../../lib/supabase/readingTests.js';
+import { getBandColor, getBandLabel } from '../../lib/supabase/aiGrading.js';
+import { BookOpen, Award, Sparkles } from 'lucide-react';
 
 const TABS = ['All', 'In Progress', 'Submitted', 'Review', 'Done', 'Overdue'];
 const STATUS_MAP = {
@@ -32,11 +42,35 @@ export default function StudentDetail() {
 
   const [tab, setTab] = useState('All');
   const [showAssign, setShowAssign] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [copiedPw, setCopiedPw] = useState(false);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
+
+  // IELTS Reading Tests for this student
+  const [readingAssignments, setReadingAssignments] = useState([]);
+  const [readingSubmissions, setReadingSubmissions] = useState([]);
+  const [readingTestsMap, setReadingTestsMap] = useState({});
+
+  React.useEffect(() => {
+    async function loadStudentReading() {
+      try {
+        const [rAssigns, rSubs, rTests] = await Promise.all([
+          getStudentReadingAssignments(studentId),
+          getTeacherReadingSubmissions(),
+          getReadingTests(),
+        ]);
+        setReadingAssignments(rAssigns || []);
+        setReadingSubmissions((rSubs || []).filter(s => s.studentId === studentId));
+        const tMap = {};
+        (rTests || []).forEach(t => { tMap[t.id] = t; });
+        setReadingTestsMap(tMap);
+      } catch (err) {
+        console.warn('Could not load student reading data:', err);
+      }
+    }
+    loadStudentReading();
+  }, [studentId]);
 
   const student = (data?.users || []).find(u => u.id === studentId);
   const assignments = useMemo(() => {
@@ -124,31 +158,26 @@ export default function StudentDetail() {
 
   return (
     <div className="g-page">
-      {/* Back button */}
-      <Link
-        to="/teacher/dashboard"
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13,
-          color: 'var(--txt-secondary)', textDecoration: 'none', marginBottom: 20,
-          transition: 'color 0.15s', fontWeight: 500
-        }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-text)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
-      >
-        <ArrowLeft size={14} /> Back to dashboard
-      </Link>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', to: '/teacher/dashboard' },
+          { label: 'Students', to: '/teacher/dashboard' },
+          { label: `${student.firstName} ${student.lastName}`, current: true },
+        ]}
+      />
 
       {/* Hero header panel */}
-      <div className="glass-1" style={{ borderRadius: 'var(--r-xl)', padding: '26px 30px', marginBottom: 22 }}>
+      <div className="glass-1" style={{ borderRadius: 'var(--radius-xl, 18px)', padding: '26px 30px', marginBottom: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 18 }}>
           {/* Student Info */}
           <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
             <div style={{
-              width: 58, height: 58, borderRadius: 16, flexShrink: 0,
-              background: 'linear-gradient(135deg, rgba(99,102,241,0.22) 0%, rgba(168,85,247,0.22) 100%)',
-              border: '1px solid rgba(99,102,241,0.30)',
+              width: 56, height: 56, borderRadius: 14, flexShrink: 0,
+              background: 'var(--color-primary-soft, #E6EEE8)',
+              border: '1px solid var(--color-border, #DDE3DC)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, fontWeight: 700, color: 'var(--accent-text)',
+              fontSize: 20, fontWeight: 700, color: 'var(--color-primary, #244A3A)',
             }}>
               {student.firstName?.[0]}{student.lastName?.[0]}
             </div>
@@ -173,163 +202,187 @@ export default function StudentDetail() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {/* Avg Grade */}
             <div style={{
-              padding: '8px 18px', borderRadius: 'var(--r-md)',
-              background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
-              textAlign: 'center', minWidth: 90
+              padding: '8px 16px', borderRadius: 'var(--radius-md)',
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+              textAlign: 'center', minWidth: 84
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 2 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: 2 }}>
                 Avg. Grade
               </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: avg != null ? gradeColor(avg) : 'var(--txt-tertiary)', lineHeight: 1.1 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: avg != null ? gradeColor(avg) : 'var(--color-text-muted)', lineHeight: 1.1 }}>
                 {avg != null ? `${avg}%` : '—'}
               </div>
             </div>
 
-            {/* Easy Assign Button */}
+            {/* Primary Action: Assign Task */}
             <button
+              type="button"
               onClick={() => setShowAssign(true)}
               className="g-btn g-btn-primary"
-              style={{ padding: '9px 16px', fontSize: 13, gap: 6 }}
+              style={{ padding: '8px 16px', fontSize: 13, gap: 6 }}
             >
-              <Plus size={15} /> Assign new task
+              <Plus size={14} /> Assign Task
             </button>
 
-            {/* Delete/Deactivate */}
-            <button
-              onClick={handleDeactivate}
-              className="g-btn g-btn-ghost"
-              style={{ color: 'var(--clr-overdue-txt)', border: '1px solid rgba(239,68,68,0.22)', padding: '9px 12px' }}
-              disabled={deactivating}
-              title="Remove student from roster"
-            >
-              <Trash2 size={14} />
-            </button>
+            {/* Contextual Student Actions */}
+            <ActionMenu
+              align="right"
+              ariaLabel="Student profile options"
+              items={[
+                {
+                  label: 'View Login Credentials',
+                  icon: KeyRound,
+                  onClick: () => setShowCredentials(true),
+                },
+                {
+                  label: 'Copy Login Invite',
+                  icon: Copy,
+                  onClick: handleCopyInvite,
+                },
+                {
+                  label: 'Change Password',
+                  icon: RefreshCw,
+                  onClick: () => setShowEditPassword(true),
+                },
+                {
+                  label: 'Remove from Roster',
+                  icon: Trash2,
+                  danger: true,
+                  onClick: handleDeactivate,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
 
-      {/* ── Student Credentials Card (Always Visible & Manageable) ── */}
+      {/* ── IELTS Reading Exams & Band Scores Section ── */}
       <div
-        className="glass-2"
+        className="g-card"
         style={{
-          borderRadius: 'var(--r-lg)',
-          padding: '20px 24px',
+          padding: '22px 24px',
           marginBottom: 24,
-          border: '1px solid rgba(99, 102, 241, 0.25)',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.52) 0%, rgba(243,244,255,0.52) 100%)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'rgba(99,102,241,0.14)', border: '1px solid rgba(99,102,241,0.25)',
+              width: 34, height: 34, borderRadius: 10,
+              background: 'var(--color-primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--accent-text)'
+              color: '#ffffff', boxShadow: '0 2px 6px rgba(36,74,58,0.25)'
             }}>
-              <KeyRound size={16} />
+              <Award size={18} />
             </div>
             <div>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
-                Student Login Credentials
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
+                IELTS Reading Exams & Band Scores
               </h3>
-              <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)' }}>
-                View, share, or reset credentials so this student can sign in to their homework portal
+              <div style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
+                Exam performance, automated AI grading, and band evaluations for this student
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <button
-              type="button"
-              onClick={handleCopyInvite}
-              className="g-btn g-btn-secondary"
-              style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}
-            >
-              {copiedInvite ? <Check size={13} /> : <Copy size={13} />}
-              {copiedInvite ? 'Copied invite!' : 'Copy invite text'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowEditPassword(true)}
-              className="g-btn g-btn-ghost"
-              style={{ fontSize: 12, padding: '6px 12px', gap: 5 }}
-            >
-              <RefreshCw size={13} /> Change password
-            </button>
-          </div>
+          <Link
+            to="/teacher/reading-tests"
+            className="g-btn g-btn-secondary"
+            style={{ fontSize: 12, padding: '6px 12px', gap: 5, textDecoration: 'none' }}
+          >
+            <BookOpen size={13} /> Manage Reading Tests
+          </Link>
         </div>
 
-        {/* Credentials Details Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-          {/* Email Block */}
+        {readingAssignments.length === 0 ? (
           <div style={{
-            background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(255,255,255,0.65)',
-            borderRadius: 'var(--r-sm)', padding: '12px 14px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            padding: '20px 16px', borderRadius: 'var(--radius-md)',
+            background: 'var(--color-surface-subtle)', border: '1px dashed var(--color-border)',
+            textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 13
           }}>
-            <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--txt-secondary)', letterSpacing: '0.04em' }}>
-                Student Login Email
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt-primary)', marginTop: 2 }}>
-                {student.email}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                navigator.clipboard.writeText(student.email);
-                toast('Email copied!');
-              }}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '5px 7px', color: 'var(--txt-secondary)' }}
-              title="Copy email"
-            >
-              <Copy size={13} />
-            </button>
+            No IELTS reading exams assigned to this student yet. Assign a test from the IELTS Reading Tests library.
           </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {readingAssignments.map(assign => {
+              const test = readingTestsMap[assign.readingTestId];
+              const sub = readingSubmissions.find(s => s.assignmentId === assign.id);
+              const isGraded = assign.status === 'graded' || Boolean(sub);
+              const band = sub?.bandScore != null ? Number(sub.bandScore) : null;
+              const bandColor = band ? getBandColor(band) : 'var(--color-primary)';
+              const bandLabel = band ? getBandLabel(band) : '';
 
-          {/* Password Block */}
-          <div style={{
-            background: 'rgba(255,255,255,0.45)', border: '1px solid rgba(99,102,241,0.22)',
-            borderRadius: 'var(--r-sm)', padding: '12px 14px',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-          }}>
-            <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--txt-secondary)', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: 4 }}>
-                <KeyRound size={11} style={{ color: 'var(--accent-text)' }} /> Student Password
-              </div>
-              <div style={{
-                fontSize: 15, fontWeight: 700, fontFamily: 'monospace', color: 'var(--txt-primary)',
-                letterSpacing: showPassword ? '0.03em' : '0.18em', marginTop: 2
-              }}>
-                {showPassword ? password : '••••••••'}
-              </div>
-            </div>
+              return (
+                <div
+                  key={assign.id}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 16px', borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                    flexWrap: 'wrap', gap: 10
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 'var(--radius-sm)',
+                      background: isGraded ? 'var(--color-success-soft)' : 'var(--color-primary-soft)',
+                      color: isGraded ? 'var(--color-success)' : 'var(--color-primary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      <BookOpen size={16} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--txt-primary)' }}>
+                        {test?.title || 'IELTS Reading Test'}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span>Assigned {new Date(assign.assignedAt).toLocaleDateString()}</span>
+                        {assign.deadline && (
+                          <span>· Due {new Date(assign.deadline).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="g-btn g-btn-ghost"
-                style={{ padding: '5px 7px', color: 'var(--txt-secondary)' }}
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyPassword}
-                className="g-btn g-btn-ghost"
-                style={{ padding: '5px 7px', color: copiedPw ? 'var(--clr-done-txt)' : 'var(--accent-text)' }}
-                title="Copy password"
-              >
-                {copiedPw ? <Check size={14} /> : <Copy size={14} />}
-              </button>
-            </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {isGraded && band != null ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '3px 8px', borderRadius: 999,
+                            background: `${bandColor}18`, color: bandColor,
+                            fontWeight: 700, fontSize: 12
+                          }}>
+                            Band {band.toFixed(1)} · {bandLabel}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 2 }}>
+                            {sub.correctCount != null ? `${sub.correctCount}/${sub.totalQuestions || 40} correct (${sub.percentage}%)` : ''}
+                          </div>
+                        </div>
+                        {sub?.id && (
+                          <Link
+                            to={`/teacher/reading-submissions/${sub.id}`}
+                            className="g-btn g-btn-secondary"
+                            style={{ fontSize: 12, padding: '6px 12px', textDecoration: 'none' }}
+                          >
+                            Review AI Feedback →
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <span style={{
+                        fontSize: 12, padding: '4px 10px', borderRadius: 999,
+                        background: 'rgba(245,158,11,0.1)', color: '#d97706', fontWeight: 600
+                      }}>
+                        Pending Completion
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Task Summary Badges */}
@@ -447,12 +500,23 @@ export default function StudentDetail() {
         />
       )}
 
+      {/* View Login Credentials Modal */}
+      {showCredentials && (
+        <StudentCredentialsModal
+          student={student}
+          onClose={() => setShowCredentials(false)}
+          onChangePassword={() => setShowEditPassword(true)}
+        />
+      )}
+
       {/* Edit Password Modal */}
       {showEditPassword && (
         <EditPasswordModal
           student={student}
           onClose={() => setShowEditPassword(false)}
-          onUpdated={() => {}}
+          onUpdated={() => {
+            if (refreshData) refreshData();
+          }}
         />
       )}
     </div>

@@ -10,6 +10,12 @@ import {
   StatusBadge, TypeChip, isOverdue,
   calcAverageGrade, gradeColor,
 } from '../../utils/helpers.jsx';
+import {
+  getMyReadingAssignments,
+  getReadingTest,
+  getReadingSubmission
+} from '../../lib/supabase/readingTests';
+import { getBandColor, getBandLabel } from '../../lib/supabase/aiGrading';
 
 /* ── Curated Student Motivational Quotes ─────── */
 const MOTIVATIONAL_QUOTES = [
@@ -171,6 +177,40 @@ export default function StudentDashboard() {
     });
   }, []);
 
+  // IELTS Reading Tests for current student
+  const [readingAssignments, setReadingAssignments] = useState([]);
+  const [readingTestsMap, setReadingTestsMap] = useState({});
+  const [readingSubmissionsMap, setReadingSubmissionsMap] = useState({});
+
+  useEffect(() => {
+    async function loadStudentReading() {
+      try {
+        const assigns = await getMyReadingAssignments();
+        setReadingAssignments(assigns || []);
+
+        const tMap = {};
+        const sMap = {};
+        for (const a of (assigns || [])) {
+          try {
+            if (!tMap[a.readingTestId]) {
+              const t = await getReadingTest(a.readingTestId);
+              tMap[a.readingTestId] = t;
+            }
+            const s = await getReadingSubmission(a.id);
+            if (s) sMap[a.id] = s;
+          } catch (e) {
+            console.warn('Reading item load err:', e);
+          }
+        }
+        setReadingTestsMap(tMap);
+        setReadingSubmissionsMap(sMap);
+      } catch (err) {
+        console.warn('Error loading student reading assignments:', err);
+      }
+    }
+    loadStudentReading();
+  }, [user?.id]);
+
   // Categorize tasks
   // 1. "Do Now / Urgent Priority": Overdue OR Due Today OR Needs Revision
   const nowTasks = useMemo(() => {
@@ -227,11 +267,9 @@ export default function StudentDashboard() {
   const progressPercent = totalTasks > 0 ? Math.round((doneCount / totalTasks) * 100) : 0;
   const avgGrade = useMemo(() => user?.id ? calcAverageGrade(user.id, myAssignments) : null, [user, myAssignments]);
 
-  // Tab & dropdown filtering for "Today's Plan" section
+  // Tab & search filtering for "Today's Plan" section
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('All Types');
-  const [timeframeFilter, setTimeframeFilter] = useState('all');
 
   const displayTasks = useMemo(() => {
     let list = myAssignments;
@@ -255,30 +293,6 @@ export default function StudentDashboard() {
       });
     }
 
-    // Type filter
-    if (typeFilter !== 'All Types') {
-      list = list.filter(a => (a.type || '').toUpperCase() === typeFilter.toUpperCase());
-    }
-
-    // Timeframe filter
-    if (timeframeFilter !== 'all') {
-      const now = new Date();
-      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const endOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7, 23, 59, 59, 999);
-
-      if (timeframeFilter === 'today') {
-        list = list.filter(a => isDueToday(a.deadline));
-      } else if (timeframeFilter === 'this_week') {
-        list = list.filter(a => {
-          if (!a.deadline) return false;
-          const dl = new Date(a.deadline);
-          return dl >= startOfToday && dl <= endOfWeek;
-        });
-      } else if (timeframeFilter === 'overdue') {
-        list = list.filter(isOverdue);
-      }
-    }
-
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(a =>
@@ -288,7 +302,7 @@ export default function StudentDashboard() {
     }
 
     return list;
-  }, [myAssignments, activeTab, nowTasks, inProgressTasks, doneTasks, typeFilter, timeframeFilter, searchQuery]);
+  }, [myAssignments, activeTab, nowTasks, inProgressTasks, doneTasks, searchQuery]);
 
   // Motivational cheer based on completion
   const motivationalMessage = useMemo(() => {
@@ -318,8 +332,9 @@ export default function StudentDashboard() {
             gap: 6,
             fontSize: 12,
             fontWeight: 600,
-            color: 'var(--accent-text)',
-            background: 'rgba(99,102,241,0.12)',
+            color: 'var(--color-primary, #244A3A)',
+            background: 'var(--color-primary-soft, #E6EEE8)',
+            border: '1px solid var(--color-border, #DDE3DC)',
             padding: '4px 10px',
             borderRadius: 'var(--r-pill)',
             marginBottom: 8,
@@ -367,7 +382,9 @@ export default function StudentDashboard() {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(238,242,255,0.50) 100%)',
+            background: 'var(--color-surface, #FFFFFF)',
+            border: '1px solid var(--color-border, #DDE3DC)',
+            boxShadow: 'var(--shadow-card)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -375,7 +392,7 @@ export default function StudentDashboard() {
           {/* Subtle decorative glow */}
           <div style={{
             position: 'absolute', top: -20, right: -20, width: 90, height: 90,
-            background: 'radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(36,74,58,0.08) 0%, transparent 70%)',
             pointerEvents: 'none'
           }} />
 
@@ -479,8 +496,8 @@ export default function StudentDashboard() {
                   width: `${progressPercent}%`,
                   height: '100%',
                   background: progressPercent === 100
-                    ? 'linear-gradient(90deg, #10b981, #059669)'
-                    : 'linear-gradient(90deg, #6366f1, #818cf8)',
+                    ? 'var(--color-success, #27734B)'
+                    : 'var(--color-primary, #244A3A)',
                   borderRadius: 5,
                   transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
@@ -582,15 +599,168 @@ export default function StudentDashboard() {
         </div>
       </div>
 
+      {/* ── SECTION: IELTS ACADEMIC READING EXAMS ── */}
+      {readingAssignments.length > 0 && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 'var(--radius-sm)',
+                background: 'var(--color-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#ffffff', boxShadow: '0 2px 6px rgba(36, 74, 58, 0.2)'
+              }}>
+                <BookOpen size={15} />
+              </div>
+              <h2 style={{ fontSize: 17, fontWeight: 700, color: 'var(--txt-primary)', margin: 0 }}>
+                IELTS Academic Reading Exams
+              </h2>
+              {readingAssignments.filter(a => a.status !== 'graded' && !readingSubmissionsMap[a.id]).length > 0 && (
+                <span className="g-badge" style={{
+                  fontSize: 10.5, background: 'rgba(239,68,68,0.1)', color: '#dc2626',
+                  border: '1px solid rgba(239,68,68,0.25)', fontWeight: 700
+                }}>
+                  {readingAssignments.filter(a => a.status !== 'graded' && !readingSubmissionsMap[a.id]).length} pending
+                </span>
+              )}
+            </div>
+            <span style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
+              Official CD format · 60m countdown · Automated AI grading
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 14 }}>
+            {readingAssignments.map(assign => {
+              const test = readingTestsMap[assign.readingTestId];
+              const sub = readingSubmissionsMap[assign.id];
+              const isGraded = assign.status === 'graded' || Boolean(sub);
+              const band = sub?.bandScore != null ? Number(sub.bandScore) : null;
+              const bandColor = band ? getBandColor(band) : 'var(--color-primary)';
+              const bandLabel = band ? getBandLabel(band) : '';
+
+              if (isGraded && sub) {
+                // Completed exam card
+                return (
+                  <div
+                    key={assign.id}
+                    className="glass-card"
+                    style={{
+                      padding: '18px 20px', display: 'flex', flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      borderLeft: `4px solid ${bandColor}`,
+                      background: 'rgba(255,255,255,0.65)'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '3px 8px', borderRadius: 999,
+                          background: `${bandColor}18`, color: bandColor,
+                          fontWeight: 800, fontSize: 11.5
+                        }}>
+                          <Award size={12} /> IELTS Band {band.toFixed(1)} · {bandLabel}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--txt-secondary)' }}>
+                          Completed
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: 15.5, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 6px', lineHeight: 1.3 }}>
+                        {test?.title || 'IELTS Reading Test'}
+                      </h3>
+
+                      <div style={{ fontSize: 12, color: 'var(--txt-secondary)', display: 'flex', gap: 10, marginBottom: 14 }}>
+                        <span>Score: <strong>{sub.correctCount || 0}/{sub.totalQuestions || 40}</strong> ({sub.percentage || 0}%)</span>
+                        <span>·</span>
+                        <span>{Math.round((sub.timeSpentSecs || 0) / 60)} mins</span>
+                      </div>
+                    </div>
+
+                    <Link
+                      to={`/student/reading-results/${sub.id}`}
+                      className="g-btn g-btn-secondary"
+                      style={{
+                        padding: '8px 14px', fontSize: 12.5, fontWeight: 600,
+                        textDecoration: 'none', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6
+                      }}
+                    >
+                      View Results & Feedback <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                );
+              }
+
+              // Pending exam card
+              return (
+                <div
+                  key={assign.id}
+                  className="glass-card"
+                  style={{
+                    padding: '18px 20px', display: 'flex', flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    borderLeft: '4px solid var(--color-primary)',
+                    background: 'var(--color-surface)',
+                    boxShadow: 'var(--shadow-card)'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 8px', borderRadius: 999,
+                        background: '#ef4444', color: '#fff',
+                        fontWeight: 800, fontSize: 10.5, letterSpacing: '0.04em'
+                      }}>
+                        IELTS CD EXAM
+                      </span>
+                      {assign.deadline && (
+                        <span style={{ fontSize: 11, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Clock size={11} /> Due {new Date(assign.deadline).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 6px', lineHeight: 1.3 }}>
+                      {test?.title || 'IELTS Reading Test'}
+                    </h3>
+
+                    <div style={{ fontSize: 12, color: 'var(--txt-secondary)', display: 'flex', gap: 10, marginBottom: 14 }}>
+                      <span>⏱ {test?.timeLimitMins || 60} mins timer</span>
+                      <span>·</span>
+                      <span>{test?.passages?.length || 3} Passages</span>
+                      <span>·</span>
+                      <span>{test?.totalQuestions || 40} Questions</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    to={`/student/reading/${assign.id}`}
+                    className="g-btn g-btn-primary"
+                    style={{
+                      padding: '10px 16px', fontSize: 13.5, fontWeight: 600,
+                      justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6,
+                    }}
+                  >
+                    Start 60m IELTS Exam <ArrowRight size={14} />
+                  </Link>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ── SECTION: WHAT HAS TO BE DONE NOW (Urgent Priority) ── */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
               width: 24, height: 24, borderRadius: 6,
-              background: urgentCount > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(99,102,241,0.15)',
+              background: urgentCount > 0 ? 'var(--color-danger-soft, #FBEAEA)' : 'var(--color-primary-soft, #E6EEE8)',
+              border: '1px solid var(--color-border, #DDE3DC)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: urgentCount > 0 ? '#dc2626' : 'var(--accent-text)',
+              color: urgentCount > 0 ? 'var(--color-danger, #B33C3C)' : 'var(--color-primary, #244A3A)',
             }}>
               <AlertTriangle size={14} />
             </div>
@@ -650,7 +820,7 @@ export default function StudentDashboard() {
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    borderLeft: `4px solid ${overdueA ? '#ef4444' : isRevision ? '#f97316' : '#6366f1'}`,
+                    borderLeft: `4px solid ${overdueA ? 'var(--color-danger)' : isRevision ? 'var(--color-warning)' : 'var(--color-primary)'}`,
                     background: overdueA
                       ? 'rgba(254,242,242,0.55)'
                       : isRevision
@@ -777,9 +947,9 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Filter Tabs & Secondary Dropdowns */}
-          <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '12px 14px', marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+          {/* Clean Filter Tabs & Search Bar */}
+          <div className="glass-2" style={{ borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
               <div className="g-tabs" style={{ gap: 4 }}>
                 {[
                   { id: 'all', label: `All (${myAssignments.length})` },
@@ -798,63 +968,21 @@ export default function StudentDashboard() {
                 ))}
               </div>
 
-              {(searchQuery || typeFilter !== 'All Types' || timeframeFilter !== 'all' || activeTab !== 'all') && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setTypeFilter('All Types');
-                    setTimeframeFilter('all');
-                    setActiveTab('all');
-                  }}
-                  className="g-btn g-btn-ghost"
-                  style={{ fontSize: 11, padding: '4px 8px', color: 'var(--accent-text)' }}
-                >
-                  Reset filters
-                </button>
-              )}
-            </div>
-
-            {/* Quick dropdown filters */}
-            <div style={{
-              display: 'flex',
-              gap: 10,
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              borderTop: '1px solid rgba(255,255,255,0.40)',
-              paddingTop: 8,
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)' }}>Type:</span>
-                <select
-                  value={typeFilter}
-                  onChange={e => setTypeFilter(e.target.value)}
-                  className="g-select"
-                  style={{ fontSize: 11.5, padding: '4px 8px' }}
-                >
-                  {['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'].map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="g-btn g-btn-ghost"
+                    style={{ fontSize: 11, padding: '4px 8px', color: 'var(--color-primary)' }}
+                  >
+                    Clear search
+                  </button>
+                )}
+                <span style={{ fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                  {displayTasks.length} {displayTasks.length === 1 ? 'task' : 'tasks'}
+                </span>
               </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)' }}>Due:</span>
-                <select
-                  value={timeframeFilter}
-                  onChange={e => setTimeframeFilter(e.target.value)}
-                  className="g-select"
-                  style={{ fontSize: 11.5, padding: '4px 8px' }}
-                >
-                  <option value="all">Anytime</option>
-                  <option value="today">Due Today</option>
-                  <option value="this_week">Due This Week</option>
-                  <option value="overdue">Overdue Only</option>
-                </select>
-              </div>
-
-              <span style={{ fontSize: 11, color: 'var(--txt-tertiary)', marginLeft: 'auto' }}>
-                {displayTasks.length} {displayTasks.length === 1 ? 'task' : 'tasks'} found
-              </span>
             </div>
           </div>
 
@@ -904,7 +1032,7 @@ export default function StudentDashboard() {
                             ? '#ef4444'
                             : task.status === 'IN_PROGRESS'
                               ? '#3b82f6'
-                              : 'rgba(99,102,241,0.5)',
+                              : 'var(--color-primary, #244A3A)',
                         flexShrink: 0
                       }} />
 

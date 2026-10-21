@@ -11,6 +11,8 @@ import {
   isOverdue, gradeColor, uid,
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
+import ActionMenu from '../../components/common/ActionMenu';
 import { updateTaskTemplate, duplicateTaskTemplate, deleteTaskTemplate, getTaskAttachments } from '../../lib/supabase/tasks.js';
 import { createAssignments, deleteAssignment, deleteAssignmentsByTemplate } from '../../lib/supabase/assignments.js';
 import { getSignedUrl } from '../../lib/supabase/storage.js';
@@ -34,24 +36,24 @@ const labelStyle = {
 };
 
 const inputStyle = {
-  width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-  borderRadius: 'var(--r-sm)', padding: '10px 12px', fontSize: 13.5,
-  color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
+  width: '100%', background: '#ffffff',
+  border: '1px solid var(--color-border, #DDE3DC)',
+  borderRadius: 'var(--radius-sm, 6px)', padding: '10px 12px', fontSize: 13.5,
+  color: 'var(--color-text, #202923)', fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box', transition: 'all 0.15s',
-  boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
 };
 
 const handleFocus = e => {
-  e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-  e.target.style.boxShadow = '0 0 0 4px rgba(99,102,241,0.10)';
-  e.target.style.background = 'rgba(255,255,255,0.62)';
+  e.target.style.borderColor = 'var(--color-primary, #244A3A)';
+  e.target.style.boxShadow = '0 0 0 3px rgba(36, 74, 58, 0.12)';
+  e.target.style.background = '#ffffff';
 };
 
 const handleBlur = e => {
-  e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-  e.target.style.boxShadow = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-  e.target.style.background = 'rgba(255,255,255,0.40)';
+  e.target.style.borderColor = 'var(--color-border, #DDE3DC)';
+  e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
+  e.target.style.background = '#ffffff';
 };
 
 /* ── Edit Task Modal ───────────────────────── */
@@ -248,8 +250,9 @@ function EditTaskModal({ template, onClose, onSave }) {
 
             {attachType === 'file' && (
               <div style={{
-                position: 'relative', border: '1px dashed rgba(99,102,241,0.35)',
-                borderRadius: 'var(--r-sm)', padding: '14px', textAlign: 'center', cursor: 'pointer'
+                position: 'relative', border: '1px dashed var(--color-border-strong, #C5CFC5)',
+                borderRadius: 'var(--radius-sm, 6px)', padding: '14px', textAlign: 'center', cursor: 'pointer',
+                background: 'var(--color-surface-muted, #F0F3EE)'
               }}>
                 <input
                   type="file"
@@ -257,14 +260,15 @@ function EditTaskModal({ template, onClose, onSave }) {
                   onChange={e => handleFileUpload(e, false)}
                   style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
                 />
-                <span style={{ fontSize: 12, color: 'var(--txt-primary)', fontWeight: 600 }}>Click to attach PDF, Word, or TXT file</span>
+                <span style={{ fontSize: 12, color: 'var(--color-text, #202923)', fontWeight: 600 }}>Click to attach PDF, Word, or TXT file</span>
               </div>
             )}
 
             {attachType === 'image' && (
               <div style={{
-                position: 'relative', border: '1px dashed rgba(99,102,241,0.35)',
-                borderRadius: 'var(--r-sm)', padding: '14px', textAlign: 'center', cursor: 'pointer'
+                position: 'relative', border: '1px dashed var(--color-border-strong, #C5CFC5)',
+                borderRadius: 'var(--radius-sm, 6px)', padding: '14px', textAlign: 'center', cursor: 'pointer',
+                background: 'var(--color-surface-muted, #F0F3EE)'
               }}>
                 <input
                   type="file"
@@ -272,7 +276,7 @@ function EditTaskModal({ template, onClose, onSave }) {
                   onChange={e => handleFileUpload(e, true)}
                   style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
                 />
-                <span style={{ fontSize: 12, color: 'var(--txt-primary)', fontWeight: 600 }}>Click to attach an image (PNG, JPG, WebP)</span>
+                <span style={{ fontSize: 12, color: 'var(--color-text, #202923)', fontWeight: 600 }}>Click to attach an image (PNG, JPG, WebP)</span>
               </div>
             )}
 
@@ -592,22 +596,17 @@ export default function TaskDetail() {
 
   return (
     <div className="g-page">
-      {/* Back button */}
-      <Link
-        to="/teacher/tasks"
-        style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13,
-          color: 'var(--txt-secondary)', textDecoration: 'none', marginBottom: 22,
-          transition: 'color 0.15s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
-      >
-        <ArrowLeft size={14} /> Back to Tasks
-      </Link>
+      {/* Breadcrumb Navigation */}
+      <Breadcrumbs
+        items={[
+          { label: 'Dashboard', to: '/teacher/dashboard' },
+          { label: 'Task Library', to: '/teacher/tasks' },
+          { label: template.title || 'Task Details', current: true },
+        ]}
+      />
 
       {/* Main Task Header Glass Panel */}
-      <div className="glass-1" style={{ borderRadius: 'var(--r-xl)', padding: '28px 32px', marginBottom: 24 }}>
+      <div className="glass-1" style={{ borderRadius: 'var(--radius-xl, 18px)', padding: '28px 32px', marginBottom: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 18 }}>
           <div style={{ flex: '1 1 260px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
@@ -623,38 +622,41 @@ export default function TaskDetail() {
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Action buttons: Primary, Secondary, Contextual */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button
+              type="button"
               onClick={() => setShowAssign(true)}
               className="g-btn g-btn-primary"
-              style={{ padding: '9px 16px', fontSize: 13 }}
+              style={{ padding: '8px 16px', fontSize: 13, gap: 6 }}
             >
-              <UserCheck size={15} /> Assign to Students
+              <UserCheck size={14} /> Assign to Students
             </button>
             <button
+              type="button"
               onClick={() => setShowEdit(true)}
               className="g-btn g-btn-secondary"
-              style={{ padding: '9px 14px', fontSize: 13 }}
+              style={{ padding: '8px 14px', fontSize: 13, gap: 6 }}
             >
-              <Edit3 size={15} /> Edit Task
+              <Edit3 size={14} /> Edit Task
             </button>
-            <button
-              onClick={handleDuplicate}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '9px 11px' }}
-              title="Duplicate Task"
-            >
-              <Copy size={14} />
-            </button>
-            <button
-              onClick={handleDelete}
-              className="g-btn g-btn-ghost"
-              style={{ padding: '9px 11px', color: 'var(--clr-overdue-txt)' }}
-              title="Delete Task"
-            >
-              <Trash2 size={14} />
-            </button>
+            <ActionMenu
+              align="right"
+              ariaLabel="Task options"
+              items={[
+                {
+                  label: 'Duplicate Task',
+                  icon: Copy,
+                  onClick: handleDuplicate,
+                },
+                {
+                  label: 'Delete Task',
+                  icon: Trash2,
+                  danger: true,
+                  onClick: handleDelete,
+                },
+              ]}
+            />
           </div>
         </div>
 
@@ -780,18 +782,18 @@ export default function TaskDetail() {
                   ) : att.type === 'FILE' ? (
                     <div style={{
                       width: 44, height: 44, borderRadius: 8,
-                      background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                      background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--accent-text)', flexShrink: 0
+                      color: 'var(--color-primary, #244A3A)', flexShrink: 0
                     }}>
                       <FileText size={20} />
                     </div>
                   ) : (
                     <div style={{
                       width: 44, height: 44, borderRadius: 8,
-                      background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                      background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--accent-text)', flexShrink: 0
+                      color: 'var(--color-primary, #244A3A)', flexShrink: 0
                     }}>
                       <LinkIcon size={20} />
                     </div>
@@ -802,7 +804,7 @@ export default function TaskDetail() {
                       {att.type === 'LINK' ? att.title : att.name}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                      <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, background: 'rgba(99,102,241,0.10)', color: 'var(--accent-text)', padding: '1px 5px', borderRadius: 4 }}>
+                      <span style={{ textTransform: 'uppercase', fontSize: 9, fontWeight: 700, background: 'var(--color-primary-soft, #E6EEE8)', color: 'var(--color-primary, #244A3A)', padding: '1px 5px', borderRadius: 4 }}>
                         {att.type}
                       </span>
                       {att.size && <span>{att.size}</span>}
@@ -854,8 +856,8 @@ export default function TaskDetail() {
                 key={st}
                 style={{
                   fontSize: 12, padding: '4px 10px', borderRadius: 99,
-                  background: 'rgba(99,102,241,0.12)', color: 'var(--accent-text)',
-                  border: '1px solid rgba(99,102,241,0.22)', fontWeight: 500,
+                  background: 'var(--color-primary-soft, #E6EEE8)', color: 'var(--color-primary, #244A3A)',
+                  border: '1px solid var(--color-border, #DDE3DC)', fontWeight: 500,
                 }}
               >
                 {st}
@@ -983,9 +985,9 @@ export default function TaskDetail() {
                 {/* Student Avatar */}
                 <div style={{
                   width: 38, height: 38, borderRadius: 11,
-                  background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.22)',
+                  background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontWeight: 700, color: 'var(--accent-text)', flexShrink: 0
+                  fontSize: 13, fontWeight: 700, color: 'var(--color-primary, #244A3A)', flexShrink: 0
                 }}>
                   {initials}
                 </div>
@@ -1024,36 +1026,34 @@ export default function TaskDetail() {
                 </div>
 
                 {/* Status Badge & Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   <StatusBadge assignment={assignment} />
                   {submission && ['SUBMITTED', 'UNDER_REVIEW', 'DONE'].includes(assignment.status) && (
                     <Link
                       to={`/teacher/submissions/${submission.id}`}
                       className="g-btn g-btn-primary"
-                      style={{ fontSize: 12, padding: '6px 14px' }}
+                      style={{ fontSize: 12, padding: '5px 12px' }}
                     >
                       {assignment.status === 'DONE' ? 'View Review' : 'Review'}
                     </Link>
                   )}
-                  {student && (
-                    <Link
-                      to={`/teacher/students/${student.id}`}
-                      className="g-btn g-btn-ghost"
-                      style={{ padding: '6px 10px', fontSize: 12 }}
-                      title="View Student"
-                    >
-                      <ChevronRight size={14} />
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteAssignment(assignment.id, student ? `${student.firstName} ${student.lastName}` : 'student')}
-                    className="g-btn g-btn-ghost"
-                    style={{ padding: '6px 8px', color: 'var(--clr-overdue-txt)' }}
-                    title="Delete this student assignment"
-                  >
-                    <Trash2 size={13} />
-                  </button>
+                  <ActionMenu
+                    align="right"
+                    ariaLabel="Student assignment actions"
+                    items={[
+                      student ? {
+                        label: 'View Student Profile',
+                        icon: ChevronRight,
+                        onClick: () => navigate(`/teacher/students/${student.id}`),
+                      } : null,
+                      {
+                        label: 'Remove Assignment',
+                        icon: Trash2,
+                        danger: true,
+                        onClick: () => handleDeleteAssignment(assignment.id, student ? `${student.firstName} ${student.lastName}` : 'student'),
+                      },
+                    ].filter(Boolean)}
+                  />
                 </div>
               </div>
             );

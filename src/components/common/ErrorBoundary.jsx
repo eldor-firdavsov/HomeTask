@@ -29,46 +29,47 @@ export default class ErrorBoundary extends React.Component {
           <div style={{
             maxWidth: 520,
             width: '100%',
-            background: 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 20,
-            padding: '32px 28px',
-            boxShadow: '0 20px 40px rgba(30, 40, 100, 0.08)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
+            background: 'var(--color-surface, #FFFFFF)',
+            borderRadius: 'var(--radius-xl, 18px)',
+            padding: '36px 32px',
+            boxShadow: 'var(--shadow-modal)',
+            border: '1px solid var(--color-border, #DDE3DC)',
             textAlign: 'center',
           }}>
             <div style={{
               width: 52,
               height: 52,
-              borderRadius: 16,
-              background: 'rgba(239, 68, 68, 0.1)',
+              borderRadius: 14,
+              background: 'var(--color-danger-soft, #FBEAEA)',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#dc2626',
+              color: 'var(--color-danger, #B33C3C)',
               fontSize: 24,
               marginBottom: 16,
+              border: '1px solid var(--color-border, #DDE3DC)',
             }}>
               ⚠️
             </div>
-            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text, #202923)', margin: '0 0 8px' }}>
               Something went wrong
             </h2>
-            <p style={{ fontSize: 13.5, color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13.5, color: 'var(--color-text-secondary, #5D685F)', margin: '0 0 20px', lineHeight: 1.5 }}>
               An unexpected error occurred while rendering this view.
             </p>
             {this.state.error?.message && (
               <pre style={{
                 textAlign: 'left',
-                background: '#f1f5f9',
+                background: 'var(--color-surface-muted, #F0F3EE)',
                 padding: '12px 14px',
-                borderRadius: 10,
+                borderRadius: 'var(--radius-sm, 6px)',
                 fontSize: 12,
-                color: '#b91c1c',
+                color: 'var(--color-danger, #B33C3C)',
                 overflowX: 'auto',
                 marginBottom: 20,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-word',
+                border: '1px solid var(--color-border, #DDE3DC)',
               }}>
                 {this.state.error.message}
               </pre>
@@ -81,13 +82,14 @@ export default class ErrorBoundary extends React.Component {
                 }}
                 style={{
                   padding: '10px 20px',
-                  borderRadius: 10,
-                  background: '#6366f1',
+                  borderRadius: 'var(--radius-sm, 6px)',
+                  background: 'var(--color-primary, #244A3A)',
                   color: '#fff',
                   border: 'none',
                   fontWeight: 600,
                   fontSize: 13.5,
                   cursor: 'pointer',
+                  boxShadow: 'var(--shadow-card)',
                 }}
               >
                 Reload Page
@@ -98,10 +100,10 @@ export default class ErrorBoundary extends React.Component {
                 }}
                 style={{
                   padding: '10px 20px',
-                  borderRadius: 10,
-                  background: 'transparent',
-                  color: '#475569',
-                  border: '1px solid #cbd5e1',
+                  borderRadius: 'var(--radius-sm, 6px)',
+                  background: '#ffffff',
+                  color: 'var(--color-text, #202923)',
+                  border: '1px solid var(--color-border, #DDE3DC)',
                   fontWeight: 600,
                   fontSize: 13.5,
                   cursor: 'pointer',

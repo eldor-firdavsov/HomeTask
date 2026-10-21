@@ -32,39 +32,40 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
       <div>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: 16,
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.24) 0%, rgba(139,92,246,0.28) 100%)',
-            border: '1px solid rgba(255,255,255,0.7)',
-            boxShadow: '0 8px 24px rgba(99,102,241,0.22), inset 0 1px 0 rgba(255,255,255,0.8)',
+            width: 52,
+            height: 52,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            flexShrink: 0,
           }}>
-            <BookOpen size={24} color="#4f46e5" strokeWidth={2.4} />
+            <img
+              src="/assets/hometask-icon.png"
+              alt="HomeTask crest"
+              style={{ width: 52, height: 52, objectFit: 'contain' }}
+            />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--txt-primary)' }}>
-                Homework
+              <span style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-text, #202923)' }}>
+                HomeTask
               </span>
               <span style={{
                 fontSize: 10.5,
                 fontWeight: 700,
                 letterSpacing: '0.06em',
                 textTransform: 'uppercase',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'var(--color-accent, #B08A4A)',
                 color: '#fff',
                 padding: '2.5px 8px',
                 borderRadius: 999,
-                boxShadow: '0 2px 8px rgba(99,102,241,0.3)',
+                boxShadow: '0 1px 4px rgba(176, 138, 74, 0.3)',
               }}>
-                Pro
+                Academic
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: 13, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-              Classroom & Student Workflow OS
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-text-secondary, #5D685F)', fontWeight: 500 }}>
+              IELTS & Classroom Assessment Platform
             </p>
           </div>
         </div>
@@ -72,7 +73,7 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
         <h2 style={{
           fontSize: 32,
           fontWeight: 800,
-          color: 'var(--txt-primary)',
+          color: 'var(--color-text, #202923)',
           letterSpacing: '-0.03em',
           lineHeight: 1.22,
           margin: '0 0 14px',
@@ -81,9 +82,7 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
             <>
               Elevate your classroom.<br />
               <span style={{
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: 'var(--color-primary, #244A3A)',
               }}>
                 Inspire student success.
               </span>
@@ -92,9 +91,7 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
             <>
               Stay focused today.<br />
               <span style={{
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
+                color: 'var(--color-primary, #244A3A)',
               }}>
                 Achieve your study goals.
               </span>
@@ -104,30 +101,28 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
 
         <p style={{
           fontSize: 14.5,
-          color: 'var(--txt-secondary)',
+          color: 'var(--color-text-secondary, #5D685F)',
           lineHeight: 1.6,
           maxWidth: 460,
           margin: '0 0 28px',
         }}>
           {activeRole === 'teacher'
-            ? 'Effortlessly curate homework assignments, grade submissions with personalized audio & text feedback, and track student mastery in real time.'
-            : 'Track today’s assignments, submit your work seamlessly, and receive instant teacher feedback and grades.'}
+            ? 'Effortlessly curate homework assignments, author IELTS reading exams, review AI diagnostic evaluations, and track student mastery in real time.'
+            : 'Track assignments, complete timed IELTS reading exams, and receive instant AI feedback and diagnostic scores.'}
         </p>
       </div>
 
-      {/* Floating Interactive Glass Cards Showcase */}
+      {/* Floating Interactive Academic Cards Showcase */}
       <div style={{ position: 'relative', margin: '16px 0 28px', minHeight: 220 }}>
         {/* Card 1: Assignment Card */}
         <div
           className="auth-floating-card-1"
           style={{
-            background: 'rgba(255, 255, 255, 0.65)',
-            backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255, 255, 255, 0.85)',
-            borderRadius: 'var(--r-lg)',
+            background: 'var(--color-surface, #FFFFFF)',
+            border: '1px solid var(--color-border, #DDE3DC)',
+            borderRadius: 'var(--radius-lg, 14px)',
             padding: '18px 20px',
-            boxShadow: '0 16px 36px rgba(30, 40, 100, 0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+            boxShadow: 'var(--shadow-card)',
             maxWidth: 380,
             position: 'relative',
             zIndex: 2,
@@ -139,12 +134,12 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.05em',
-              color: '#4f46e5',
-              background: 'rgba(99,102,241,0.12)',
+              color: 'var(--color-primary, #244A3A)',
+              background: 'var(--color-primary-soft, #E6EEE8)',
               padding: '3px 9px',
               borderRadius: 6,
             }}>
-              Writing Task
+              IELTS Reading
             </span>
             <span style={{
               display: 'inline-flex',
@@ -152,18 +147,18 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
               gap: 4,
               fontSize: 11.5,
               fontWeight: 600,
-              color: 'var(--clr-done-txt)',
-              background: 'var(--clr-done)',
-              border: '1px solid var(--clr-done-bd)',
+              color: 'var(--color-success, #27734B)',
+              background: 'var(--color-success-soft, #E7F3EA)',
+              border: '1px solid var(--color-border, #DDE3DC)',
               padding: '2.5px 8px',
               borderRadius: 999,
             }}>
-              <CheckCircle2 size={12} strokeWidth={2.4} /> Reviewed · 98% (A+)
+              <CheckCircle2 size={12} strokeWidth={2.4} /> Band 8.5 · 38/40
             </span>
           </div>
 
-          <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--txt-primary)', marginBottom: 8 }}>
-            How Technology Transforms Modern Learning
+          <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--color-text, #202923)', marginBottom: 8 }}>
+            Academic Reading Practice: Climate Systems
           </div>
 
           <div style={{
@@ -171,15 +166,15 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
             alignItems: 'center',
             gap: 10,
             padding: '10px 12px',
-            background: 'rgba(255, 255, 255, 0.5)',
-            borderRadius: 'var(--r-sm)',
-            border: '1px solid rgba(255, 255, 255, 0.65)',
+            background: 'var(--color-surface-muted, #F0F3EE)',
+            borderRadius: 'var(--radius-sm, 6px)',
+            border: '1px solid var(--color-border, #DDE3DC)',
           }}>
             <div style={{
               width: 28,
               height: 28,
               borderRadius: 8,
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'var(--color-primary, #244A3A)',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
@@ -191,11 +186,11 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
               AK
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--txt-primary)' }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text, #202923)' }}>
                 Ahmadjon Karimov
               </div>
-              <div style={{ fontSize: 11, color: 'var(--txt-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                "Well-structured body arguments and clear conclusion."
+              <div style={{ fontSize: 11, color: 'var(--color-text-secondary, #5D685F)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                "High precision in True/False/Not Given & Heading matching."
               </div>
             </div>
           </div>
@@ -205,13 +200,11 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
         <div
           className="auth-floating-card-2"
           style={{
-            background: 'rgba(255, 255, 255, 0.72)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.9)',
-            borderRadius: 'var(--r-md)',
+            background: 'var(--color-surface, #FFFFFF)',
+            border: '1px solid var(--color-border, #DDE3DC)',
+            borderRadius: 'var(--radius-md, 10px)',
             padding: '12px 16px',
-            boxShadow: '0 12px 28px rgba(30, 40, 100, 0.09)',
+            boxShadow: 'var(--shadow-modal)',
             maxWidth: 300,
             position: 'absolute',
             right: 12,
@@ -226,20 +219,20 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
             width: 36,
             height: 36,
             borderRadius: 10,
-            background: 'rgba(245, 158, 11, 0.16)',
+            background: 'var(--color-warning-soft, #FBF1DB)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <Flame size={20} color="#d97706" />
+            <Flame size={20} color="var(--color-accent, #B08A4A)" />
           </div>
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--txt-primary)' }}>
-              7-Day Streak Active
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-text, #202923)' }}>
+              Official 60m CD Simulation
             </div>
-            <div style={{ fontSize: 11, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Timer size={11} /> 25m Focus Sprint ready
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary, #5D685F)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Timer size={11} /> Real IELTS Exam Engine
             </div>
           </div>
         </div>
@@ -249,10 +242,9 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
       <div style={{
         marginTop: 18,
         padding: '14px 18px',
-        background: 'rgba(255,255,255,0.4)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.6)',
-        borderRadius: 'var(--r-md)',
+        background: 'var(--color-surface-muted, #F0F3EE)',
+        border: '1px solid var(--color-border, #DDE3DC)',
+        borderRadius: 'var(--radius-md, 10px)',
         display: 'flex',
         alignItems: 'flex-start',
         gap: 12,
@@ -261,20 +253,20 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
           width: 26,
           height: 26,
           borderRadius: 8,
-          background: 'rgba(99,102,241,0.12)',
+          background: 'var(--color-primary-soft, #E6EEE8)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
           marginTop: 2,
         }}>
-          <Sparkles size={14} color="#6366f1" />
+          <Sparkles size={14} color="var(--color-primary, #244A3A)" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontStyle: 'italic', color: 'var(--txt-primary)', lineHeight: 1.45 }}>
+          <div style={{ fontSize: 12.5, fontStyle: 'italic', color: 'var(--color-text, #202923)', lineHeight: 1.45 }}>
             "{quote.text}"
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent-text)', marginTop: 3 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-accent, #B08A4A)', marginTop: 3 }}>
             — {quote.author}
           </div>
         </div>
@@ -287,19 +279,19 @@ export default function AuthShowcase({ activeRole = 'teacher' }) {
         gap: 18,
         marginTop: 24,
         paddingTop: 16,
-        borderTop: '1px solid rgba(255, 255, 255, 0.45)',
+        borderTop: '1px solid var(--color-border, #DDE3DC)',
       }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-          <ShieldCheck size={14} color="#10b981" />
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--color-text-secondary, #5D685F)', fontWeight: 500 }}>
+          <ShieldCheck size={14} color="var(--color-primary, #244A3A)" />
           Secure Supabase Auth
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-          <Zap size={14} color="#6366f1" />
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--color-text-secondary, #5D685F)', fontWeight: 500 }}>
+          <Zap size={14} color="var(--color-accent, #B08A4A)" />
           Realtime Updates
         </div>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--txt-secondary)', fontWeight: 500 }}>
-          <Award size={14} color="#8b5cf6" />
-          Instant Feedback
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--color-text-secondary, #5D685F)', fontWeight: 500 }}>
+          <Award size={14} color="var(--color-primary, #244A3A)" />
+          Instant AI Grading
         </div>
       </div>
     </div>

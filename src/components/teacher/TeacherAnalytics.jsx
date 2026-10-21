@@ -48,18 +48,27 @@ export default function TeacherAnalytics() {
           const completion = calculateCompletionRate(s.id, assignments);
           const avgScore = calculateAverageScore(s.id, assignments);
           return (
-            <div key={s.id} className="glass" style={{ padding: '1.5rem' }}>
-              <h3 style={{ marginBottom: '1rem' }}>{s.name}</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <span style={{ color: 'var(--muted)' }}>Completion Rate</span>
-                <strong>{completion}%</strong>
+            <div
+              key={s.id}
+              style={{
+                background: 'var(--color-surface, #FFFFFF)',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                borderRadius: 'var(--radius-lg, 14px)',
+                boxShadow: 'var(--shadow-card)',
+                padding: '1.5rem',
+              }}
+            >
+              <h3 style={{ margin: '0 0 1rem', fontSize: '1.1rem', color: 'var(--color-text, #202923)' }}>{s.name}</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: 13 }}>
+                <span style={{ color: 'var(--color-text-secondary, #5D685F)' }}>Completion Rate</span>
+                <strong style={{ color: 'var(--color-text, #202923)' }}>{completion}%</strong>
               </div>
-              <div style={{ width: '100%', height: '8px', background: 'var(--bg-1)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
-                <div style={{ width: `${completion}%`, height: '100%', background: 'var(--primary)' }} />
+              <div style={{ width: '100%', height: '8px', background: 'var(--color-surface-muted, #F0F3EE)', borderRadius: '4px', overflow: 'hidden', marginBottom: '1rem' }}>
+                <div style={{ width: `${completion}%`, height: '100%', background: 'var(--color-primary, #244A3A)' }} />
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--muted)' }}>Avg Score</span>
-                <strong>{avgScore > 0 ? `${avgScore} / 10` : '-'}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <span style={{ color: 'var(--color-text-secondary, #5D685F)' }}>Avg Score</span>
+                <strong style={{ color: 'var(--color-text, #202923)' }}>{avgScore > 0 ? `${avgScore} / 10` : '—'}</strong>
               </div>
             </div>
           );

@@ -32,16 +32,86 @@ export default function CreateTaskModal({ onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
-      <div className="glass" style={{ padding: '2rem', width: '100%', maxWidth: '500px', background: 'var(--bg-1)' }}>
-        <h2>Create Task</h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-          <input placeholder="Task Title" value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)' }} />
-          <select value={type} onChange={e => setType(e.target.value)} style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)' }}>
-            <option>Homework</option><option>Writing</option><option>Quiz</option>
-          </select>
-          <textarea placeholder="Description" value={desc} onChange={e => setDesc(e.target.value)} style={{ padding: '0.5rem', borderRadius: 'var(--radius-sm)', minHeight: '100px' }} />
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.45)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-task-modal-title"
+        style={{
+          padding: '2rem',
+          width: '100%',
+          maxWidth: '500px',
+          background: 'var(--color-surface, #FFFFFF)',
+          border: '1px solid var(--color-border, #DDE3DC)',
+          borderRadius: 'var(--radius-lg, 14px)',
+          boxShadow: 'var(--shadow-modal)',
+        }}
+      >
+        <h2 id="create-task-modal-title" style={{ margin: '0 0 1rem', fontSize: '1.25rem', color: 'var(--color-text, #202923)' }}>Create Task</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary, #5D685F)', textTransform: 'uppercase', marginBottom: 6 }}>
+              Task Title
+            </label>
+            <input
+              placeholder="e.g. Vocabulary & Essay Practice"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                color: 'var(--color-text, #202923)',
+                boxSizing: 'border-box',
+                outline: 'none',
+              }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary, #5D685F)', textTransform: 'uppercase', marginBottom: 6 }}>
+              Task Type
+            </label>
+            <select
+              value={type}
+              onChange={e => setType(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                color: 'var(--color-text, #202923)',
+                boxSizing: 'border-box',
+                outline: 'none',
+              }}
+            >
+              <option>Homework</option><option>Writing</option><option>Quiz</option><option>Reading</option><option>Vocabulary</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--color-text-secondary, #5D685F)', textTransform: 'uppercase', marginBottom: 6 }}>
+              Instructions & Description
+            </label>
+            <textarea
+              placeholder="Provide detailed instructions for your students..."
+              value={desc}
+              onChange={e => setDesc(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                color: 'var(--color-text, #202923)',
+                boxSizing: 'border-box',
+                minHeight: '100px',
+                outline: 'none',
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
             <Button onClick={onClose}>Cancel</Button>
             <Button variant="primary" onClick={handleSave}>Publish Task</Button>
           </div>

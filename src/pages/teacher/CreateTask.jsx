@@ -9,6 +9,7 @@ import { uid } from '../../utils/helpers.jsx';
 import { createTaskTemplate, addTaskAttachment } from '../../lib/supabase/tasks.js';
 import { createAssignments } from '../../lib/supabase/assignments.js';
 import { uploadTaskAttachment } from '../../lib/supabase/storage.js';
+import Breadcrumbs from '../../components/common/Breadcrumbs';
 
 const TASK_TYPES = ['WRITING','READING','VOCABULARY','GRAMMAR','LISTENING','SPEAKING','KEYWORD','SUMMARY','OTHER'];
 const SUB_TYPES  = ['Text','Image','File','Audio'];
@@ -28,7 +29,7 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-export default function CreateTask() {
+export function CreateTaskForm({ onCancel, onSuccess, hideBreadcrumbs = false }) {
   const { data, setData, session, profile, refreshData } = useData();
   const navigate = useNavigate();
   const toast    = useToast();
@@ -89,23 +90,23 @@ export default function CreateTask() {
 
   /* ── Focus/blur handlers ── */
   const onFocus = e => {
-    e.target.style.borderColor = 'rgba(99,102,241,0.50)';
-    e.target.style.boxShadow   = '0 0 0 4px rgba(99,102,241,0.10)';
-    e.target.style.background  = 'rgba(255,255,255,0.62)';
+    e.target.style.borderColor = 'var(--color-primary, #244A3A)';
+    e.target.style.boxShadow   = '0 0 0 3px rgba(36, 74, 58, 0.12)';
+    e.target.style.background  = '#ffffff';
   };
   const onBlur  = e => {
-    e.target.style.borderColor = 'rgba(255,255,255,0.60)';
-    e.target.style.boxShadow   = '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)';
-    e.target.style.background  = 'rgba(255,255,255,0.40)';
+    e.target.style.borderColor = 'var(--color-border, #DDE3DC)';
+    e.target.style.boxShadow   = '0 1px 2px rgba(0,0,0,0.03)';
+    e.target.style.background  = '#ffffff';
   };
 
   const inputStyle = {
-    width: '100%', background: 'rgba(255,255,255,0.40)', backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.60)',
-    borderRadius: 'var(--r-sm)', padding: '10px 13px', fontSize: 13.5,
-    color: 'var(--txt-primary)', fontFamily: 'inherit', outline: 'none',
+    width: '100%', background: '#ffffff',
+    border: '1px solid var(--color-border, #DDE3DC)',
+    borderRadius: 'var(--radius-sm, 6px)', padding: '10px 13px', fontSize: 13.5,
+    color: 'var(--color-text, #202923)', fontFamily: 'inherit', outline: 'none',
     boxSizing: 'border-box', transition: 'all 0.15s',
-    boxShadow: '0 2px 8px rgba(30,40,100,0.04), inset 0 1px 0 rgba(255,255,255,0.55)',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
   };
 
   const labelStyle = {
@@ -209,7 +210,11 @@ export default function CreateTask() {
 
       toast('Task saved to library');
       if (refreshData) await refreshData();
-      navigate('/teacher/tasks');
+      if (onSuccess) {
+        onSuccess(tpl);
+      } else {
+        navigate('/teacher/tasks');
+      }
     } catch (err) {
       console.error('Save template error:', err);
       toast(err.message || 'Failed to save task to library', 'error');
@@ -275,7 +280,11 @@ export default function CreateTask() {
 
       toast(`Task created and assigned to ${selectedStudentIds.length} student${selectedStudentIds.length === 1 ? '' : 's'}`);
       if (refreshData) await refreshData();
-      navigate('/teacher/dashboard');
+      if (onSuccess) {
+        onSuccess(tpl);
+      } else {
+        navigate('/teacher/tasks');
+      }
     } catch (err) {
       console.error('Create and assign error:', err);
       toast(err.message || 'Failed to create and assign task', 'error');
@@ -292,19 +301,23 @@ export default function CreateTask() {
   ) : null;
 
   return (
-    <div className="g-page" style={{ maxWidth: 620, margin: '0 auto' }}>
-      {/* Back */}
-      <Link to="/teacher/tasks"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, color: 'var(--txt-secondary)', textDecoration: 'none', marginBottom: 24, transition: 'color 0.15s' }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--txt-primary)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--txt-secondary)'}
-      >
-        <ArrowLeft size={13} /> Tasks
-      </Link>
+    <div className={hideBreadcrumbs ? '' : 'g-page'} style={{ maxWidth: 680, margin: '0 auto' }}>
+      {/* Breadcrumb Navigation */}
+      {!hideBreadcrumbs && (
+        <Breadcrumbs
+          items={[
+            { label: 'Dashboard', to: '/teacher/dashboard' },
+            { label: 'Task Library', to: '/teacher/tasks' },
+            { label: 'New Task Template', current: true },
+          ]}
+        />
+      )}
 
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 24px', letterSpacing: '-0.02em' }}>
-        New task
-      </h1>
+      {!hideBreadcrumbs && (
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt-primary)', margin: '0 0 24px', letterSpacing: '-0.02em' }}>
+          New task
+        </h1>
+      )}
 
       {/* Task Info Section */}
       <div className="glass-2" style={sectionStyle()}>
@@ -418,8 +431,8 @@ export default function CreateTask() {
 
         {attachType === 'file' && (
           <div style={{
-            background: 'rgba(255,255,255,0.35)', border: '1px dashed rgba(99,102,241,0.35)',
-            borderRadius: 'var(--r-md)', padding: '22px 18px', textAlign: 'center', marginBottom: 16,
+            background: 'var(--color-surface-muted, #F0F3EE)', border: '1px dashed var(--color-border-strong, #C5CFC5)',
+            borderRadius: 'var(--radius-md, 10px)', padding: '22px 18px', textAlign: 'center', marginBottom: 16,
             position: 'relative', cursor: 'pointer'
           }}>
             <input
@@ -430,11 +443,11 @@ export default function CreateTask() {
                 position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%'
               }}
             />
-            <FileText size={28} style={{ color: 'var(--accent)', margin: '0 auto 8px', opacity: 0.8 }} />
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt-primary)' }}>
+            <FileText size={28} style={{ color: 'var(--color-primary, #244A3A)', margin: '0 auto 8px', opacity: 0.8 }} />
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text, #202923)' }}>
               Click to choose a document or file
             </div>
-            <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary, #5D685F)', marginTop: 4 }}>
               PDF, Word, TXT, PowerPoint, or ZIP files
             </div>
           </div>
@@ -442,8 +455,8 @@ export default function CreateTask() {
 
         {attachType === 'image' && (
           <div style={{
-            background: 'rgba(255,255,255,0.35)', border: '1px dashed rgba(99,102,241,0.35)',
-            borderRadius: 'var(--r-md)', padding: '22px 18px', textAlign: 'center', marginBottom: 16,
+            background: 'var(--color-surface-muted, #F0F3EE)', border: '1px dashed var(--color-border-strong, #C5CFC5)',
+            borderRadius: 'var(--radius-md, 10px)', padding: '22px 18px', textAlign: 'center', marginBottom: 16,
             position: 'relative', cursor: 'pointer'
           }}>
             <input
@@ -454,11 +467,11 @@ export default function CreateTask() {
                 position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%'
               }}
             />
-            <ImageIcon size={28} style={{ color: 'var(--accent)', margin: '0 auto 8px', opacity: 0.8 }} />
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt-primary)' }}>
+            <ImageIcon size={28} style={{ color: 'var(--color-primary, #244A3A)', margin: '0 auto 8px', opacity: 0.8 }} />
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text, #202923)' }}>
               Click to choose an image of the task
             </div>
-            <div style={{ fontSize: 11, color: 'var(--txt-secondary)', marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: 'var(--color-text-secondary, #5D685F)', marginTop: 4 }}>
               PNG, JPG, WebP, or GIF
             </div>
           </div>
@@ -486,29 +499,29 @@ export default function CreateTask() {
                 ) : att.type === 'FILE' ? (
                   <div style={{
                     width: 38, height: 38, borderRadius: 6,
-                    background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--accent-text)', flexShrink: 0
+                    background: 'var(--color-primary-soft, #E6EEE8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--color-primary, #244A3A)', flexShrink: 0
                   }}>
                     <FileText size={18} />
                   </div>
                 ) : (
                   <div style={{
                     width: 38, height: 38, borderRadius: 6,
-                    background: 'rgba(99,102,241,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--accent-text)', flexShrink: 0
+                    background: 'var(--color-primary-soft, #E6EEE8)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--color-primary, #244A3A)', flexShrink: 0
                   }}>
                     <LinkIcon size={18} />
                   </div>
                 )}
 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--txt-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text, #202923)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {att.type === 'LINK' ? att.title : att.name}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-secondary, #5D685F)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{
                       textTransform: 'uppercase', fontSize: 9.5, fontWeight: 700,
-                      background: 'rgba(99,102,241,0.10)', color: 'var(--accent-text)',
+                      background: 'var(--color-primary-soft, #E6EEE8)', color: 'var(--color-primary, #244A3A)',
                       padding: '1px 5px', borderRadius: 4
                     }}>
                       {att.type}
@@ -550,13 +563,12 @@ export default function CreateTask() {
                 key={st} type="button"
                 onClick={() => toggleSub(st)}
                 style={{
-                  padding: '8px 16px', borderRadius: 'var(--r-pill)', fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', border: `1px solid ${active ? 'rgba(99,102,241,0.40)' : 'rgba(255,255,255,0.55)'}`,
-                  background: active ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.35)',
-                  color: active ? 'var(--accent-text)' : 'var(--txt-secondary)',
-                  backdropFilter: 'blur(8px)',
+                  padding: '8px 16px', borderRadius: 'var(--radius-pill, 999px)', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', border: `1px solid ${active ? 'var(--color-primary, #244A3A)' : 'var(--color-border, #DDE3DC)'}`,
+                  background: active ? 'var(--color-primary, #244A3A)' : '#ffffff',
+                  color: active ? '#ffffff' : 'var(--color-text-secondary, #5D685F)',
                   transition: 'all 0.15s', fontFamily: 'inherit',
-                  boxShadow: active ? 'inset 0 1px 0 rgba(255,255,255,0.40)' : 'none',
+                  boxShadow: 'var(--shadow-card)',
                 }}
               >
                 {st}
@@ -626,8 +638,8 @@ export default function CreateTask() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px',
                     borderRadius: 'var(--r-sm)', cursor: 'pointer', transition: 'all 0.12s',
-                    background: isSelected ? 'rgba(99,102,241,0.12)' : 'transparent',
-                    border: isSelected ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
+                    background: isSelected ? 'var(--color-primary-soft, #E6EEE8)' : 'transparent',
+                    border: isSelected ? '1px solid var(--color-border, #DDE3DC)' : '1px solid transparent',
                     marginBottom: 4,
                   }}
                 >
@@ -635,13 +647,13 @@ export default function CreateTask() {
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => {}}
-                    style={{ cursor: 'pointer', accentColor: 'var(--accent-text)', width: 16, height: 16 }}
+                    style={{ cursor: 'pointer', accentColor: 'var(--color-primary, #244A3A)', width: 16, height: 16 }}
                   />
                   <div style={{
                     width: 28, height: 28, borderRadius: 8,
-                    background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.20)',
+                    background: 'var(--color-primary-soft, #E6EEE8)', border: '1px solid var(--color-border, #DDE3DC)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 10.5, fontWeight: 700, color: 'var(--accent-text)', flexShrink: 0
+                    fontSize: 10.5, fontWeight: 700, color: 'var(--color-primary, #244A3A)', flexShrink: 0
                   }}>
                     {initials}
                   </div>
@@ -697,7 +709,9 @@ export default function CreateTask() {
 
       {/* Actions */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4, paddingBottom: 32, flexWrap: 'wrap' }}>
-        <button type="button" onClick={() => navigate(-1)} className="g-btn g-btn-ghost">Cancel</button>
+        <button type="button" onClick={onCancel || (() => navigate('/teacher/tasks'))} className="g-btn g-btn-ghost">
+          Cancel
+        </button>
         {selectedStudentIds.length > 0 && (
           <button type="button" onClick={handleSave} className="g-btn g-btn-secondary" disabled={busy}>
             Save to library only
@@ -723,5 +737,16 @@ export default function CreateTask() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function CreateTask(props) {
+  const navigate = useNavigate();
+  return (
+    <CreateTaskForm
+      {...props}
+      onCancel={props.onCancel || (() => navigate('/teacher/tasks'))}
+      onSuccess={props.onSuccess || (() => navigate('/teacher/tasks'))}
+    />
   );
 }

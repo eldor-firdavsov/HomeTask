@@ -10,23 +10,46 @@ export default function LoadingScreen({ message = 'Loading…' }) {
       justifyContent: 'center',
       flexDirection: 'column',
       gap: 16,
+      backgroundColor: 'var(--color-page)',
     }}>
       <div style={{
-        width: 44, height: 44, borderRadius: 14,
-        background: 'rgba(99,102,241,0.14)',
-        border: '1px solid rgba(99,102,241,0.24)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'pulse 1.5s ease-in-out infinite',
-        boxShadow: '0 4px 16px rgba(99,102,241,0.15)',
+        position: 'relative',
+        width: 60,
+        height: 60,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-        </svg>
+        {/* Subtle spinning ring */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          border: '2.5px solid var(--color-primary-soft, #E6EEE8)',
+          borderTopColor: 'var(--color-primary, #244A3A)',
+          animation: 'spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite',
+        }} />
+        {/* HomeTask Crest */}
+        <img
+          src="/assets/hometask-icon.png"
+          alt="HomeTask"
+          style={{ width: 34, height: 34, objectFit: 'contain' }}
+        />
       </div>
-      <div style={{ fontSize: 13.5, color: 'var(--txt-secondary)', fontWeight: 600, letterSpacing: '0.01em' }}>
+      <div style={{ 
+        fontSize: 14, 
+        color: 'var(--color-text-secondary)', 
+        fontWeight: 600, 
+        letterSpacing: '0.01em',
+        fontFamily: 'inherit'
+      }}>
         {message}
       </div>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

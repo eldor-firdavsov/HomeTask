@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { GraduationCap, BookOpen, ArrowRight, ShieldCheck } from 'lucide-react';
+import BrandLogo from '../common/BrandLogo';
 
 export default function AuthLayout({ role = 'student', children }) {
   const isStudent = role === 'student';
@@ -13,14 +14,14 @@ export default function AuthLayout({ role = 'student', children }) {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        background: 'linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%)',
+        background: 'var(--color-page, #F7F8F5)',
         position: 'relative',
         boxSizing: 'border-box',
         padding: '24px 20px',
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       }}
     >
-      {/* Subtle background decoration (very soft & minimalist) */}
+      {/* Subtle background decoration (very soft & minimalist academic atmosphere) */}
       <div
         aria-hidden="true"
         style={{
@@ -34,12 +35,12 @@ export default function AuthLayout({ role = 'student', children }) {
         <div
           style={{
             position: 'absolute',
-            top: '-20%',
+            top: '-15%',
             left: '50%',
             transform: 'translateX(-50%)',
             width: '600px',
             height: '400px',
-            background: 'radial-gradient(ellipse at center, rgba(99, 102, 241, 0.12) 0%, rgba(238, 242, 255, 0) 70%)',
+            background: 'radial-gradient(ellipse at center, rgba(36, 74, 58, 0.05) 0%, rgba(247, 248, 245, 0) 70%)',
             filter: 'blur(40px)',
           }}
         />
@@ -60,41 +61,12 @@ export default function AuthLayout({ role = 'student', children }) {
         }}
       >
         {/* Brand */}
-        <Link
-          to="/"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            textDecoration: 'none',
-          }}
-        >
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#ffffff',
-              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
-            }}
-          >
-            <BookOpen size={18} strokeWidth={2.4} />
-          </div>
-          <span
-            style={{
-              fontSize: 18,
-              fontWeight: 700,
-              letterSpacing: '-0.025em',
-              color: '#0f172a',
-            }}
-          >
-            Homework
-          </span>
-        </Link>
+        <BrandLogo
+          variant="horizontal"
+          size={38}
+          subtitle="Academic Platform"
+          linkTo="/"
+        />
 
         {/* Role Switcher in Header */}
         <div>
@@ -109,18 +81,18 @@ export default function AuthLayout({ role = 'student', children }) {
                 borderRadius: 999,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#4338ca',
-                background: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
-                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                color: 'var(--color-primary, #244A3A)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                 textDecoration: 'none',
                 transition: 'all 0.15s ease',
               }}
               title="Switch to Teacher Login"
             >
               <GraduationCap size={15} />
-              <span>Teacher Login</span>
-              <ArrowRight size={13} strokeWidth={2.4} />
+              <span>Teacher Portal</span>
+              <ArrowRight size={13} strokeWidth={2.2} />
             </Link>
           ) : (
             <Link
@@ -133,18 +105,18 @@ export default function AuthLayout({ role = 'student', children }) {
                 borderRadius: 999,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#4338ca',
-                background: 'rgba(255, 255, 255, 0.85)',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
-                boxShadow: '0 2px 6px rgba(15, 23, 42, 0.04)',
+                color: 'var(--color-primary, #244A3A)',
+                background: '#ffffff',
+                border: '1px solid var(--color-border, #DDE3DC)',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
                 textDecoration: 'none',
                 transition: 'all 0.15s ease',
               }}
               title="Switch to Student Login"
             >
               <BookOpen size={14} />
-              <span>Student Login</span>
-              <ArrowRight size={13} strokeWidth={2.4} />
+              <span>Student Portal</span>
+              <ArrowRight size={13} strokeWidth={2.2} />
             </Link>
           )}
         </div>
@@ -163,7 +135,7 @@ export default function AuthLayout({ role = 'student', children }) {
         {children}
       </main>
 
-      {/* Minimal Footer */}
+      {/* Minimal Academic Footer */}
       <footer
         style={{
           width: '100%',
@@ -177,12 +149,13 @@ export default function AuthLayout({ role = 'student', children }) {
           justifyContent: 'center',
           gap: 6,
           fontSize: 12,
-          color: '#94a3b8',
+          color: 'var(--color-text-muted, #778078)',
         }}
       >
-        <ShieldCheck size={14} color="#6366f1" />
-        <span>Secure authentication · Homework Platform</span>
+        <ShieldCheck size={14} color="var(--color-primary, #244A3A)" />
+        <span>Secure Academic Authentication · HomeTask & IELTS Platform</span>
       </footer>
     </div>
   );
 }
+
