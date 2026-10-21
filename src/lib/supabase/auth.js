@@ -100,6 +100,10 @@ export async function updateProfile(userId, updates) {
 }
 
 // ── Verify current password ──────────────────────────────
+// NOTE: This uses signInWithPassword which refreshes the auth session.
+// After calling verifyPassword, the session is re-authenticated.
+// When used before updatePassword, callers should re-authenticate
+// with the NEW password afterward to keep the session valid.
 export async function verifyPassword(email, password) {
   const { error } = await supabase.auth.signInWithPassword({
     email,

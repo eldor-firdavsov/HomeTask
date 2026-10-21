@@ -174,7 +174,9 @@ export default function StudentTaskDetail() {
     </div>
   );
 
-  const canSubmit = !['SUBMITTED','UNDER_REVIEW','DONE'].includes(assignment.status);
+  const canSubmit = !['DONE'].includes(assignment.status) && (
+    !['SUBMITTED', 'UNDER_REVIEW'].includes(assignment.status) || !!assignment.feedback
+  );
   const overdueA  = isOverdue(assignment);
   const dlDate    = assignment.deadline ? new Date(assignment.deadline) : null;
   const dlStr     = dlDate ? dlDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) + ', ' + dlDate.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : null;
@@ -336,8 +338,8 @@ export default function StudentTaskDetail() {
         </div>
       )}
 
-      {/* Revision feedback */}
-      {assignment.status === 'NEEDS_REVISION' && assignment.feedback && (
+      {/* Revision / Review feedback */}
+      {(['REVIEW', 'NEEDS_REVISION'].includes(assignment.status) || assignment.feedback) && assignment.feedback && (
         <div className="glass-2" style={{
           borderRadius: 'var(--r-lg)', padding: '18px 22px', marginBottom: 20,
           background: 'rgba(251,146,60,0.12)', border: '1px solid rgba(251,146,60,0.30)',
@@ -503,7 +505,7 @@ export default function StudentTaskDetail() {
       )}
 
       {/* Already submitted (read-only) */}
-      {submission && !canSubmit && assignment.status !== 'NEEDS_REVISION' && (
+      {submission && !canSubmit && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px', marginBottom: 20, minWidth: 0, overflow: 'hidden' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 12 }}>
             Your submission {submission.version > 1 ? `(Version ${submission.version})` : ''}
@@ -567,7 +569,7 @@ export default function StudentTaskDetail() {
       {canSubmit && (
         <div className="glass-2" style={{ borderRadius: 'var(--r-lg)', padding: '22px 26px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--txt-secondary)', marginBottom: 14 }}>
-            {assignment.status === 'NEEDS_REVISION' ? 'Revised answer' : 'Your submission'}
+            {assignment.feedback ? 'Revised answer' : 'Your submission'}
           </div>
           <textarea
             rows={7}
@@ -626,7 +628,7 @@ export default function StudentTaskDetail() {
               </button>
               <button onClick={handleSubmit} className="g-btn g-btn-primary" disabled={busy}>
                 <Send size={13} />
-                {busy ? 'Submitting…' : assignment.status === 'NEEDS_REVISION' ? 'Resubmit' : 'Submit'}
+                {busy ? 'Submitting…' : assignment.feedback ? 'Resubmit' : 'Submit'}
               </button>
             </div>
           </div>

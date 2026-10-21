@@ -75,16 +75,18 @@ export default function ForgotPassword({ role = 'teacher' }) {
 
   return (
     <AuthLayout role={role}>
-      <div className={`auth-card-panel ${shake ? 'auth-shake' : ''}`}>
-        <div
-          className="glass-4"
-          style={{
-            borderRadius: 'var(--r-xl)',
-            padding: '36px 32px 30px',
-            boxShadow: '0 24px 60px rgba(30, 40, 100, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-            position: 'relative',
-          }}
-        >
+      <div
+        className={shake ? 'auth-shake' : ''}
+        style={{
+          background: '#ffffff',
+          borderRadius: 18,
+          border: '1px solid rgba(226, 232, 240, 0.9)',
+          boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03)',
+          padding: '36px 32px 32px',
+          width: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
           {/* Back link */}
           <Link
             to={loginPath}
@@ -363,7 +365,6 @@ export default function ForgotPassword({ role = 'teacher' }) {
             </form>
           )}
         </div>
-      </div>
     </AuthLayout>
   );
 }

@@ -177,21 +177,21 @@ export default function StudentDashboard() {
     return myAssignments
       .filter(a => {
         if (a.status === 'DONE') return false;
-        if (a.status === 'SUBMITTED' || a.status === 'UNDER_REVIEW') return false;
+        if (a.status === 'SUBMITTED' || (a.status === 'REVIEW' && !a.feedback) || a.status === 'UNDER_REVIEW') return false;
         const overdue = isOverdue(a);
         const dueToday = isDueToday(a.deadline);
-        const needsRev = a.status === 'NEEDS_REVISION';
+        const needsRev = (a.status === 'REVIEW' || a.status === 'NEEDS_REVISION') && !!a.feedback;
         return overdue || dueToday || needsRev;
       })
       .sort((a, b) => {
-        // Order: Overdue first, then Needs Revision, then deadline soonest
+        // Order: Overdue first, then Review/Revision, then deadline soonest
         const aOver = isOverdue(a);
         const bOver = isOverdue(b);
         if (aOver && !bOver) return -1;
         if (!aOver && bOver) return 1;
 
-        const aRev = a.status === 'NEEDS_REVISION';
-        const bRev = b.status === 'NEEDS_REVISION';
+        const aRev = (a.status === 'REVIEW' || a.status === 'NEEDS_REVISION') && !!a.feedback;
+        const bRev = (b.status === 'REVIEW' || b.status === 'NEEDS_REVISION') && !!b.feedback;
         if (aRev && !bRev) return -1;
         if (!aRev && bRev) return 1;
 
@@ -639,7 +639,7 @@ export default function StudentDashboard() {
             {nowTasks.map(task => {
               const urgency = getTimeUrgency(task);
               const overdueA = isOverdue(task);
-              const isRevision = task.status === 'NEEDS_REVISION';
+              const isRevision = (task.status === 'REVIEW' || task.status === 'NEEDS_REVISION') && !!task.feedback;
 
               return (
                 <div

@@ -5,6 +5,7 @@ import { Search, BookOpen, ChevronRight, Copy, Trash2, UserCheck, X } from 'luci
 import { TypeChip, formatDate } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/tasks.js';
+import { deleteAssignmentsByTemplate } from '../../lib/supabase/assignments.js';
 
 const TYPES = ['All Types', 'Vocabulary', 'Writing', 'Reading', 'Listening', 'Speaking', 'Grammar', 'Keyword', 'Summary', 'Other'];
 const STATUS_TABS = [
@@ -98,19 +99,22 @@ export default function TaskLibrary() {
   };
 
   const handleDelete = async (tplId) => {
-    const inUse = data.assignments.some(a => a.templateId === tplId);
-    if (inUse) {
-      toast('Cannot delete — this template has active assignments.', 'error');
-      return;
-    }
-    if (!confirm('Delete this task template? This cannot be undone.')) return;
+    const assignedCount = data.assignments.filter(a => a.templateId === tplId).length;
+    const msg = assignedCount > 0
+      ? `This task has ${assignedCount} active student assignment(s). Delete this task and all its assignments? This cannot be undone.`
+      : 'Delete this task template? This cannot be undone.';
+    if (!confirm(msg)) return;
     try {
+      if (assignedCount > 0) {
+        await deleteAssignmentsByTemplate(tplId);
+      }
       await deleteTaskTemplate(tplId);
       setData(prev => ({
         ...prev,
         templates: prev.templates.filter(t => t.id !== tplId),
+        assignments: prev.assignments.filter(a => a.templateId !== tplId),
       }));
-      toast('Template deleted');
+      toast('Task template and assignments deleted');
       if (refreshData) await refreshData();
     } catch (err) {
       console.error('Delete template error:', err);

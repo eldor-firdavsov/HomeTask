@@ -14,13 +14,14 @@ export function effectiveStatus(a) {
 }
 
 const STATUS_META = {
-  PENDING:        { label: 'Pending',        cls: 'g-badge g-badge-pending'   },
-  IN_PROGRESS:    { label: 'In Progress',    cls: 'g-badge g-badge-progress'  },
-  SUBMITTED:      { label: 'Submitted',      cls: 'g-badge g-badge-submitted' },
-  UNDER_REVIEW:   { label: 'Under Review',   cls: 'g-badge g-badge-review'    },
-  NEEDS_REVISION: { label: 'Needs Revision', cls: 'g-badge g-badge-revision'  },
-  DONE:           { label: 'Done',           cls: 'g-badge g-badge-done'      },
-  OVERDUE:        { label: 'Overdue',        cls: 'g-badge g-badge-overdue'   },
+  IN_PROGRESS:    { label: 'In Progress', cls: 'g-badge g-badge-progress'  },
+  PENDING:        { label: 'In Progress', cls: 'g-badge g-badge-progress'  },
+  SUBMITTED:      { label: 'Submitted',   cls: 'g-badge g-badge-submitted' },
+  REVIEW:         { label: 'Review',      cls: 'g-badge g-badge-review'    },
+  UNDER_REVIEW:   { label: 'Review',      cls: 'g-badge g-badge-review'    },
+  NEEDS_REVISION: { label: 'Review',      cls: 'g-badge g-badge-review'    },
+  DONE:           { label: 'Done',        cls: 'g-badge g-badge-done'      },
+  OVERDUE:        { label: 'Overdue',     cls: 'g-badge g-badge-overdue'   },
 };
 
 export function StatusBadge({ assignment }) {
@@ -80,12 +81,11 @@ export function studentTaskCounts(studentId, assignments) {
   const mine = assignments.filter(a => a.studentId === studentId);
   const now  = new Date();
   return {
-    total:   mine.length,
-    pending: mine.filter(a => a.status === 'PENDING').length,
-    review:  mine.filter(a => ['SUBMITTED','UNDER_REVIEW'].includes(a.status)).length,
-    revision:mine.filter(a => a.status === 'NEEDS_REVISION').length,
-    done:    mine.filter(a => a.status === 'DONE').length,
-    overdue: mine.filter(a => a.status !== 'DONE' && a.deadline && new Date(a.deadline) < now).length,
+    total:      mine.length,
+    inProgress: mine.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status)).length,
+    review:     mine.filter(a => ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_REVISION', 'REVIEW'].includes(a.status)).length,
+    done:       mine.filter(a => a.status === 'DONE').length,
+    overdue:    mine.filter(a => a.status !== 'DONE' && a.deadline && new Date(a.deadline) < now).length,
   };
 }
 

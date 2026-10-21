@@ -4,14 +4,12 @@ import { useData } from '../../context/DataContext';
 import { Search, ChevronRight, ClipboardList, Filter, X, ArrowUpDown, Calendar } from 'lucide-react';
 import { StatusBadge, TypeChip, isOverdue } from '../../utils/helpers.jsx';
 
-const STATUS_FILTERS = ['All', 'Pending', 'In Progress', 'Submitted', 'Under Review', 'Needs Revision', 'Done', 'Overdue'];
+const STATUS_FILTERS = ['All', 'In Progress', 'Submitted', 'Review', 'Done', 'Overdue'];
 
 const STATUS_MAP = {
-  'Pending': 'PENDING',
   'In Progress': 'IN_PROGRESS',
   'Submitted': 'SUBMITTED',
-  'Under Review': 'UNDER_REVIEW',
-  'Needs Revision': 'NEEDS_REVISION',
+  'Review': 'REVIEW',
   'Done': 'DONE',
 };
 
@@ -34,7 +32,11 @@ export default function StudentTasks() {
   const statusCounts = useMemo(() => {
     const counts = { All: mine.length, Overdue: 0 };
     STATUS_FILTERS.forEach(f => {
-      if (f !== 'All' && f !== 'Overdue') {
+      if (f === 'In Progress') {
+        counts[f] = mine.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status)).length;
+      } else if (f === 'Review') {
+        counts[f] = mine.filter(a => ['REVIEW', 'UNDER_REVIEW', 'NEEDS_REVISION'].includes(a.status)).length;
+      } else if (f !== 'All' && f !== 'Overdue') {
         counts[f] = mine.filter(a => a.status === STATUS_MAP[f]).length;
       }
     });
@@ -59,6 +61,10 @@ export default function StudentTasks() {
     if (statusFilter !== 'All') {
       if (statusFilter === 'Overdue') {
         list = list.filter(isOverdue);
+      } else if (statusFilter === 'In Progress') {
+        list = list.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status));
+      } else if (statusFilter === 'Review') {
+        list = list.filter(a => ['REVIEW', 'UNDER_REVIEW', 'NEEDS_REVISION'].includes(a.status));
       } else {
         list = list.filter(a => a.status === STATUS_MAP[statusFilter]);
       }
@@ -323,7 +329,7 @@ export default function StudentTasks() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 16, padding: '16px 22px',
                     borderBottom: i < filtered.length - 1 ? '1px solid rgba(255,255,255,0.40)' : 'none',
-                    borderLeft: `3px solid ${overdueA ? 'rgba(248,113,113,0.70)' : a.status === 'NEEDS_REVISION' ? 'rgba(251,146,60,0.70)' : 'transparent'}`,
+                    borderLeft: `3px solid ${overdueA ? 'rgba(248,113,113,0.70)' : ['REVIEW', 'NEEDS_REVISION'].includes(a.status) ? 'rgba(251,146,60,0.70)' : 'transparent'}`,
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>

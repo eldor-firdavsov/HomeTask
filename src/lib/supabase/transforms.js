@@ -2,18 +2,19 @@ import { supabase } from './client.js';
 
 // ── Status mapping: DB enum → UI label ───────────────────
 export const STATUS_DB_TO_UI = {
-  'not_started': 'PENDING',
+  'not_started': 'IN_PROGRESS',
   'in_progress': 'IN_PROGRESS',
   'submitted': 'SUBMITTED',
-  'under_review': 'UNDER_REVIEW',
-  'needs_revision': 'NEEDS_REVISION',
+  'under_review': 'REVIEW',
+  'needs_revision': 'REVIEW',
   'done': 'DONE',
 };
 
 export const STATUS_UI_TO_DB = {
-  'PENDING': 'not_started',
+  'PENDING': 'in_progress',
   'IN_PROGRESS': 'in_progress',
   'SUBMITTED': 'submitted',
+  'REVIEW': 'under_review',
   'UNDER_REVIEW': 'under_review',
   'NEEDS_REVISION': 'needs_revision',
   'DONE': 'done',

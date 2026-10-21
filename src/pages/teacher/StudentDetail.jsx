@@ -8,11 +8,14 @@ import {
 } from '../../utils/helpers.jsx';
 import { createAssignments } from '../../lib/supabase/assignments.js';
 import { deactivateStudent } from '../../lib/supabase/students.js';
+import { deleteAssignment } from '../../lib/supabase/assignments.js';
 
-const TABS = ['All','Pending','In Progress','Submitted','Review','Needs Revision','Done','Overdue'];
+const TABS = ['All', 'In Progress', 'Submitted', 'Review', 'Done', 'Overdue'];
 const STATUS_MAP = {
-  'Pending':'PENDING','In Progress':'IN_PROGRESS','Submitted':'SUBMITTED',
-  'Review':'UNDER_REVIEW','Needs Revision':'NEEDS_REVISION','Done':'DONE',
+  'In Progress': 'IN_PROGRESS',
+  'Submitted': 'SUBMITTED',
+  'Review': 'REVIEW',
+  'Done': 'DONE',
 };
 
 /* ── Assign Modal ──────────────────────────── */
@@ -138,8 +141,26 @@ export default function StudentDetail() {
   const filtered = useMemo(() => {
     if (tab === 'All')     return assignments;
     if (tab === 'Overdue') return assignments.filter(a => isOverdue(a));
+    if (tab === 'In Progress') return assignments.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status));
+    if (tab === 'Review') return assignments.filter(a => ['REVIEW', 'UNDER_REVIEW', 'NEEDS_REVISION'].includes(a.status));
     return assignments.filter(a => a.status === STATUS_MAP[tab]);
   }, [assignments, tab]);
+
+  const handleDeleteAssignment = async (assignmentId, taskTitle) => {
+    if (!confirm(`Delete this assigned task "${taskTitle}" for ${student?.firstName || 'this student'}? This cannot be undone.`)) return;
+    try {
+      await deleteAssignment(assignmentId);
+      setData(prev => ({
+        ...prev,
+        assignments: prev.assignments.filter(a => a.id !== assignmentId),
+      }));
+      toast('Assigned task deleted');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Delete assignment error:', err);
+      toast(err.message || 'Failed to delete assigned task', 'error');
+    }
+  };
 
   const avg = calcAverageGrade(studentId, data.assignments);
 
@@ -289,6 +310,14 @@ export default function StudentDetail() {
                       {a.status === 'DONE' ? 'View Review' : 'Review'}
                     </Link>
                   )}
+                  <button
+                    onClick={() => handleDeleteAssignment(a.id, a.title)}
+                    className="g-btn g-btn-ghost"
+                    style={{ color: 'var(--clr-overdue-txt)', padding: '6px 8px' }}
+                    title="Delete assigned task"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             );

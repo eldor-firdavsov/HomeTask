@@ -1240,3 +1240,432 @@ p, span, div, h1, h2, h3, h4, h5, h6 {
   animation: authSpin 0.8s linear infinite;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   TEACHER SETTINGS PAGE DESIGN SYSTEM
+═══════════════════════════════════════════════════════════ */
+
+/* Settings page container */
+.ts-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 60px;
+}
+
+/* Settings page header */
+.ts-header {
+  margin-bottom: 32px;
+}
+.ts-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: rgba(99,102,241,0.10);
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  margin-bottom: 12px;
+  border: 1px solid rgba(99,102,241,0.15);
+}
+.ts-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--txt-primary);
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+.ts-header p {
+  font-size: 14px;
+  color: var(--txt-secondary);
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+/* Profile banner card */
+.ts-profile-banner {
+  padding: 20px 24px;
+  border-radius: var(--r-xl);
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.60) 0%, rgba(238,242,255,0.40) 100%);
+}
+.ts-profile-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.20) 0%, rgba(139,92,246,0.18) 100%);
+  border: 1px solid rgba(99,102,241,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent-text);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.12);
+}
+.ts-profile-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ts-profile-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--txt-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.ts-profile-email {
+  font-size: 13px;
+  color: var(--txt-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ts-profile-meta {
+  font-size: 12px;
+  color: var(--txt-tertiary);
+  text-align: right;
+}
+.ts-role-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(99,102,241,0.10);
+  color: var(--accent-text);
+  border: 1px solid rgba(99,102,241,0.20);
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+}
+
+/* Tab navigation */
+.ts-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 28px;
+  background: rgba(255,255,255,0.30);
+  border-radius: var(--r-md);
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.50);
+}
+.ts-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--txt-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  position: relative;
+}
+.ts-tab:hover {
+  color: var(--txt-primary);
+  background: rgba(255,255,255,0.45);
+}
+.ts-tab.active {
+  background: rgba(255,255,255,0.70);
+  color: var(--accent-text);
+  font-weight: 600;
+  border-color: rgba(255,255,255,0.80);
+  box-shadow: 0 2px 8px rgba(30,40,100,0.06), 0 1px 0 rgba(255,255,255,0.80) inset;
+}
+
+/* Tab content animation */
+.ts-tab-content {
+  animation: tsTabFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes tsTabFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Settings form card */
+.ts-card {
+  border-radius: var(--r-xl);
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+  background: var(--glass-2-bg);
+  backdrop-filter: blur(var(--glass-2-blur));
+  -webkit-backdrop-filter: blur(var(--glass-2-blur));
+  border: 1px solid var(--glass-2-bd);
+  box-shadow: var(--glass-2-shadow);
+  transition: box-shadow 0.2s ease;
+}
+.ts-card:hover {
+  box-shadow: 0 6px 24px rgba(30,40,100,0.07), inset 0 1px 0 rgba(255,255,255,0.70);
+}
+
+/* Card header with icon */
+.ts-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ts-card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.14) 0%, rgba(139,92,246,0.12) 100%);
+  border: 1px solid rgba(99,102,241,0.20);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-text);
+  flex-shrink: 0;
+}
+.ts-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--txt-primary);
+  margin: 0 0 3px;
+  letter-spacing: -0.01em;
+}
+.ts-card-desc {
+  font-size: 13px;
+  color: var(--txt-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Settings form elements */
+.ts-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--txt-secondary);
+  margin-bottom: 7px;
+}
+.ts-input {
+  width: 100%;
+  background: rgba(255,255,255,0.50);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(200,210,230,0.50);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--txt-primary);
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-shadow: 0 1px 4px rgba(30,40,100,0.04);
+}
+.ts-input::placeholder {
+  color: var(--txt-tertiary);
+}
+.ts-input:focus {
+  border-color: rgba(99,102,241,0.55);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.10), 0 1px 4px rgba(30,40,100,0.04);
+  background: rgba(255,255,255,0.70);
+}
+.ts-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Input with password toggle */
+.ts-input-pw-wrap {
+  position: relative;
+}
+.ts-input-pw-wrap .ts-input {
+  padding-right: 42px;
+}
+.ts-pw-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--txt-tertiary);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+.ts-pw-toggle:hover {
+  color: var(--accent-text);
+  background: rgba(99,102,241,0.08);
+}
+
+/* Form grid */
+.ts-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.ts-form-group {
+  margin-bottom: 16px;
+}
+
+/* Current email display strip */
+.ts-current-value {
+  background: rgba(255,255,255,0.40);
+  border: 1px solid rgba(200,210,230,0.40);
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ts-current-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ts-current-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt-primary);
+  margin-top: 2px;
+}
+.ts-verified-badge {
+  font-size: 11px;
+  color: #059669;
+  font-weight: 600;
+  background: rgba(5,150,105,0.08);
+  border: 1px solid rgba(5,150,105,0.20);
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+}
+
+/* Alert banners */
+.ts-alert {
+  padding: 11px 14px;
+  border-radius: var(--r-sm);
+  margin-bottom: 18px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: tsAlertSlideIn 0.25s ease-out both;
+  line-height: 1.4;
+}
+@keyframes tsAlertSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ts-alert-error {
+  background: rgba(254,242,242,0.90);
+  border: 1px solid rgba(248,113,113,0.35);
+  color: #991b1b;
+}
+.ts-alert-success {
+  background: rgba(240,253,244,0.90);
+  border: 1px solid rgba(187,247,208,0.55);
+  color: #065f46;
+}
+.ts-alert svg {
+  flex-shrink: 0;
+}
+
+/* Password strength checks */
+.ts-pw-checks {
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(200,210,230,0.35);
+  border-radius: var(--r-sm);
+  padding: 10px 14px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.ts-pw-check {
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--txt-tertiary);
+  transition: color 0.2s;
+}
+.ts-pw-check.pass {
+  color: #059669;
+}
+
+/* Form footer actions */
+.ts-form-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 4px;
+}
+.ts-form-footer-hint {
+  font-size: 12px;
+  color: var(--txt-tertiary);
+  max-width: 300px;
+  line-height: 1.4;
+}
+
+/* Spin animation for loading */
+.ts-spin {
+  animation: tsSpin 0.7s linear infinite;
+}
+@keyframes tsSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ts-page {
+    padding-bottom: 40px;
+  }
+  .ts-card {
+    padding: 20px 18px 18px !important;
+    border-radius: var(--r-lg) !important;
+  }
+  .ts-form-row {
+    grid-template-columns: 1fr;
+  }
+  .ts-profile-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .ts-profile-meta {
+    text-align: left;
+  }
+  .ts-tabs {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

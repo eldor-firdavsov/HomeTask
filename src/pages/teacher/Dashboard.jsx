@@ -294,10 +294,10 @@ function StudentCard({ student, assignments }) {
           <span style={{ fontSize: 12, color: 'var(--txt-tertiary)' }}>No tasks yet</span>
         ) : (
           <>
-            {counts.pending > 0 && (
+            {counts.inProgress > 0 && (
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--txt-primary)' }}>{counts.pending}</div>
-                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>pending</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--clr-progress-txt)' }}>{counts.inProgress}</div>
+                <div style={{ fontSize: 10, color: 'var(--txt-secondary)' }}>in progress</div>
               </div>
             )}
             {counts.review > 0 && (
@@ -448,18 +448,69 @@ export default function Dashboard() {
   return (
     <div className="g-page">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28, flexWrap: 'wrap', gap: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--txt-primary)', margin: 0, letterSpacing: '-0.025em' }}>
             Dashboard
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: '4px 0 0' }}>
-            Manage your students and track their progress
+          <p style={{ fontSize: 14, color: 'var(--txt-secondary)', margin: '5px 0 0' }}>
+            Manage your students, tasks, and track progress
           </p>
         </div>
         <Link to="/teacher/tasks/new" className="g-btn g-btn-primary">
           + New task
         </Link>
+      </div>
+
+      {/* Quick Stats */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: 12,
+        marginBottom: 24,
+      }}>
+        {[
+          {
+            label: 'Students',
+            value: students.length,
+            color: 'var(--accent-text)',
+            bg: 'rgba(99,102,241,0.10)',
+            bd: 'rgba(99,102,241,0.18)',
+          },
+          {
+            label: 'In Review',
+            value: (data?.submissions || []).filter(s => {
+              const a = (data?.assignments || []).find(a => a.id === s.assignedTaskId);
+              return a && ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_REVISION', 'REVIEW'].includes(a.status);
+            }).length,
+            color: 'var(--clr-submitted-txt)',
+            bg: 'var(--clr-submitted)',
+            bd: 'var(--clr-submitted-bd)',
+          },
+          {
+            label: 'Active Tasks',
+            value: (data?.assignments || []).filter(a => a.status !== 'DONE').length,
+            color: 'var(--clr-progress-txt)',
+            bg: 'var(--clr-progress)',
+            bd: 'var(--clr-progress-bd)',
+          },
+          {
+            label: 'Templates',
+            value: (data?.templates || []).length,
+            color: 'var(--clr-done-txt)',
+            bg: 'var(--clr-done)',
+            bd: 'var(--clr-done-bd)',
+          },
+        ].map(stat => (
+          <div key={stat.label} className="glass-card" style={{ padding: '16px 18px', cursor: 'default' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+              {stat.label}
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+              {stat.value}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Tabs bar */}

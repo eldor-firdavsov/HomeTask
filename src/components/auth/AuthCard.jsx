@@ -9,10 +9,8 @@ import {
   GraduationCap,
   BookOpen,
   AlertCircle,
-  CheckCircle2,
   X,
   Sparkles,
-  Zap,
 } from 'lucide-react';
 import { useToast, useData } from '../../context/DataContext';
 
@@ -30,11 +28,13 @@ export default function AuthCard({ initialRole = 'student' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
-  const [showDemoOptions, setShowDemoOptions] = useState(false);
 
-  // Sync role when initialRole prop changes
+  const isStudent = role === 'student';
+
+  // Sync role when initialRole changes
   useEffect(() => {
     setRole(initialRole);
+    setError('');
   }, [initialRole]);
 
   // Load remembered email on mount
@@ -49,18 +49,10 @@ export default function AuthCard({ initialRole = 'student' }) {
     }
   }, []);
 
-  // Monitor Caps Lock key
   const handleKeyDetection = (e) => {
     if (e.getModifierState) {
       setCapsLockActive(e.getModifierState('CapsLock'));
     }
-  };
-
-  const handleRoleSwitch = (newRole) => {
-    if (newRole === role) return;
-    setRole(newRole);
-    setError('');
-    navigate(newRole === 'teacher' ? '/teacher/login' : '/student/login', { replace: true });
   };
 
   const triggerErrorShake = (msg) => {
@@ -98,14 +90,14 @@ export default function AuthCard({ initialRole = 'student' }) {
       const msg = err?.message || 'Login failed';
       if (msg.includes('Invalid login credentials')) {
         triggerErrorShake(
-          role === 'teacher'
-            ? 'Invalid email or password. Please verify your credentials.'
-            : 'Invalid student credentials. Please check the email and password provided by your teacher.'
+          isStudent
+            ? 'Invalid student credentials. Please check the email and password provided by your teacher.'
+            : 'Invalid email or password. Please verify your credentials.'
         );
       } else if (msg.includes('Email not confirmed')) {
-        triggerErrorShake('Account email has not been activated. Please check your confirmation link.');
+        triggerErrorShake('Account email has not been confirmed yet. Please check your inbox.');
       } else if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.toLowerCase().includes('fetch')) {
-        triggerErrorShake('Cannot reach Supabase. If your free-tier project is paused, please click "Restore" in your Supabase Dashboard.');
+        triggerErrorShake('Cannot reach the authentication server. Please check your connection or restore your database if paused.');
       } else {
         triggerErrorShake(msg);
       }
@@ -114,386 +106,436 @@ export default function AuthCard({ initialRole = 'student' }) {
     }
   };
 
-  const quickFill = (demoEmail, demoRole) => {
-    if (demoRole !== role) {
-      handleRoleSwitch(demoRole);
+  const handleQuickFill = (targetRole) => {
+    if (targetRole === 'student') {
+      setEmail('eldor@ilmla.uz');
+      setPassword('password123');
+    } else {
+      setEmail('teacher@ilmla.uz');
+      setPassword('password123');
     }
-    setEmail(demoEmail);
-    setPassword('password123'); // Standard demo seed password
     setError('');
   };
 
   return (
-    <div className={`auth-card-panel ${shake ? 'auth-shake' : ''}`}>
-      <div
-        className="glass-4"
-        style={{
-          borderRadius: 'var(--r-xl)',
-          padding: '36px 32px 30px',
-          boxShadow: '0 24px 60px rgba(30, 40, 100, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-          position: 'relative',
-        }}
-      >
-        {/* Portal Greeting */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: 24,
-              height: 24,
-              borderRadius: 8,
-              background: 'rgba(99, 102, 241, 0.12)',
-              color: '#4f46e5',
-            }}>
-              {role === 'teacher' ? <GraduationCap size={14} /> : <Sparkles size={14} />}
-            </span>
-            <span style={{
-              fontSize: 11.5,
-              fontWeight: 700,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: 'var(--accent-text)',
-            }}>
-              {role === 'teacher' ? 'Educator Sign In' : 'Student Portal'}
-            </span>
-          </div>
-
-          <h1 style={{
-            fontSize: 22,
-            fontWeight: 800,
-            color: 'var(--txt-primary)',
-            letterSpacing: '-0.02em',
-            margin: '0 0 6px',
-          }}>
-            {role === 'teacher' ? 'Welcome back, Teacher' : 'Welcome back, Student'}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--txt-secondary)', margin: 0, lineHeight: 1.5 }}>
-            {role === 'teacher'
-              ? 'Access your assignment manager, student submissions & grading analytics.'
-              : 'Log in with credentials from your teacher to view assignments and progress.'}
-          </p>
+    <div
+      className={shake ? 'auth-shake' : ''}
+      style={{
+        background: '#ffffff',
+        borderRadius: 18,
+        border: '1px solid rgba(226, 232, 240, 0.9)',
+        boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03)',
+        padding: '36px 32px 32px',
+        width: '100%',
+        boxSizing: 'border-box',
+        transition: 'box-shadow 0.2s ease',
+      }}
+    >
+      {/* Header section */}
+      <div style={{ marginBottom: 28, textAlign: 'left' }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 999,
+            background: isStudent ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.08)',
+            color: '#4338ca',
+            fontSize: 12,
+            fontWeight: 600,
+            marginBottom: 12,
+          }}
+        >
+          {isStudent ? <BookOpen size={13} /> : <GraduationCap size={13} />}
+          <span>{isStudent ? 'Student Portal' : 'Educator Space'}</span>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          {/* Email field */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{
-                fontSize: 11.5,
-                fontWeight: 600,
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                color: 'var(--txt-secondary)',
-              }}>
-                Email address
-              </label>
-              <span style={{ fontSize: 11, color: 'var(--txt-tertiary)' }}>
-                {role === 'teacher' ? 'School or personal' : 'Student email'}
-              </span>
-            </div>
+        <h1
+          style={{
+            fontSize: 24,
+            fontWeight: 700,
+            letterSpacing: '-0.025em',
+            color: '#0f172a',
+            margin: '0 0 6px',
+            lineHeight: 1.25,
+          }}
+        >
+          {isStudent ? 'Student Login' : 'Teacher Login'}
+        </h1>
+        <p
+          style={{
+            fontSize: 13.5,
+            color: '#64748b',
+            margin: 0,
+            lineHeight: 1.5,
+          }}
+        >
+          {isStudent
+            ? 'Sign in to access your assigned homework, submit work, and check feedback.'
+            : 'Sign in to manage classes, create homework tasks, and review submissions.'}
+        </p>
+      </div>
 
-            <div className="auth-input-container">
-              <span className="auth-input-icon">
-                <Mail size={16} />
-              </span>
-              <input
-                type="text"
-                inputMode="email"
-                autoCapitalize="none"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder={role === 'teacher' ? 'teacher@school.edu' : 'student@school.edu'}
-                className="auth-input"
-                autoComplete="username email"
-                disabled={loading}
-              />
-              {email && (
-                <button
-                  type="button"
-                  onClick={() => setEmail('')}
-                  className="auth-action-btn"
-                  title="Clear email"
-                  tabIndex={-1}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+      {/* Error message */}
+      {error && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            padding: '12px 14px',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: 10,
+            fontSize: 13,
+            color: '#991b1b',
+            marginBottom: 20,
+            lineHeight: 1.45,
+          }}
+        >
+          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2, color: '#dc2626' }} />
+          <div>{error}</div>
+        </div>
+      )}
 
-          {/* Password field */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <label style={{
-                fontSize: 11.5,
-                fontWeight: 600,
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                color: 'var(--txt-secondary)',
-              }}>
-                Password
-              </label>
-              <Link
-                to={role === 'teacher' ? '/teacher/forgot-password' : '/student/forgot-password'}
-                style={{
-                  fontSize: 12,
-                  color: 'var(--accent-text)',
-                  textDecoration: 'none',
-                  fontWeight: 500,
-                }}
-              >
-                Forgot password?
-              </Link>
-            </div>
-
-            <div className="auth-input-container">
-              <span className="auth-input-icon">
-                <Lock size={16} />
-              </span>
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                onKeyDown={handleKeyDetection}
-                onKeyUp={handleKeyDetection}
-                placeholder="••••••••••••"
-                className="auth-input"
-                autoComplete="current-password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="auth-action-btn"
-                title={showPassword ? 'Hide password' : 'Show password'}
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-
-            {/* Caps Lock indicator */}
-            {capsLockActive && (
-              <div style={{
+      {/* Form */}
+      <form onSubmit={handleSubmit}>
+        {/* Email */}
+        <div style={{ marginBottom: 18 }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#334155',
+              marginBottom: 7,
+            }}
+          >
+            Email address
+          </label>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span
+              style={{
+                position: 'absolute',
+                left: 14,
+                color: '#94a3b8',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 5,
-                fontSize: 11.5,
+                pointerEvents: 'none',
+              }}
+            >
+              <Mail size={16} />
+            </span>
+            <input
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoComplete="username email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={isStudent ? 'student@school.uz' : 'teacher@school.uz'}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '11px 40px 11px 40px',
+                fontSize: 14,
+                color: '#0f172a',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: 10,
+                outline: 'none',
+                transition: 'all 0.15s ease',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => {
+                e.target.style.background = '#ffffff';
+                e.target.style.borderColor = '#6366f1';
+                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.target.style.background = '#f8fafc';
+                e.target.style.borderColor = '#cbd5e1';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+            {email && !loading && (
+              <button
+                type="button"
+                onClick={() => setEmail('')}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: 4,
+                }}
+                title="Clear"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Password */}
+        <div style={{ marginBottom: 18 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 7,
+            }}
+          >
+            <label
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: '#334155',
+              }}
+            >
+              Password
+            </label>
+            <Link
+              to={isStudent ? '/student/forgot-password' : '/teacher/forgot-password'}
+              style={{
+                fontSize: 12.5,
+                fontWeight: 500,
+                color: '#4f46e5',
+                textDecoration: 'none',
+              }}
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <span
+              style={{
+                position: 'absolute',
+                left: 14,
+                color: '#94a3b8',
+                display: 'flex',
+                alignItems: 'center',
+                pointerEvents: 'none',
+              }}
+            >
+              <Lock size={16} />
+            </span>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={handleKeyDetection}
+              onKeyUp={handleKeyDetection}
+              placeholder="••••••••••••"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '11px 40px 11px 40px',
+                fontSize: 14,
+                color: '#0f172a',
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                borderRadius: 10,
+                outline: 'none',
+                transition: 'all 0.15s ease',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => {
+                e.target.style.background = '#ffffff';
+                e.target.style.borderColor = '#6366f1';
+                e.target.style.boxShadow = '0 0 0 3px rgba(99, 102, 241, 0.15)';
+              }}
+              onBlur={(e) => {
+                e.target.style.background = '#f8fafc';
+                e.target.style.borderColor = '#cbd5e1';
+                e.target.style.boxShadow = 'none';
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: 12,
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: 4,
+              }}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+          {capsLockActive && (
+            <div
+              style={{
+                fontSize: 12,
                 color: '#b45309',
                 marginTop: 6,
                 fontWeight: 500,
-              }}>
-                <span style={{ fontSize: 13 }}>⚠️</span> Caps Lock is ON
-              </div>
-            )}
-          </div>
+              }}
+            >
+              ⚠️ Caps Lock is turned on
+            </div>
+          )}
+        </div>
 
-          {/* Remember me checkbox */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 20,
-          }}>
-            <label style={{
+        {/* Remember me */}
+        <div style={{ marginBottom: 22 }}>
+          <label
+            style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 8,
               cursor: 'pointer',
+              fontSize: 13,
+              color: '#475569',
               userSelect: 'none',
-              fontSize: 12.5,
-              color: 'var(--txt-secondary)',
-              fontWeight: 500,
-            }}>
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={e => setRememberMe(e.target.checked)}
-                style={{
-                  accentColor: 'var(--accent)',
-                  width: 15,
-                  height: 15,
-                  cursor: 'pointer',
-                }}
-              />
-              Remember my email
-            </label>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: 10,
-              padding: '11px 14px',
-              background: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.28)',
-              borderRadius: 'var(--r-sm)',
-              fontSize: 12.5,
-              color: '#991b1b',
-              marginBottom: 18,
-              lineHeight: 1.45,
-            }}>
-              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1, color: '#dc2626' }} />
-              <div>{error}</div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="g-btn g-btn-primary"
-            disabled={loading}
-            style={{
-              width: '100%',
-              justifyContent: 'center',
-              padding: '12px 20px',
-              fontSize: 14,
-              fontWeight: 700,
-              letterSpacing: '0.01em',
-              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-              boxShadow: '0 4px 16px rgba(99, 102, 241, 0.35)',
-              opacity: loading ? 0.75 : 1,
-              cursor: loading ? 'not-allowed' : 'pointer',
             }}
           >
-            {loading ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <span className="auth-spinner" style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }} />
-                Signing in…
-              </span>
-            ) : (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                Sign in to {role === 'teacher' ? 'Dashboard' : 'Portal'}
-                <ArrowRight size={15} />
-              </span>
-            )}
-          </button>
-        </form>
-
-        {/* Demo Fast-Fill Drawer */}
-        <div style={{ marginTop: 22, borderTop: '1px solid rgba(255,255,255,0.5)', paddingTop: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11.5, color: 'var(--txt-tertiary)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <Zap size={12} color="#f59e0b" /> Fast Test Logins
-            </span>
-            <button
-              type="button"
-              onClick={() => setShowDemoOptions(!showDemoOptions)}
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent-text)',
-                fontSize: 11.5,
-                fontWeight: 600,
+                width: 16,
+                height: 16,
+                accentColor: '#4f46e5',
                 cursor: 'pointer',
-                padding: '2px 4px',
+                borderRadius: 4,
+              }}
+            />
+            <span>Remember my email</span>
+          </label>
+        </div>
+
+        {/* Submit button */}
+        <button
+          type="submit"
+          disabled={loading}
+          style={{
+            width: '100%',
+            padding: '12px 20px',
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#ffffff',
+            background: '#4f46e5',
+            border: 'none',
+            borderRadius: 10,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.8 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)',
+            transition: 'background 0.15s ease, transform 0.05s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) e.currentTarget.style.background = '#4338ca';
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) e.currentTarget.style.background = '#4f46e5';
+          }}
+        >
+          {loading ? (
+            <span>Signing in…</span>
+          ) : (
+            <>
+              <span>Sign in as {isStudent ? 'Student' : 'Teacher'}</span>
+              <ArrowRight size={15} />
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Switch between Student and Teacher Auth */}
+      <div
+        style={{
+          marginTop: 24,
+          paddingTop: 20,
+          borderTop: '1px solid #f1f5f9',
+          textAlign: 'center',
+          fontSize: 13,
+          color: '#64748b',
+        }}
+      >
+        {isStudent ? (
+          <div>
+            <span>Are you a teacher? </span>
+            <Link
+              to="/teacher/login"
+              style={{
+                color: '#4f46e5',
+                fontWeight: 600,
+                textDecoration: 'none',
               }}
             >
-              {showDemoOptions ? 'Hide' : 'Quick Fill'}
-            </button>
+              Sign in to Teacher Portal →
+            </Link>
           </div>
+        ) : (
+          <div>
+            <span>Are you a student? </span>
+            <Link
+              to="/student/login"
+              style={{
+                color: '#4f46e5',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Sign in to Student Login →
+            </Link>
+          </div>
+        )}
+      </div>
 
-          {showDemoOptions && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              marginTop: 10,
-              padding: 10,
-              background: 'rgba(255,255,255,0.4)',
-              borderRadius: 'var(--r-sm)',
-              border: '1px solid rgba(255,255,255,0.6)',
-            }}>
-              {role === 'teacher' ? (
-                <button
-                  type="button"
-                  onClick={() => quickFill('teacher@ilmla.uz', 'teacher')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '7px 10px',
-                    background: 'rgba(255,255,255,0.65)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    color: 'var(--txt-primary)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <span><strong>Teacher Demo:</strong> teacher@ilmla.uz</span>
-                  <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => quickFill('eldor@ilmla.uz', 'student')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '7px 10px',
-                    background: 'rgba(255,255,255,0.65)',
-                    border: '1px solid rgba(99,102,241,0.2)',
-                    borderRadius: 6,
-                    fontSize: 12,
-                    color: 'var(--txt-primary)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                  }}
-                >
-                  <span><strong>Student Demo:</strong> eldor@ilmla.uz</span>
-                  <span style={{ fontSize: 10.5, color: 'var(--accent-text)', fontWeight: 600 }}>Fill →</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Portal Switch Link */}
-        <div style={{
-          marginTop: 18,
-          textAlign: 'center',
-          fontSize: 12,
-          color: 'var(--txt-secondary)',
-        }}>
-          {role === 'student' ? (
-            <span>
-              Are you an educator?{' '}
-              <Link to="/teacher/login" style={{ color: '#4f46e5', fontWeight: 600, textDecoration: 'none' }}>
-                Go to Teacher Portal →
-              </Link>
-            </span>
-          ) : (
-            <span>
-              Are you a student?{' '}
-              <Link to="/student/login" style={{ color: '#4f46e5', fontWeight: 600, textDecoration: 'none' }}>
-                Go to Student Login →
-              </Link>
-            </span>
-          )}
-        </div>
-
-        {/* Footer info */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
+      {/* Subtle Demo Quick-Fill */}
+      <div
+        style={{
           marginTop: 14,
-          fontSize: 11,
-          color: 'var(--txt-tertiary)',
-        }}>
-          <CheckCircle2 size={12} color="#10b981" />
-          <span>Encrypted authentication · Supabase Protected</span>
-        </div>
+          textAlign: 'center',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => handleQuickFill(isStudent ? 'student' : 'teacher')}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#94a3b8',
+            fontSize: 12,
+            cursor: 'pointer',
+            padding: '4px 8px',
+            borderRadius: 6,
+            transition: 'color 0.15s ease',
+            textDecoration: 'underline',
+            textUnderlineOffset: 3,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#4f46e5';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#94a3b8';
+          }}
+        >
+          Click to auto-fill {isStudent ? 'student demo credentials' : 'teacher demo credentials'}
+        </button>
       </div>
     </div>
   );

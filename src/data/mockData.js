@@ -47,29 +47,29 @@ export const initialData = {
 
   assignments: [
     // Ahmadjon (s1)
-    { id: 'a1',  templateId:'tpl1', teacherId:'t1', studentId:'s1', title:'Write a Short Essay', type:'WRITING', instructions:'Write a 200–250 word essay on "How technology is changing education."', submissionTypes:['Text'], deadline: d(3),   status:'PENDING',         createdAt: d(-5), updatedAt: d(-5) },
+    { id: 'a1',  templateId:'tpl1', teacherId:'t1', studentId:'s1', title:'Write a Short Essay', type:'WRITING', instructions:'Write a 200–250 word essay on "How technology is changing education."', submissionTypes:['Text'], deadline: d(3),   status:'IN_PROGRESS',     createdAt: d(-5), updatedAt: d(-5) },
     { id: 'a2',  templateId:'tpl2', teacherId:'t1', studentId:'s1', title:'Unit 5 Vocabulary Quiz', type:'VOCABULARY', instructions:'Write a sentence for each of the 20 Unit 5 words.', submissionTypes:['Text'], deadline: d(-1),  status:'SUBMITTED',       createdAt: d(-6), updatedAt: d(-2) },
     { id: 'a3',  templateId:'tpl4', teacherId:'t1', studentId:'s1', title:'Grammar: Past Perfect Tense', type:'GRAMMAR', instructions:'Complete 15 sentences using the past perfect tense.', submissionTypes:['Text'], deadline: d(7),   status:'DONE', grade:88, feedback:'Excellent work! Minor errors in sentences 3 and 11.', createdAt: d(-8), updatedAt: d(-1) },
 
     // Ali (s2)
     { id: 'a4',  templateId:'tpl1', teacherId:'t1', studentId:'s2', title:'Write a Short Essay', type:'WRITING', instructions:'Write a 200–250 word essay on "How technology is changing education."', submissionTypes:['Text'], deadline: d(5),   status:'IN_PROGRESS',     createdAt: d(-4), updatedAt: d(-4) },
     { id: 'a5',  templateId:'tpl3', teacherId:'t1', studentId:'s2', title:'Reading Comprehension – Climate Change', type:'READING', instructions:'Answer the five comprehension questions in full sentences.', submissionTypes:['Text'], deadline: d(-3),  status:'SUBMITTED',       createdAt: d(-7), updatedAt: d(-1) },
-    { id: 'a6',  templateId:'tpl5', teacherId:'t1', studentId:'s2', title:'Listening Exercise – British Accents', type:'LISTENING', instructions:'Answer the ten listening questions.', submissionTypes:['Text'], deadline: d(10),  status:'PENDING',         createdAt: d(-2), updatedAt: d(-2) },
+    { id: 'a6',  templateId:'tpl5', teacherId:'t1', studentId:'s2', title:'Listening Exercise – British Accents', type:'LISTENING', instructions:'Answer the ten listening questions.', submissionTypes:['Text'], deadline: d(10),  status:'IN_PROGRESS',     createdAt: d(-2), updatedAt: d(-2) },
 
     // Madina (s3)
-    { id: 'a7',  templateId:'tpl2', teacherId:'t1', studentId:'s3', title:'Unit 5 Vocabulary Quiz', type:'VOCABULARY', instructions:'Write a sentence for each of the 20 Unit 5 words.', submissionTypes:['Text'], deadline: d(2),   status:'NEEDS_REVISION',  createdAt: d(-9), updatedAt: d(-1) },
-    { id: 'a8',  templateId:'tpl6', teacherId:'t1', studentId:'s3', title:'Speaking Practice – Self Introduction', type:'SPEAKING', instructions:'Record a 2-minute self-introduction in English.', submissionTypes:['Audio'], deadline: d(4),   status:'PENDING',         createdAt: d(-3), updatedAt: d(-3) },
+    { id: 'a7',  templateId:'tpl2', teacherId:'t1', studentId:'s3', title:'Unit 5 Vocabulary Quiz', type:'VOCABULARY', instructions:'Write a sentence for each of the 20 Unit 5 words.', submissionTypes:['Text'], deadline: d(2),   status:'REVIEW',          createdAt: d(-9), updatedAt: d(-1) },
+    { id: 'a8',  templateId:'tpl6', teacherId:'t1', studentId:'s3', title:'Speaking Practice – Self Introduction', type:'SPEAKING', instructions:'Record a 2-minute self-introduction in English.', submissionTypes:['Audio'], deadline: d(4),   status:'IN_PROGRESS',     createdAt: d(-3), updatedAt: d(-3) },
     { id: 'a9',  templateId:'tpl9', teacherId:'t1', studentId:'s3', title:'Conditional Sentences Practice', type:'GRAMMAR', instructions:'Write five original sentences for each type of conditional.', submissionTypes:['Text'], deadline: d(6),   status:'DONE', grade:72, feedback:'Good attempt. Work on third conditional — sentences 14 and 15 had structural errors.', createdAt: d(-10), updatedAt: d(-2) },
 
     // Sardor (s4)
     { id: 'a10', templateId:'tpl7', teacherId:'t1', studentId:'s4', title:'Keyword Summary Exercise', type:'KEYWORD', instructions:'Identify 10 key words and write a 3-sentence summary.', submissionTypes:['Text'], deadline: d(-5),  status:'SUBMITTED',       createdAt: d(-8), updatedAt: d(-3) },
-    { id: 'a11', templateId:'tpl8', teacherId:'t1', studentId:'s4', title:'Summary Writing – News Article', type:'SUMMARY', instructions:'Write a concise 100-word summary in your own words.', submissionTypes:['Text'], deadline: d(8),   status:'PENDING',         createdAt: d(-2), updatedAt: d(-2) },
+    { id: 'a11', templateId:'tpl8', teacherId:'t1', studentId:'s4', title:'Summary Writing – News Article', type:'SUMMARY', instructions:'Write a concise 100-word summary in your own words.', submissionTypes:['Text'], deadline: d(8),   status:'IN_PROGRESS',     createdAt: d(-2), updatedAt: d(-2) },
     { id: 'a12', templateId:'tpl10',teacherId:'t1', studentId:'s4', title:'Describe a Photo', type:'WRITING', instructions:'Write 150–180 words describing the photograph.', submissionTypes:['Text','Image'], deadline: d(12),  status:'DONE', grade:95, feedback:'Outstanding description! Very vivid and accurate.', createdAt: d(-11), updatedAt: d(-3) },
 
     // Mohira (s5)
-    { id: 'a13', templateId:'tpl4', teacherId:'t1', studentId:'s5', title:'Grammar: Past Perfect Tense', type:'GRAMMAR', instructions:'Complete 15 sentences using the past perfect tense.', submissionTypes:['Text'], deadline: d(1),   status:'UNDER_REVIEW',    createdAt: d(-5), updatedAt: d(-1) },
+    { id: 'a13', templateId:'tpl4', teacherId:'t1', studentId:'s5', title:'Grammar: Past Perfect Tense', type:'GRAMMAR', instructions:'Complete 15 sentences using the past perfect tense.', submissionTypes:['Text'], deadline: d(1),   status:'REVIEW',          createdAt: d(-5), updatedAt: d(-1) },
     { id: 'a14', templateId:'tpl3', teacherId:'t1', studentId:'s5', title:'Reading Comprehension – Climate Change', type:'READING', instructions:'Answer the five comprehension questions in full sentences.', submissionTypes:['Text'], deadline: d(-2),  status:'SUBMITTED',       createdAt: d(-6), updatedAt: d(-1) },
-    { id: 'a15', templateId:'tpl1', teacherId:'t1', studentId:'s5', title:'Write a Short Essay', type:'WRITING', instructions:'Write a 200–250 word essay on "How technology is changing education."', submissionTypes:['Text'], deadline: d(9),   status:'PENDING',         createdAt: d(-1), updatedAt: d(-1) },
+    { id: 'a15', templateId:'tpl1', teacherId:'t1', studentId:'s5', title:'Write a Short Essay', type:'WRITING', instructions:'Write a 200–250 word essay on "How technology is changing education."', submissionTypes:['Text'], deadline: d(9),   status:'IN_PROGRESS',     createdAt: d(-1), updatedAt: d(-1) },
 
     // Azizbek (s6)
     { id: 'a16', templateId:'tpl5', teacherId:'t1', studentId:'s6', title:'Listening Exercise – British Accents', type:'LISTENING', instructions:'Answer the ten listening questions.', submissionTypes:['Text'], deadline: d(-4),  status:'SUBMITTED',       createdAt: d(-8), updatedAt: d(-2) },
@@ -91,7 +91,7 @@ export const initialData = {
     // Madina – vocab quiz needs revision
     { id: 'sub3', assignedTaskId: 'a7', studentId: 's3',
       content: '1. Ambiguous: The answer was ambiguous.\n2. Coherent: The text coherent.\n3. Deliberate: She deliberate to study harder.\n4. Elaborate: Please elaborate.\n5. Fundamental: It is fundamental.',
-      status: 'NEEDS_REVISION', submittedAt: d(-3), createdAt: d(-3) },
+      status: 'REVIEW', submittedAt: d(-3), createdAt: d(-3) },
 
     // Sardor – keyword summary submitted
     { id: 'sub4', assignedTaskId: 'a10', studentId: 's4',
@@ -101,7 +101,7 @@ export const initialData = {
     // Mohira – grammar under review
     { id: 'sub5', assignedTaskId: 'a13', studentId: 's5',
       content: '1. By the time I arrived, she had already left.\n2. He had studied English for three years before he moved to London.\n3. They had never seen such a beautiful sunset before that evening.\n4. When I called, she had just finished her homework.\n5. I realized I had forgotten my passport at home.',
-      status: 'UNDER_REVIEW', submittedAt: d(-1), createdAt: d(-1) },
+      status: 'REVIEW', submittedAt: d(-1), createdAt: d(-1) },
 
     // Mohira – reading submitted
     { id: 'sub6', assignedTaskId: 'a14', studentId: 's5',

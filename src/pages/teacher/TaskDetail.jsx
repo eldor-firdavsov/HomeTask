@@ -12,7 +12,7 @@ import {
 } from '../../utils/helpers.jsx';
 import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import { updateTaskTemplate, duplicateTaskTemplate, deleteTaskTemplate, getTaskAttachments } from '../../lib/supabase/tasks.js';
-import { createAssignments } from '../../lib/supabase/assignments.js';
+import { createAssignments, deleteAssignment, deleteAssignmentsByTemplate } from '../../lib/supabase/assignments.js';
 import { getSignedUrl } from '../../lib/supabase/storage.js';
 
 const TASK_TYPES = ['WRITING','READING','VOCABULARY','GRAMMAR','LISTENING','SPEAKING','KEYWORD','SUMMARY','OTHER'];
@@ -425,12 +425,11 @@ export default function TaskDetail() {
   // Statistics
   const stats = useMemo(() => {
     const total = assignments.length;
-    const pending = assignments.filter(a => a.status === 'PENDING').length;
-    const inProgress = assignments.filter(a => a.status === 'IN_PROGRESS').length;
-    const review = assignments.filter(a => ['SUBMITTED','UNDER_REVIEW'].includes(a.status)).length;
+    const inProgress = assignments.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status)).length;
+    const review = assignments.filter(a => ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_REVISION', 'REVIEW'].includes(a.status)).length;
     const done = assignments.filter(a => a.status === 'DONE').length;
     const overdue = assignments.filter(a => isOverdue(a)).length;
-    return { total, pending, inProgress, review, done, overdue };
+    return { total, inProgress, review, done, overdue };
   }, [assignments]);
 
   const filteredAssignments = useMemo(() => {
@@ -450,13 +449,9 @@ export default function TaskDetail() {
       if (studentStatusFilter === 'overdue') {
         list = list.filter(isOverdue);
       } else if (studentStatusFilter === 'review') {
-        list = list.filter(a => ['SUBMITTED', 'UNDER_REVIEW'].includes(a.status));
-      } else if (studentStatusFilter === 'pending') {
-        list = list.filter(a => a.status === 'PENDING');
+        list = list.filter(a => ['SUBMITTED', 'UNDER_REVIEW', 'NEEDS_REVISION', 'REVIEW'].includes(a.status));
       } else if (studentStatusFilter === 'in_progress') {
-        list = list.filter(a => a.status === 'IN_PROGRESS');
-      } else if (studentStatusFilter === 'revision') {
-        list = list.filter(a => a.status === 'NEEDS_REVISION');
+        list = list.filter(a => ['IN_PROGRESS', 'PENDING'].includes(a.status));
       } else if (studentStatusFilter === 'done') {
         list = list.filter(a => a.status === 'DONE');
       }
@@ -555,23 +550,43 @@ export default function TaskDetail() {
 
   /* ── Delete template ── */
   const handleDelete = async () => {
-    if (assignments.length > 0) {
-      toast('Cannot delete: this task is assigned to active students.', 'error');
-      return;
-    }
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) return;
+    const msg = assignments.length > 0
+      ? `This task is assigned to ${assignments.length} student(s). Are you sure you want to delete this task and all its assignments? This cannot be undone.`
+      : 'Are you sure you want to delete this task? This action cannot be undone.';
+    if (!confirm(msg)) return;
     try {
+      if (assignments.length > 0) {
+        await deleteAssignmentsByTemplate(template.id);
+      }
       await deleteTaskTemplate(template.id);
       setData(prev => ({
         ...prev,
         templates: prev.templates.filter(t => t.id !== template.id),
+        assignments: prev.assignments.filter(a => a.templateId !== template.id),
       }));
-      toast('Task template deleted');
+      toast('Task template and assignments deleted');
       if (refreshData) await refreshData();
       navigate('/teacher/tasks');
     } catch (err) {
       console.error('Delete error:', err);
       toast(err.message || 'Failed to delete task template', 'error');
+    }
+  };
+
+  /* ── Delete single student assignment ── */
+  const handleDeleteAssignment = async (assignmentId, studentName) => {
+    if (!confirm(`Delete this assigned task for ${studentName || 'this student'}? This cannot be undone.`)) return;
+    try {
+      await deleteAssignment(assignmentId);
+      setData(prev => ({
+        ...prev,
+        assignments: prev.assignments.filter(a => a.id !== assignmentId),
+      }));
+      toast('Student assignment deleted');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Delete assignment error:', err);
+      toast(err.message || 'Failed to delete assignment', 'error');
     }
   };
 
@@ -668,10 +683,10 @@ export default function TaskDetail() {
             borderRadius: 'var(--r-md)', padding: '12px 14px',
           }}>
             <div style={{ fontSize: 11, color: 'var(--txt-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.04em', marginBottom: 2 }}>
-              Pending
+              In Progress
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--txt-secondary)' }}>
-              {stats.pending}
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--clr-progress-txt)' }}>
+              {stats.inProgress}
             </div>
           </div>
           <div style={{
@@ -875,7 +890,6 @@ export default function TaskDetail() {
             <div className="g-tabs" style={{ gap: 4 }}>
               {[
                 { id: 'all', label: `All (${assignments.length})` },
-                { id: 'pending', label: `Pending (${stats.pending})` },
                 { id: 'in_progress', label: `In Progress (${stats.inProgress})` },
                 { id: 'review', label: `Review (${stats.review})` },
                 { id: 'done', label: `Done (${stats.done})` },
@@ -1031,6 +1045,15 @@ export default function TaskDetail() {
                       <ChevronRight size={14} />
                     </Link>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAssignment(assignment.id, student ? `${student.firstName} ${student.lastName}` : 'student')}
+                    className="g-btn g-btn-ghost"
+                    style={{ padding: '6px 8px', color: 'var(--clr-overdue-txt)' }}
+                    title="Delete this student assignment"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             );

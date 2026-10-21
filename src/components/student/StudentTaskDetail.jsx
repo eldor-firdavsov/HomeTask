@@ -89,7 +89,7 @@ export default function StudentTaskDetail() {
         </div>
       )}
 
-      {(status === 'in_progress' || status === 'needs_revision') && (
+      {(status === 'in_progress' || status === 'needs_revision' || status === 'review') && (
         <div className="glass" style={{ padding: '2rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Submit your work</h3>
           

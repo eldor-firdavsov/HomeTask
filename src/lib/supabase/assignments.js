@@ -132,6 +132,15 @@ export async function deleteAssignment(assignmentId) {
   if (error) throw error;
 }
 
+// ── Delete all assignments for a task template ───────────
+export async function deleteAssignmentsByTemplate(templateId) {
+  const { error } = await supabase
+    .from('assignments')
+    .delete()
+    .eq('task_template_id', templateId);
+  if (error) throw error;
+}
+
 // ── Get assignment attachments ───────────────────────────
 export async function getAssignmentAttachments(assignmentId) {
   const { data, error } = await supabase

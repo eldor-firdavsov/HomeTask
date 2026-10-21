@@ -43,7 +43,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Root route: always defaults to student login when unauthenticated */}
+      {/* Root route: defaults to student login when unauthenticated */}
       <Route path="/" element={
         session
           ? <Navigate to={session.role === 'TEACHER' ? '/teacher/dashboard' : '/student/dashboard'} replace />
