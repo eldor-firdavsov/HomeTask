@@ -76,11 +76,30 @@ export async function archiveReadingTest(testId) {
 
 // ── Delete a reading test ────────────────────────────────
 export async function deleteReadingTest(testId) {
+  // 1. Delete associated reading test assignments
+  try {
+    await supabase
+      .from('reading_test_assignments')
+      .delete()
+      .eq('reading_test_id', testId);
+  } catch (err) {
+    console.warn('Could not cascade delete reading test assignments:', err);
+  }
+
+  // 2. Delete the reading test
   const { error } = await supabase
     .from('reading_tests')
     .delete()
     .eq('id', testId);
-  if (error) throw error;
+
+  if (error) {
+    console.warn('Hard delete failed, falling back to soft delete for reading test:', error);
+    const { error: arcErr } = await supabase
+      .from('reading_tests')
+      .update({ is_archived: true })
+      .eq('id', testId);
+    if (arcErr) throw error || arcErr;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════

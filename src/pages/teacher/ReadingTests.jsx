@@ -16,7 +16,7 @@ import { getBandColor, getBandLabel } from '../../lib/supabase/aiGrading';
 import ActionMenu from '../../components/common/ActionMenu';
 
 export default function ReadingTests() {
-  const { profile, data } = useData();
+  const { profile, data, setData, refreshData } = useData();
   const toast = useToast();
 
   const [tests, setTests] = useState([]);
@@ -78,7 +78,14 @@ export default function ReadingTests() {
     try {
       await deleteReadingTest(testId);
       setTests(prev => prev.filter(t => t.id !== testId));
+      if (setData) {
+        setData(prev => ({
+          ...prev,
+          assignments: (prev.assignments || []).filter(a => a.readingTestId !== testId),
+        }));
+      }
       toast('Test deleted successfully');
+      if (refreshData) await refreshData();
     } catch (err) {
       console.error('Failed to delete test:', err);
       toast('Failed to delete test', 'error');

@@ -132,9 +132,7 @@ export default function TaskLibrary({ defaultMode = null }) {
       : 'Delete this task template? This cannot be undone.';
     if (!confirm(msg)) return;
     try {
-      if (assignedCount > 0) {
-        await deleteAssignmentsByTemplate(tplId);
-      }
+      await deleteAssignmentsByTemplate(tplId);
       await deleteTaskTemplate(tplId);
       setData(prev => ({
         ...prev,

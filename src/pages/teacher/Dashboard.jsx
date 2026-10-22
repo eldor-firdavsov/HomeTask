@@ -4,7 +4,7 @@ import { useData, useToast } from '../../context/DataContext';
 import {
   Search, UserPlus, ChevronRight, ClipboardList, BookOpen, Plus,
   UserCheck, Copy, Check, RefreshCw, X, Eye, EyeOff, KeyRound,
-  Download, LayoutGrid, Table as TableIcon, Send, Users, Sparkles, Share2
+  Download, LayoutGrid, Table as TableIcon, Send, Users, Sparkles, Share2, Trash2
 } from 'lucide-react';
 import {
   calcAverageGrade, gradeColor, studentTaskCounts,
@@ -15,6 +15,8 @@ import AssignStudentsModal from '../../components/tasks/AssignStudentsModal';
 import EditPasswordModal from '../../components/teacher/EditPasswordModal';
 import StudentCredentialsModal from '../../components/teacher/StudentCredentialsModal';
 import { createStudent } from '../../lib/supabase/students.js';
+import { deleteTaskTemplate, duplicateTaskTemplate } from '../../lib/supabase/tasks.js';
+import { deleteAssignmentsByTemplate } from '../../lib/supabase/assignments.js';
 import {
   getStudentPassword, saveStudentPassword, formatStudentInvite,
   formatAllStudentsRoster, downloadCredentialsCsv
@@ -674,7 +676,7 @@ function ReviewQueue({ submissions, assignments, users }) {
 
 /* ── Dashboard Main ──────────────────────────── */
 export default function Dashboard() {
-  const { data } = useData();
+  const { data, setData, session, profile, refreshData } = useData();
   const toast = useToast();
 
   const [search, setSearch] = useState('');
@@ -762,6 +764,46 @@ export default function Dashboard() {
     setAssigningTemplate(template);
     setAssigningStudent(null);
     setAssignModalOpen(true);
+  };
+
+  // Handle delete task template
+  const handleDeleteTask = async (tplId) => {
+    const assignedCount = (data?.assignments || []).filter(a => a.templateId === tplId).length;
+    const msg = assignedCount > 0
+      ? `This task has ${assignedCount} active student assignment(s). Delete this task and all its assignments? This cannot be undone.`
+      : 'Delete this task template? This cannot be undone.';
+    if (!confirm(msg)) return;
+    try {
+      await deleteAssignmentsByTemplate(tplId);
+      await deleteTaskTemplate(tplId);
+      setData(prev => ({
+        ...prev,
+        templates: (prev.templates || []).filter(t => t.id !== tplId),
+        assignments: (prev.assignments || []).filter(a => a.templateId !== tplId),
+      }));
+      toast('Task template and assignments deleted');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Delete task error:', err);
+      toast(err.message || 'Failed to delete task template', 'error');
+    }
+  };
+
+  // Handle duplicate task template
+  const handleDuplicateTask = async (tpl) => {
+    try {
+      const teacherId = session?.user?.id || profile?.id || tpl.teacherId;
+      const copy = await duplicateTaskTemplate(tpl.id, teacherId);
+      setData(prev => ({
+        ...prev,
+        templates: [copy, ...(prev.templates || [])],
+      }));
+      toast('Template duplicated');
+      if (refreshData) await refreshData();
+    } catch (err) {
+      console.error('Duplicate error:', err);
+      toast(err.message || 'Failed to duplicate template', 'error');
+    }
   };
 
   // Handle general bulk assign
@@ -1194,6 +1236,23 @@ export default function Dashboard() {
                       >
                         View <ChevronRight size={12} />
                       </Link>
+                      <ActionMenu
+                        align="right"
+                        ariaLabel="Task actions"
+                        items={[
+                          {
+                            label: 'Duplicate Task',
+                            icon: Copy,
+                            onClick: () => handleDuplicateTask(tpl),
+                          },
+                          {
+                            label: 'Delete Task',
+                            icon: Trash2,
+                            danger: true,
+                            onClick: () => handleDeleteTask(tpl.id),
+                          },
+                        ]}
+                      />
                     </div>
                   </div>
                 );

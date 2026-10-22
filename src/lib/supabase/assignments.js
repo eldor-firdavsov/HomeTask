@@ -125,11 +125,21 @@ export async function updateAssignmentStatus(assignmentId, status) {
 
 // ── Delete assignment ────────────────────────────────────
 export async function deleteAssignment(assignmentId) {
-  const { error } = await supabase
+  // Delete from standard assignments table
+  const { error: asgError } = await supabase
     .from('assignments')
     .delete()
     .eq('id', assignmentId);
-  if (error) throw error;
+
+  // Also delete from reading_test_assignments (for unified IELTS reading test tasks)
+  const { error: rtError } = await supabase
+    .from('reading_test_assignments')
+    .delete()
+    .eq('id', assignmentId);
+
+  if (asgError && rtError) {
+    throw asgError || rtError;
+  }
 }
 
 // ── Delete all assignments for a task template ───────────

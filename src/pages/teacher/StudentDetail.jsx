@@ -21,7 +21,8 @@ import { getStudentPassword, formatStudentInvite } from '../../utils/credentials
 import {
   getStudentReadingAssignments,
   getTeacherReadingSubmissions,
-  getReadingTests
+  getReadingTests,
+  deleteReadingAssignment
 } from '../../lib/supabase/readingTests.js';
 import { getBandColor, getBandLabel } from '../../lib/supabase/aiGrading.js';
 import { BookOpen, Award, Sparkles } from 'lucide-react';
@@ -109,10 +110,18 @@ export default function StudentDetail() {
     setTimeout(() => setCopiedInvite(false), 2500);
   };
 
-  const handleDeleteAssignment = async (assignmentId, taskTitle) => {
-    if (!confirm(`Delete this assigned task "${taskTitle}" for ${student?.firstName || 'this student'}? This cannot be undone.`)) return;
+  const handleDeleteAssignment = async (assignmentOrId, taskTitle) => {
+    const assignmentId = typeof assignmentOrId === 'object' ? assignmentOrId.id : assignmentOrId;
+    const isReading = typeof assignmentOrId === 'object' ? !!assignmentOrId.isReadingTest : false;
+    const title = taskTitle || (typeof assignmentOrId === 'object' ? assignmentOrId.title : 'this task');
+
+    if (!confirm(`Delete this assigned task "${title}" for ${student?.firstName || 'this student'}? This cannot be undone.`)) return;
     try {
-      await deleteAssignment(assignmentId);
+      if (isReading) {
+        await deleteReadingAssignment(assignmentId);
+      } else {
+        await deleteAssignment(assignmentId);
+      }
       setData(prev => ({
         ...prev,
         assignments: prev.assignments.filter(a => a.id !== assignmentId),
@@ -478,7 +487,7 @@ export default function StudentDetail() {
                     </Link>
                   )}
                   <button
-                    onClick={() => handleDeleteAssignment(a.id, a.title)}
+                    onClick={() => handleDeleteAssignment(a, a.title)}
                     className="g-btn g-btn-ghost"
                     style={{ color: 'var(--clr-overdue-txt)', padding: '6px 8px' }}
                     title="Delete assigned task"

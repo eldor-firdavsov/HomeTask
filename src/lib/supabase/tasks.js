@@ -18,6 +18,7 @@ export async function getTaskTemplate(templateId) {
     .from('task_templates')
     .select('*')
     .eq('id', templateId)
+    .eq('is_archived', false)
     .single();
   if (error) throw error;
   return transformTemplate(data);
@@ -58,22 +59,47 @@ export async function updateTaskTemplate(templateId, updates) {
   return transformTemplate(data);
 }
 
-// ── Soft-delete a task template ──────────────────────────
+// ── Delete a task template ───────────────────────────────
 export async function deleteTaskTemplate(templateId) {
-  const { error } = await supabase
-    .from('task_templates')
-    .update({ is_archived: true })
-    .eq('id', templateId);
-  if (error) throw error;
-}
+  // 1. Clean up associated assignments in the DB
+  try {
+    await supabase
+      .from('assignments')
+      .delete()
+      .eq('task_template_id', templateId);
+  } catch (err) {
+    console.warn('Could not cascade delete assignments for template:', err);
+  }
 
-// ── Hard-delete a task template (only if no assignments) ─
-export async function hardDeleteTaskTemplate(templateId) {
-  const { error } = await supabase
+  // 2. Clean up task attachments
+  try {
+    await supabase
+      .from('task_attachments')
+      .delete()
+      .eq('task_template_id', templateId);
+  } catch (err) {
+    console.warn('Could not delete task attachments for template:', err);
+  }
+
+  // 3. Delete the template from task_templates
+  const { error: hardErr } = await supabase
     .from('task_templates')
     .delete()
     .eq('id', templateId);
-  if (error) throw error;
+
+  if (hardErr) {
+    console.warn('Hard delete failed, falling back to soft delete:', hardErr);
+    const { error: softErr } = await supabase
+      .from('task_templates')
+      .update({ is_archived: true })
+      .eq('id', templateId);
+    if (softErr) throw hardErr || softErr;
+  }
+}
+
+// ── Hard-delete a task template ──────────────────────────
+export async function hardDeleteTaskTemplate(templateId) {
+  return deleteTaskTemplate(templateId);
 }
 
 // ── Duplicate a task template ────────────────────────────

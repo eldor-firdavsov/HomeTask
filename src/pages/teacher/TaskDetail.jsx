@@ -559,9 +559,7 @@ export default function TaskDetail() {
       : 'Are you sure you want to delete this task? This action cannot be undone.';
     if (!confirm(msg)) return;
     try {
-      if (assignments.length > 0) {
-        await deleteAssignmentsByTemplate(template.id);
-      }
+      await deleteAssignmentsByTemplate(template.id);
       await deleteTaskTemplate(template.id);
       setData(prev => ({
         ...prev,
