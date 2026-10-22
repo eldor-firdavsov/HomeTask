@@ -351,12 +351,22 @@ export default function StudentTasks() {
                       <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--color-text)' }}>{a.title}</span>
                       <TypeChip type={a.type} />
                       {a.isReadingTest && (
-                        <span style={{
-                          fontSize: 11, padding: '2px 8px', borderRadius: 4,
-                          background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
-                        }}>
-                          IELTS Academic
-                        </span>
+                        <>
+                          <span style={{
+                            fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                            background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
+                          }}>
+                            IELTS Academic
+                          </span>
+                          <span style={{
+                            fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                            background: a.mode === 'practice' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            color: a.mode === 'practice' ? '#2563eb' : '#dc2626',
+                            fontWeight: 700
+                          }}>
+                            {a.mode === 'practice' ? 'Practice' : 'Strict Exam'} · {a.timeLimitMins || 60}m
+                          </span>
+                        </>
                       )}
                     </div>
                     <div style={{ fontSize: 12, color: overdueA ? 'var(--color-danger)' : 'var(--color-text-secondary)', display: 'flex', gap: 6, flexWrap: 'wrap' }}>

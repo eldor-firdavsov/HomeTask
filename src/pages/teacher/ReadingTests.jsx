@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData, useToast } from '../../context/DataContext';
 import {
   BookOpen, Sparkles, Award, Clock,
-  Search, Trash2, Send, ChevronRight, X
+  Search, Trash2, Send, ChevronRight, X, Shield, AlertTriangle
 } from 'lucide-react';
 import {
   getReadingTests,
@@ -32,6 +32,8 @@ export default function ReadingTests() {
   const [assignModalTest, setAssignModalTest] = useState(null);
   const [selectedStudentIds, setSelectedStudentIds] = useState([]);
   const [assignDeadline, setAssignDeadline] = useState('');
+  const [assignMode, setAssignMode] = useState('exam'); // 'exam' | 'practice'
+  const [assignTimeLimitMins, setAssignTimeLimitMins] = useState(60);
   const [assigning, setAssigning] = useState(false);
 
   const students = useMemo(() => {
@@ -106,8 +108,10 @@ export default function ReadingTests() {
         teacherId: profile.id,
         studentIds: selectedStudentIds,
         deadline: assignDeadline || null,
+        mode: assignMode,
+        timeLimitMins: Number(assignTimeLimitMins) || 60,
       });
-      toast(`Assigned "${assignModalTest.title}" to ${selectedStudentIds.length} student(s)!`);
+      toast(`Assigned "${assignModalTest.title}" (${assignMode === 'exam' ? 'Strict Exam' : 'Practice Mode'}, ${assignTimeLimitMins}m) to ${selectedStudentIds.length} student(s)!`);
       setAssignModalTest(null);
       setSelectedStudentIds([]);
       setAssignDeadline('');
@@ -139,6 +143,8 @@ export default function ReadingTests() {
 
       return {
         ...sub,
+        mode: sub.mode || assignment?.mode || 'exam',
+        timeLimitMins: assignment?.timeLimitMins || sub.targetTimeMins || 60,
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Student',
         studentEmail: student?.email || '',
         testTitle: test?.title || 'IELTS Reading Test',
@@ -425,6 +431,9 @@ export default function ReadingTests() {
                       onClick={() => {
                         setAssignModalTest(test);
                         setSelectedStudentIds([]);
+                        setAssignMode('exam');
+                        setAssignTimeLimitMins(test.timeLimitMins || 60);
+                        setAssignDeadline('');
                       }}
                       className="g-btn g-btn-primary"
                       style={{
@@ -502,7 +511,27 @@ export default function ReadingTests() {
                         </td>
 
                         <td style={{ padding: '14px 16px', fontWeight: 500, color: 'var(--txt-primary)' }}>
-                          {sub.testTitle}
+                          <div>{sub.testTitle}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 3,
+                              fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999,
+                              background: sub.mode === 'practice' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              color: sub.mode === 'practice' ? '#2563eb' : '#dc2626'
+                            }}>
+                              {sub.mode === 'practice' ? <Clock size={10} /> : <Shield size={10} />}
+                              {sub.mode === 'practice' ? 'Practice' : 'Strict Exam'}
+                            </span>
+                            {sub.mode !== 'practice' && (sub.tabSwitchCount || 0) > 0 && (
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 3,
+                                fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 999,
+                                background: '#fee2e2', color: '#b91c1c'
+                              }}>
+                                <AlertTriangle size={10} /> {sub.tabSwitchCount} tab switch{sub.tabSwitchCount > 1 ? 'es' : ''}
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         <td style={{ padding: '14px 16px', color: 'var(--txt-secondary)', fontSize: 12.5 }}>
@@ -570,14 +599,14 @@ export default function ReadingTests() {
         }}>
           <div className="glass-1" style={{
             borderRadius: 'var(--r-xl)', padding: '28px 30px',
-            maxWidth: 580, width: '100%', maxHeight: '85vh', overflow: 'auto',
+            maxWidth: 620, width: '100%', maxHeight: '90vh', overflow: 'auto',
             border: '1px solid rgba(255,255,255,0.7)',
             boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--txt-primary)' }}>
-                  Assign Reading Test to Students
+                  Assign IELTS Reading Test
                 </h2>
                 <div style={{ fontSize: 13, color: 'var(--color-primary, #244A3A)', fontWeight: 600, marginTop: 4 }}>
                   {assignModalTest.title}
@@ -586,6 +615,132 @@ export default function ReadingTests() {
               <button onClick={() => setAssignModalTest(null)} className="g-btn g-btn-ghost" style={{ padding: '4px' }}>
                 <X size={18} />
               </button>
+            </div>
+
+            {/* ── 1. Mode Selection: Strict Exam vs Practice Mode ── */}
+            <div style={{ marginBottom: 18 }}>
+              <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: 8 }}>
+                Assignment Mode
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {/* Exam Mode Button */}
+                <div
+                  onClick={() => setAssignMode('exam')}
+                  style={{
+                    padding: '12px 14px', borderRadius: 'var(--radius-md, 10px)', cursor: 'pointer',
+                    border: assignMode === 'exam' ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    background: assignMode === 'exam' ? 'var(--color-primary-soft)' : 'var(--color-surface)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                    <Shield size={16} color={assignMode === 'exam' ? 'var(--color-primary)' : 'var(--txt-secondary)'} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: assignMode === 'exam' ? 'var(--color-primary)' : 'var(--txt-primary)' }}>
+                      Exam Mode
+                    </span>
+                    {assignMode === 'exam' && (
+                      <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, background: 'var(--color-primary)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>
+                        STRICT
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)', lineHeight: 1.4 }}>
+                    Full screen required, anti-tab switching detection, auto-finish when time expires, prompt to send to AI & teacher.
+                  </div>
+                </div>
+
+                {/* Practice Mode Button */}
+                <div
+                  onClick={() => setAssignMode('practice')}
+                  style={{
+                    padding: '12px 14px', borderRadius: 'var(--radius-md, 10px)', cursor: 'pointer',
+                    border: assignMode === 'practice' ? '2px solid #2563eb' : '1px solid var(--color-border)',
+                    background: assignMode === 'practice' ? 'rgba(37, 99, 235, 0.08)' : 'var(--color-surface)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                    <Clock size={16} color={assignMode === 'practice' ? '#2563eb' : 'var(--txt-secondary)'} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: assignMode === 'practice' ? '#2563eb' : 'var(--txt-primary)' }}>
+                      Practice Mode
+                    </span>
+                    {assignMode === 'practice' && (
+                      <span style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, background: '#2563eb', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>
+                        SELF-PACED
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 11.5, color: 'var(--txt-secondary)', lineHeight: 1.4 }}>
+                    Running timer reminds student when allotted time passes. No strict full screen lock, free pace.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ── 2. Time Limit Configuration (Teacher Sets Duration) ── */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Test Duration (Time Limit)
+                </label>
+                <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--color-primary)' }}>
+                  {assignTimeLimitMins} Minutes
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                {[30, 45, 60, 75, 90, 120].map(mins => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setAssignTimeLimitMins(mins)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: assignTimeLimitMins === mins ? 700 : 500,
+                      background: assignTimeLimitMins === mins ? 'var(--color-primary)' : 'var(--color-surface-muted, #f1f5f9)',
+                      color: assignTimeLimitMins === mins ? '#ffffff' : 'var(--txt-primary)',
+                      border: '1px solid ' + (assignTimeLimitMins === mins ? 'var(--color-primary)' : 'var(--color-border)'),
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {mins}m {mins === 60 ? '(Standard IELTS)' : ''}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min="5"
+                  max="240"
+                  value={assignTimeLimitMins}
+                  onChange={e => setAssignTimeLimitMins(Math.max(1, parseInt(e.target.value) || 60))}
+                  className="g-input"
+                  style={{ width: 90, fontSize: 13, padding: '7px 10px' }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--txt-secondary)' }}>
+                  minutes (custom duration configured by you)
+                </span>
+              </div>
+              <div style={{
+                marginTop: 8, padding: '8px 12px', borderRadius: 6, fontSize: 11.5,
+                background: assignMode === 'exam' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(37, 99, 235, 0.08)',
+                color: assignMode === 'exam' ? '#b91c1c' : '#1d4ed8',
+                display: 'flex', alignItems: 'center', gap: 6
+              }}>
+                {assignMode === 'exam' ? (
+                  <>
+                    <Shield size={13} style={{ flexShrink: 0 }} />
+                    <span>In Exam Mode, the test will automatically lock and submit when {assignTimeLimitMins} minutes expire.</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock size={13} style={{ flexShrink: 0 }} />
+                    <span>In Practice Mode, a reminder banner will notify the student once {assignTimeLimitMins} minutes pass, allowing them to continue.</span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Deadline */}

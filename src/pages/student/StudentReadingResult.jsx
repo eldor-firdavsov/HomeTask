@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import {
   Award, Clock, CheckCircle2, XCircle, ArrowLeft, Sparkles,
-  BookOpen, ChevronRight, TrendingUp, AlertCircle, Check
+  BookOpen, ChevronRight, TrendingUp, AlertCircle, Check, Shield, AlertTriangle
 } from 'lucide-react';
 import {
   getReadingSubmissionById,
@@ -87,6 +87,8 @@ export default function StudentReadingResult() {
   const timeMins = submission.timeSpentSecs ? Math.round(submission.timeSpentSecs / 60) : '—';
   const passages = test?.passages || [];
   const detailedResults = submission.detailedResults || [];
+  const isExam = (submission.mode || 'exam') === 'exam';
+  const infractions = Number(submission.tabSwitchCount || 0);
 
   const currentPassage = passages[activePassage] || { title: `Passage ${activePassage + 1}`, text: '', questions: [] };
   const currentPassageQIds = new Set((currentPassage.questions || []).map(q => q.id));
@@ -120,22 +122,48 @@ export default function StudentReadingResult() {
         flexWrap: 'wrap', gap: 24
       }}>
         <div>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 6,
-            background: `${bandColor}25`, color: bandColor,
-            padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 800,
-            letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 10
-          }}>
-            <Award size={14} /> Official IELTS Band Evaluation
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: `${bandColor}25`, color: bandColor,
+              padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 800,
+              letterSpacing: '0.04em', textTransform: 'uppercase'
+            }}>
+              <Award size={14} /> Official IELTS Band Evaluation
+            </div>
+
+            {/* Mode badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 700,
+              background: isExam ? 'rgba(239, 68, 68, 0.12)' : 'rgba(37, 99, 235, 0.12)',
+              color: isExam ? '#dc2626' : '#2563eb'
+            }}>
+              {isExam ? <Shield size={13} /> : <Clock size={13} />}
+              {isExam ? 'Strict Exam Mode' : 'Practice Mode'}
+            </div>
+
+            {/* Anti-cheat result if exam */}
+            {isExam && infractions > 0 && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '4px 10px', borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+                background: '#fee2e2', color: '#b91c1c'
+              }}>
+                <AlertTriangle size={13} /> {infractions} Tab Switch{infractions > 1 ? 'es' : ''} Logged
+              </div>
+            )}
           </div>
+
           <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--txt-primary)', margin: '0 0 6px' }}>
             {test?.title || 'IELTS Academic Reading Test'}
           </h1>
-          <p style={{ fontSize: 13.5, color: 'var(--txt-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <p style={{ fontSize: 13.5, color: 'var(--txt-secondary)', margin: 0, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <span>Completed on {new Date(submission.submittedAt).toLocaleDateString()}</span>
             <span>•</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <Clock size={14} /> {timeMins} minutes taken
+              {submission.targetTimeMins && ` (target: ${submission.targetTimeMins}m)`}
             </span>
           </p>
         </div>

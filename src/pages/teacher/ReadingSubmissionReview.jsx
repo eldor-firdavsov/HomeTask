@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import {
   ArrowLeft, Award, Clock, CheckCircle2, XCircle, AlertCircle,
-  BookOpen, Sparkles, User, FileText, ChevronRight
+  BookOpen, Sparkles, User, FileText, ChevronRight, Shield, AlertTriangle
 } from 'lucide-react';
 import {
   getReadingSubmissionById,
@@ -93,6 +93,8 @@ export default function ReadingSubmissionReview() {
   const timeMins = submission.timeSpentSecs ? Math.round(submission.timeSpentSecs / 60) : '—';
   const passages = test?.passages || [];
   const detailedResults = submission.detailedResults || [];
+  const isExam = (submission.mode || 'exam') === 'exam';
+  const infractions = submission.tabSwitchCount || 0;
 
   const currentPassage = passages[activePassage] || { title: `Passage ${activePassage + 1}`, text: '', questions: [] };
 
@@ -134,16 +136,38 @@ export default function ReadingSubmissionReview() {
             {student ? `${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}` : <User size={22} />}
           </div>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)' }}>
-              {student ? `${student.firstName} ${student.lastName}` : 'Student'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--txt-primary)' }}>
+                {student ? `${student.firstName} ${student.lastName}` : 'Student'}
+              </span>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+                background: isExam ? 'rgba(239, 68, 68, 0.12)' : 'rgba(37, 99, 235, 0.12)',
+                color: isExam ? '#dc2626' : '#2563eb'
+              }}>
+                {isExam ? <Shield size={12} /> : <Clock size={12} />}
+                {isExam ? 'Strict Exam Mode' : 'Practice Mode'}
+              </span>
+              {isExam && infractions > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 700,
+                  background: '#fee2e2', color: '#b91c1c'
+                }}>
+                  <AlertTriangle size={12} /> {infractions} Tab Switch{infractions > 1 ? 'es' : ''}
+                </span>
+              )}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 10, marginTop: 2 }}>
+            <div style={{ fontSize: 13, color: 'var(--txt-secondary)', display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
               <span>{test?.title || 'IELTS Reading Test'}</span>
               <span>•</span>
               <span>{submission.submittedAt ? new Date(submission.submittedAt).toLocaleString() : ''}</span>
               <span>•</span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                 <Clock size={13} /> {timeMins} mins
+                {submission.targetTimeMins && ` (target: ${submission.targetTimeMins}m)`}
+                {submission.overtimeSecs > 0 && ` • +${Math.round(submission.overtimeSecs / 60)}m overtime`}
               </span>
             </div>
           </div>
@@ -175,8 +199,24 @@ export default function ReadingSubmissionReview() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 22 }}>
         {/* Metrics card */}
         <div className="glass-1" style={{ borderRadius: 'var(--r-xl)', padding: '20px 24px' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 12 }}>
-            Performance Metrics
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--txt-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Performance Metrics
+            </div>
+            {isExam ? (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                fontSize: 11.5, fontWeight: 700,
+                color: infractions > 0 ? '#dc2626' : '#16a34a'
+              }}>
+                {infractions > 0 ? <AlertTriangle size={13} /> : <Shield size={13} />}
+                {infractions > 0 ? `${infractions} Tab Violations` : 'Clean Anti-Cheat Session'}
+              </span>
+            ) : (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11.5, fontWeight: 600, color: '#2563eb' }}>
+                <Clock size={13} /> Self-Paced Practice
+              </span>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>

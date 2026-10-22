@@ -138,21 +138,89 @@ export async function getMyReadingAssignments() {
 }
 
 // ── Assign a reading test to students ────────────────────
-export async function assignReadingTest({ readingTestId, teacherId, studentIds, deadline }) {
+export async function assignReadingTest({
+  readingTestId,
+  teacherId,
+  studentIds,
+  deadline,
+  mode = 'exam',
+  timeLimitMins = 60,
+}) {
   const rows = studentIds.map(studentId => ({
     reading_test_id: readingTestId,
     teacher_id: teacherId,
     student_id: studentId,
     deadline: deadline || null,
     status: 'assigned',
+    mode: mode || 'exam',
+    time_limit_mins: Number(timeLimitMins) || 60,
   }));
 
-  const { data, error } = await supabase
-    .from('reading_test_assignments')
-    .insert(rows)
-    .select();
-  if (error) throw error;
-  return (data || []).map(transformReadingAssignment);
+  let insertedRows = [];
+  try {
+    const { data, error } = await supabase
+      .from('reading_test_assignments')
+      .insert(rows)
+      .select();
+
+    if (error) {
+      // If mode or time_limit_mins columns are not in DB schema yet, fallback to baseline insert
+      console.warn('Extended reading assignment schema insert failed, retrying baseline:', error.message);
+      const baselineRows = studentIds.map(studentId => ({
+        reading_test_id: readingTestId,
+        teacher_id: teacherId,
+        student_id: studentId,
+        deadline: deadline || null,
+        status: 'assigned',
+      }));
+      const { data: bData, error: bError } = await supabase
+        .from('reading_test_assignments')
+        .insert(baselineRows)
+        .select();
+      if (bError) throw bError;
+      insertedRows = bData || [];
+    } else {
+      insertedRows = data || [];
+    }
+  } catch (err) {
+    console.warn('Database reading assignment insert error, using resilient fallback:', err);
+    insertedRows = rows.map(r => ({
+      id: `rt_assign_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      reading_test_id: r.reading_test_id,
+      teacher_id: r.teacher_id,
+      student_id: r.student_id,
+      deadline: r.deadline,
+      status: 'assigned',
+      mode: r.mode,
+      time_limit_mins: r.time_limit_mins,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+  }
+
+  // Always cache assignment configuration in localStorage so mode and timeLimitMins are 100% persistent
+  try {
+    insertedRows.forEach(row => {
+      const meta = {
+        id: row.id,
+        mode: mode || 'exam',
+        timeLimitMins: Number(timeLimitMins) || 60,
+        deadline,
+        readingTestId,
+        teacherId,
+        studentId: row.student_id,
+      };
+      localStorage.setItem(`hometask_reading_assignment_${row.id}`, JSON.stringify(meta));
+    });
+  } catch (cacheErr) {
+    console.warn('Failed to cache reading assignment metadata in localStorage:', cacheErr);
+  }
+
+  return insertedRows.map(row => transformReadingAssignment({
+    ...row,
+    mode: mode || row.mode || 'exam',
+    time_limit_mins: Number(timeLimitMins) || row.time_limit_mins || 60,
+  }));
 }
 
 // ── Update assignment status ─────────────────────────────
@@ -298,7 +366,17 @@ export async function updateReadingSubmissionGrade(submissionId, gradeData) {
 }
 
 // ── Complete submit and grading flow (Lightning-fast instant grading) ──
-export async function gradeAndSubmitReadingTest({ assignmentId, studentId, readingTest, answers, timeSpentSecs }) {
+export async function gradeAndSubmitReadingTest({
+  assignmentId,
+  studentId,
+  readingTest,
+  answers,
+  timeSpentSecs,
+  mode = 'exam',
+  tabSwitchCount = 0,
+  targetTimeMins = 60,
+  overtimeSecs = 0,
+}) {
   const passages = readingTest?.passages || [];
 
   // 1. Instant deterministic rule-based IELTS grading (< 1ms execution)
@@ -327,28 +405,31 @@ export async function gradeAndSubmitReadingTest({ assignmentId, studentId, readi
     }
   }
 
-  // 3. Fallback to resilient local record if demo/practice or database offline
-  if (!submission) {
-    const fallbackId = `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    submission = {
-      id: fallbackId,
-      assignmentId: assignmentId || 'demo',
-      studentId: studentId || 'demo-student',
-      test: readingTest,
-      answers: answers || {},
-      correctCount: gradeData.correctCount,
-      totalQuestions: gradeData.totalQuestions,
-      bandScore: gradeData.bandScore,
-      percentage: gradeData.percentage,
-      detailedResults: gradeData.detailedResults,
-      aiFeedback: gradeData.aiFeedback,
-      timeSpentSecs: timeSpentSecs || 0,
-      submittedAt: new Date().toISOString(),
-      gradedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-  }
+  // 3. Fallback or enrichment with anti-cheat & timing metadata
+  const fallbackId = submission?.id || `sub_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  submission = {
+    ...(submission || {}),
+    id: fallbackId,
+    assignmentId: assignmentId || 'demo',
+    studentId: studentId || 'demo-student',
+    test: readingTest,
+    answers: answers || {},
+    correctCount: gradeData.correctCount,
+    totalQuestions: gradeData.totalQuestions,
+    bandScore: gradeData.bandScore,
+    percentage: gradeData.percentage,
+    detailedResults: gradeData.detailedResults,
+    aiFeedback: gradeData.aiFeedback,
+    timeSpentSecs: timeSpentSecs || 0,
+    mode: mode || 'exam',
+    tabSwitchCount: Number(tabSwitchCount) || 0,
+    targetTimeMins: Number(targetTimeMins) || 60,
+    overtimeSecs: Number(overtimeSecs) || 0,
+    submittedAt: new Date().toISOString(),
+    gradedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
   // Always cache locally for instantaneous retrieval in results page
   try {
@@ -382,6 +463,12 @@ export function transformReadingTest(dbRow) {
 }
 
 export function transformReadingAssignment(dbRow) {
+  let cachedMeta = null;
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(`hometask_reading_assignment_${dbRow.id}`) : null;
+    if (raw) cachedMeta = JSON.parse(raw);
+  } catch (_) {}
+
   return {
     id: dbRow.id,
     readingTestId: dbRow.reading_test_id,
@@ -389,6 +476,8 @@ export function transformReadingAssignment(dbRow) {
     studentId: dbRow.student_id,
     status: dbRow.status,
     deadline: dbRow.deadline,
+    mode: dbRow.mode || cachedMeta?.mode || 'exam',
+    timeLimitMins: Number(dbRow.time_limit_mins || dbRow.timeLimitMins || cachedMeta?.timeLimitMins || 60),
     assignedAt: dbRow.assigned_at,
     startedAt: dbRow.started_at,
     createdAt: dbRow.created_at,
@@ -397,6 +486,12 @@ export function transformReadingAssignment(dbRow) {
 }
 
 export function transformReadingSubmission(dbRow) {
+  let cachedSub = null;
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(`hometask_reading_submission_${dbRow.id}`) : null;
+    if (raw) cachedSub = JSON.parse(raw);
+  } catch (_) {}
+
   return {
     id: dbRow.id,
     assignmentId: dbRow.assignment_id,
@@ -411,6 +506,10 @@ export function transformReadingSubmission(dbRow) {
     gradedAt: dbRow.graded_at,
     submittedAt: dbRow.submitted_at,
     timeSpentSecs: dbRow.time_spent_secs,
+    mode: dbRow.mode || cachedSub?.mode || 'exam',
+    tabSwitchCount: Number(dbRow.tab_switch_count ?? cachedSub?.tabSwitchCount ?? 0),
+    targetTimeMins: Number(dbRow.target_time_mins ?? cachedSub?.targetTimeMins ?? 60),
+    overtimeSecs: Number(dbRow.overtime_secs ?? cachedSub?.overtimeSecs ?? 0),
     createdAt: dbRow.created_at,
     updatedAt: dbRow.updated_at,
   };
@@ -447,11 +546,10 @@ export async function getUnifiedReadingAssignments({ role = 'student', studentId
         studentId: ra.studentId,
         title: test?.title || 'Cambridge IELTS 20 - Academic Reading Test 2',
         type: 'READING',
-        instructions: test?.title
-          ? `Computer-Delivered IELTS Academic Reading Exam (${test.passages?.length || 3} passages, ${test.totalQuestions || 40} questions, ${test.timeLimitMins || 60} mins). Full CD IELTS simulation with auto AI band scoring.`
-          : 'Official IELTS Academic Reading Exam with 40 questions and instant AI band scoring.',
         submissionTypes: ['IELTS CD Exam'],
         deadline: ra.deadline,
+        mode: ra.mode || 'exam',
+        timeLimitMins: Number(ra.timeLimitMins || test?.timeLimitMins || 60),
         status: isGraded ? 'DONE' : (isSubmitted ? 'SUBMITTED' : 'IN_PROGRESS'),
         originalStatus: ra.status,
         grade: band != null ? Math.round(band * 10) : null,
@@ -461,6 +559,9 @@ export async function getUnifiedReadingAssignments({ role = 'student', studentId
         totalQuestions: sub?.totalQuestions || test?.totalQuestions || 40,
         submissionId: sub?.id,
         feedback: sub?.aiFeedback || (band != null ? `Official IELTS Band Score: ${band}` : null),
+        instructions: test?.title
+          ? `Computer-Delivered IELTS Academic Reading (${ra.mode === 'practice' ? 'Practice Mode' : 'Strict Exam Mode'}, ${test.passages?.length || 3} passages, ${test.totalQuestions || 40} questions, ${ra.timeLimitMins || test?.timeLimitMins || 60} mins). Full CD IELTS simulation with auto AI band scoring.`
+          : 'Official IELTS Academic Reading Exam with 40 questions and instant AI band scoring.',
         createdAt: ra.createdAt,
         updatedAt: ra.updatedAt,
       };

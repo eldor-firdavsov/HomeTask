@@ -912,7 +912,7 @@ export default function StudentDashboard() {
                       }}
                     >
                       {task.isReadingTest
-                        ? (task.status === 'DONE' ? 'View Band' : 'Start Exam')
+                        ? (task.status === 'DONE' ? 'View Band' : (task.mode === 'practice' ? 'Start Practice' : 'Start Exam'))
                         : (isRevision ? 'Revise Task' : task.status === 'IN_PROGRESS' ? 'Resume Task' : 'Start Task')}
                       <ArrowRight size={13} />
                     </Link>
@@ -1055,12 +1055,22 @@ export default function StudentDashboard() {
                           </span>
                           <TypeChip type={task.type} />
                           {task.isReadingTest && (
-                            <span style={{
-                              fontSize: 10.5, padding: '1px 7px', borderRadius: 4,
-                              background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
-                            }}>
-                              IELTS Academic
-                            </span>
+                            <>
+                              <span style={{
+                                fontSize: 10.5, padding: '1px 7px', borderRadius: 4,
+                                background: 'rgba(36, 74, 58, 0.12)', color: 'var(--color-primary)', fontWeight: 700
+                              }}>
+                                IELTS Academic
+                              </span>
+                              <span style={{
+                                fontSize: 10.5, padding: '1px 7px', borderRadius: 4,
+                                background: task.mode === 'practice' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                color: task.mode === 'practice' ? '#2563eb' : '#dc2626',
+                                fontWeight: 700
+                              }}>
+                                {task.mode === 'practice' ? 'Practice' : 'Strict Exam'} · {task.timeLimitMins || 60}m
+                              </span>
+                            </>
                           )}
                         </div>
 

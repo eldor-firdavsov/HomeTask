@@ -458,11 +458,21 @@ export default function StudentDetail() {
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--txt-primary)', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
                       {a.title}
                     </span>
                     <TypeChip type={a.type} />
+                    {a.isReadingTest && (
+                      <span style={{
+                        fontSize: 10.5, padding: '2px 7px', borderRadius: 4,
+                        background: a.mode === 'practice' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: a.mode === 'practice' ? '#2563eb' : '#dc2626',
+                        fontWeight: 700
+                      }}>
+                        {a.mode === 'practice' ? 'Practice' : 'Strict Exam'} · {a.timeLimitMins || 60}m
+                      </span>
+                    )}
                   </div>
                   <div style={{ fontSize: 12, color: overdueA ? 'var(--clr-overdue-txt)' : 'var(--txt-secondary)', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                     <span>
@@ -471,7 +481,11 @@ export default function StudentDetail() {
                         : 'No deadline'
                       }
                     </span>
-                    {typeof a.grade === 'number' && (
+                    {a.isReadingTest && a.bandScore != null ? (
+                      <span style={{ fontWeight: 700, color: '#059669' }}>
+                        · Band {a.bandScore}
+                      </span>
+                    ) : typeof a.grade === 'number' && (
                       <span style={{ fontWeight: 700, color: gradeColor(a.grade) }}>
                         · Grade: {a.grade}/100
                       </span>

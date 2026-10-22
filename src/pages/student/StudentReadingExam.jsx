@@ -4,7 +4,8 @@ import { useData, useToast } from '../../context/DataContext';
 import {
   Clock, Flag, HelpCircle, ArrowLeft, ArrowRight, CheckCircle2,
   AlertTriangle, Send, Highlighter, Eraser, Loader2, Eye, EyeOff,
-  Maximize, Minimize, MoveHorizontal, ListOrdered, StickyNote, X, Trash2, Target
+  Maximize, Minimize, MoveHorizontal, ListOrdered, StickyNote, X, Trash2, Target,
+  Shield
 } from 'lucide-react';
 import {
   getMyReadingAssignments,
@@ -20,9 +21,24 @@ export default function StudentReadingExam() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [_assignment, setAssignment] = useState(null);
+  const [assignment, setAssignment] = useState(null);
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Exam mode & timing configuration
+  const mode = assignment?.mode || (assignmentId === 'practice' || assignmentId === 'demo' ? 'practice' : 'exam');
+  const isExamMode = mode === 'exam';
+  const isPracticeMode = mode === 'practice';
+  const targetTimeMins = Number(assignment?.timeLimitMins || test?.timeLimitMins || 60);
+
+  // Strict Exam Mode & Anti-Cheat State
+  const [examStarted, setExamStarted] = useState(!isExamMode);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [showTabSwitchWarning, setShowTabSwitchWarning] = useState(false);
+  const [showFullscreenRequiredModal, setShowFullscreenRequiredModal] = useState(false);
+  const [isTimeExpiredModalOpen, setIsTimeExpiredModalOpen] = useState(false);
+  const [autoSubmitCountdown, setAutoSubmitCountdown] = useState(10);
+  const [practiceOvertimeAlertDismissed, setPracticeOvertimeAlertDismissed] = useState(false);
 
   // Exam state
   const [activePassageIdx, setActivePassageIdx] = useState(0);
@@ -62,6 +78,8 @@ export default function StudentReadingExam() {
   const questionsContainerRef = useRef(null);
   const timerRef = useRef(null);
   const splitContainerRef = useRef(null);
+  const hasLeftRef = useRef(false);
+  const handleSubmitExamRef = useRef(null);
 
   // ── 1. Load test data ──────────────────────────────────
   useEffect(() => {
@@ -69,9 +87,17 @@ export default function StudentReadingExam() {
       setLoading(true);
       try {
         if (!assignmentId || assignmentId === 'demo' || assignmentId === 'practice' || assignmentId === 'cambridge-20') {
-          setAssignment({ id: 'demo', readingTestId: 'cambridge-20-test-2' });
+          const isPractice = assignmentId === 'practice' || assignmentId === 'demo';
+          const defaultAssign = {
+            id: assignmentId || 'demo',
+            readingTestId: 'cambridge-20-test-2',
+            mode: isPractice ? 'practice' : 'exam',
+            timeLimitMins: 60,
+          };
+          setAssignment(defaultAssign);
           setTest(CAMBRIDGE_20_READING_TEST_2);
           setSecondsRemaining(60 * 60);
+          if (isPractice) setExamStarted(true);
           const firstQ = CAMBRIDGE_20_READING_TEST_2.passages[0]?.questions?.[0];
           if (firstQ) setActiveQuestionId(firstQ.id);
           setLoading(false);
@@ -82,7 +108,13 @@ export default function StudentReadingExam() {
         const currentAssign = assignments.find(a => a.id === assignmentId);
         if (!currentAssign) {
           // If assignment not in DB, fallback to Cambridge 20 so students can still practice
-          setAssignment({ id: assignmentId, readingTestId: 'cambridge-20-test-2' });
+          const fallbackAssign = {
+            id: assignmentId,
+            readingTestId: 'cambridge-20-test-2',
+            mode: 'exam',
+            timeLimitMins: 60,
+          };
+          setAssignment(fallbackAssign);
           setTest(CAMBRIDGE_20_READING_TEST_2);
           setSecondsRemaining(60 * 60);
           const firstQ = CAMBRIDGE_20_READING_TEST_2.passages[0]?.questions?.[0];
@@ -101,15 +133,19 @@ export default function StudentReadingExam() {
         const testData = await getReadingTest(currentAssign.readingTestId);
         setTest(testData);
 
-        const mins = testData.timeLimitMins || 60;
+        const mins = Number(currentAssign.timeLimitMins || testData.timeLimitMins || 60);
         setSecondsRemaining(mins * 60);
+
+        if (currentAssign.mode === 'practice') {
+          setExamStarted(true);
+        }
 
         const firstQ = testData.passages?.[0]?.questions?.[0];
         if (firstQ) setActiveQuestionId(firstQ.id);
 
       } catch (err) {
         console.warn('Failed to load exam from DB, loading Cambridge 20 test:', err);
-        setAssignment({ id: assignmentId || 'demo', readingTestId: 'cambridge-20-test-2' });
+        setAssignment({ id: assignmentId || 'demo', readingTestId: 'cambridge-20-test-2', mode: 'exam', timeLimitMins: 60 });
         setTest(CAMBRIDGE_20_READING_TEST_2);
         setSecondsRemaining(60 * 60);
         const firstQ = CAMBRIDGE_20_READING_TEST_2.passages[0]?.questions?.[0];
@@ -121,16 +157,49 @@ export default function StudentReadingExam() {
     loadExam();
   }, [assignmentId, navigate, toast]);
 
-  // ── 2. Fullscreen Listener ────────────────────────────
+  // ── 2. Fullscreen Listener & Enforcement ──────────────
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
+      const isFull = Boolean(document.fullscreenElement);
+      setIsFullscreen(isFull);
+      if (isExamMode && examStarted && !isFull && !submitting && !isTimeExpiredModalOpen) {
+        setShowFullscreenRequiredModal(true);
+      } else if (isFull) {
+        setShowFullscreenRequiredModal(false);
+      }
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  }, [isExamMode, examStarted, submitting, isTimeExpiredModalOpen]);
+
+  const enterExamFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+        .then(() => {
+          setIsFullscreen(true);
+          setShowFullscreenRequiredModal(false);
+          setExamStarted(true);
+        })
+        .catch(() => {
+          setIsFullscreen(true);
+          setShowFullscreenRequiredModal(false);
+          setExamStarted(true);
+        });
+    } else {
+      setShowFullscreenRequiredModal(false);
+      setExamStarted(true);
+    }
+  };
 
   const toggleFullscreen = () => {
+    if (isExamMode) {
+      if (!document.fullscreenElement) {
+        enterExamFullscreen();
+      } else {
+        toast('Strict Exam Mode requires fullscreen throughout the examination.', 'warning');
+      }
+      return;
+    }
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
     } else {
@@ -138,7 +207,50 @@ export default function StudentReadingExam() {
     }
   };
 
-  // ── 3. Split Screen Resizing ──────────────────────────
+  // ── 3. Anti-Cheat: Tab Switching & Window Blur Detection (Strict Exam Mode) ──
+  useEffect(() => {
+    if (!isExamMode || !examStarted || submitting || loading || isTimeExpiredModalOpen) return;
+
+    const onLeave = () => {
+      hasLeftRef.current = true;
+    };
+
+    const onReturn = () => {
+      if (hasLeftRef.current) {
+        hasLeftRef.current = false;
+        setTabSwitchCount(prev => prev + 1);
+        setShowTabSwitchWarning(true);
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        onLeave();
+      } else {
+        onReturn();
+      }
+    };
+
+    const onWindowBlur = () => {
+      onLeave();
+    };
+
+    const onWindowFocus = () => {
+      onReturn();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('focus', onWindowFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [isExamMode, examStarted, submitting, loading, isTimeExpiredModalOpen]);
+
+  // ── 4. Split Screen Resizing ──────────────────────────
   const handleMouseDownResizer = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -153,7 +265,6 @@ export default function StudentReadingExam() {
       const newWidth = e.clientX - rect.left;
       const totalWidth = rect.width;
       const percent = (newWidth / totalWidth) * 100;
-      // Clamp between 25% and 75%
       const clamped = Math.max(25, Math.min(75, percent));
       setSplitRatio(clamped);
     };
@@ -171,28 +282,45 @@ export default function StudentReadingExam() {
     };
   }, [isDragging]);
 
-  // Auto-submit ref to avoid circular state initialization
-  const autoSubmitRef = useRef(null);
-
-  // ── 4. Countdown Timer ─────────────────────────────────
+  // ── 5. Countdown Timer (Strict Exam vs Practice Overtime) ──
   useEffect(() => {
     if (loading || !test || submitting) return;
+    if (isExamMode && !examStarted) return; // Wait until student enters exam mode
 
     timerRef.current = setInterval(() => {
       setSecondsRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          if (autoSubmitRef.current) {
-            autoSubmitRef.current();
+        if (isExamMode) {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            setIsTimeExpiredModalOpen(true);
+            return 0;
           }
+          return prev - 1;
+        } else {
+          // Practice mode: keeps running and ticks into negative (overtime)
+          return prev - 1;
+        }
+      });
+    }, 1000);
+
+    return () => clearInterval(timerRef.current);
+  }, [loading, test, submitting, isExamMode, examStarted]);
+
+  // Auto-submit countdown in Exam Mode when time expired
+  useEffect(() => {
+    if (!isTimeExpiredModalOpen || submitting) return;
+    const interval = setInterval(() => {
+      setAutoSubmitCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleSubmitExamRef.current?.();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    return () => clearInterval(timerRef.current);
-  }, [loading, test, submitting]);
+    return () => clearInterval(interval);
+  }, [isTimeExpiredModalOpen, submitting]);
 
   // ── 5. Flattened Questions List ────────────────────────
   const allQuestions = useMemo(() => {
@@ -221,22 +349,28 @@ export default function StudentReadingExam() {
 
   // Formatted timer: MM:SS
   const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
+    const abs = Math.abs(secs);
+    const m = Math.floor(abs / 60);
+    const s = abs % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const timerWarningClass = secondsRemaining <= 300
+  const isOvertime = isPracticeMode && secondsRemaining < 0;
+
+  const timerWarningClass = isExamMode && secondsRemaining <= 300
     ? 'timer-warning-red'
-    : secondsRemaining <= 600
+    : isExamMode && secondsRemaining <= 600
       ? 'timer-warning-amber'
-      : '';
+      : isOvertime
+        ? 'timer-warning-amber'
+        : '';
 
   // In official IELTS, in the last 10 minutes time is forced visible
-  const isTimerForcedVisible = secondsRemaining <= 600;
+  const isTimerForcedVisible = isExamMode && secondsRemaining <= 600;
 
   // Answer handler
   const handleAnswerChange = (qId, val) => {
+    if (isTimeExpiredModalOpen || submitting) return;
     setAnswers(prev => ({ ...prev, [qId]: val }));
   };
 
@@ -341,8 +475,10 @@ export default function StudentReadingExam() {
   // ── 7. Submission Handler ─────────────────────────────
   const handleSubmitExam = async () => {
     setShowSubmitModal(false);
+    setIsTimeExpiredModalOpen(false);
     setSubmitting(true);
     const timeSpentSecs = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+    const overtimeSecs = isPracticeMode && secondsRemaining < 0 ? Math.abs(secondsRemaining) : 0;
 
     try {
       const studentId = session?.user?.id || profile?.id;
@@ -352,6 +488,10 @@ export default function StudentReadingExam() {
         readingTest: test,
         answers,
         timeSpentSecs,
+        mode,
+        tabSwitchCount: isExamMode ? tabSwitchCount : 0,
+        targetTimeMins,
+        overtimeSecs,
       });
 
       toast('🎉 IELTS Reading Exam submitted and graded successfully!');
@@ -362,12 +502,8 @@ export default function StudentReadingExam() {
       setSubmitting(false);
     }
   };
-
   useEffect(() => {
-    autoSubmitRef.current = () => {
-      toast('Time has expired! Submitting your exam answers now...', 'warning');
-      handleSubmitExam();
-    };
+    handleSubmitExamRef.current = handleSubmitExam;
   });
 
   if (loading) {
@@ -448,6 +584,27 @@ export default function StudentReadingExam() {
             <span className="cd-ielts-cd-tag">IELTS CD</span>
           </div>
 
+          {/* Mode Pill Badge */}
+          {isExamMode ? (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 8px', borderRadius: 4, background: '#fef2f2',
+              border: '1px solid #fecaca', color: '#dc2626', fontSize: 11.5, fontWeight: 700
+            }}>
+              <Shield size={12} />
+              <span>STRICT EXAM ({targetTimeMins}m)</span>
+            </div>
+          ) : (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '3px 8px', borderRadius: 4, background: '#eff6ff',
+              border: '1px solid #bfdbfe', color: '#2563eb', fontSize: 11.5, fontWeight: 700
+            }}>
+              <Clock size={12} />
+              <span>PRACTICE MODE ({targetTimeMins}m limit)</span>
+            </div>
+          )}
+
           <div className="cd-ielts-test-title" title={test?.title || 'Academic Reading Test'}>
             {test?.title || 'Academic Reading Test'}
           </div>
@@ -457,15 +614,19 @@ export default function StudentReadingExam() {
         <div className="cd-ielts-header-center">
           <div className={`cd-ielts-timer-box ${timerWarningClass}`}>
             <Clock size={16} />
-            {timerVisible || isTimerForcedVisible ? (
+            {isOvertime ? (
+              <span style={{ minWidth: 64, textAlign: 'center', color: '#b45309', fontWeight: 800 }}>
+                +{formatTime(secondsRemaining)} Overtime
+              </span>
+            ) : timerVisible || isTimerForcedVisible ? (
               <span style={{ minWidth: 46, textAlign: 'center' }}>
-                {formatTime(secondsRemaining)}
+                {secondsRemaining === 0 && isExamMode ? '00:00 (Time Up)' : formatTime(secondsRemaining)}
               </span>
             ) : (
               <span style={{ fontSize: 12, color: '#6b7280' }}>Time Hidden</span>
             )}
 
-            {!isTimerForcedVisible && (
+            {!isTimerForcedVisible && !isOvertime && (
               <button
                 type="button"
                 className="cd-ielts-timer-toggle"
@@ -497,6 +658,33 @@ export default function StudentReadingExam() {
           </button>
         </div>
       </header>
+
+      {/* ── Practice Mode Overtime Reminder Banner ── */}
+      {isPracticeMode && secondsRemaining < 0 && !practiceOvertimeAlertDismissed && (
+        <div style={{
+          background: '#fffbeb', borderBottom: '1px solid #fde68a', color: '#92400e',
+          padding: '8px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontSize: 12.5, fontWeight: 500, zIndex: 40
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={15} color="#d97706" style={{ flexShrink: 0 }} />
+            <span>
+              <strong>Target Time Limit Reached:</strong> You have passed the {targetTimeMins}-minute duration assigned by your teacher (+{formatTime(secondsRemaining)} overtime). You may continue answering questions and submit whenever you are finished.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPracticeOvertimeAlertDismissed(true)}
+            style={{
+              background: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 4,
+              padding: '3px 10px', fontSize: 11.5, fontWeight: 600, color: '#78350f', cursor: 'pointer',
+              flexShrink: 0, marginLeft: 12
+            }}
+          >
+            Dismiss Reminder
+          </button>
+        </div>
+      )}
 
       {/* ── 2. Part Announcement Bar (.ielts-reading-part-announcement-container) ── */}
       <div className="cd-ielts-announcement-bar">
@@ -702,6 +890,7 @@ export default function StudentReadingExam() {
                     handleAnswerChange,
                     activeQuestionId,
                     setActiveQuestionId,
+                    isLocked: isTimeExpiredModalOpen || submitting,
                   })}
                 </div>
               );
@@ -1082,6 +1271,219 @@ export default function StudentReadingExam() {
           </div>
         </div>
       )}
+
+      {/* ── 8. Strict Exam Mode Starting Screen / Modal ── */}
+      {isExamMode && !examStarted && (
+        <div className="cd-ielts-modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.94)', zIndex: 1200 }}>
+          <div style={{
+            background: '#ffffff', borderRadius: 16, padding: '36px 40px',
+            maxWidth: 540, width: '92%', boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 56, height: 56, borderRadius: '50%', background: '#fee2e2',
+              color: '#dc2626', margin: '0 auto 16px'
+            }}>
+              <Shield size={28} />
+            </div>
+
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: '#fef2f2', border: '1px solid #fecaca',
+              padding: '4px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 800,
+              color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 10
+            }}>
+              Official IELTS Strict Examination Mode
+            </div>
+
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
+              {test?.title || 'IELTS Academic Reading Exam'}
+            </h1>
+            <p style={{ fontSize: 13.5, color: '#64748b', lineHeight: 1.5, margin: '0 0 20px' }}>
+              Your teacher has assigned this test in <strong>Strict Exam Mode</strong> with an allotted duration of <strong>{targetTimeMins} minutes</strong>.
+            </p>
+
+            <div style={{
+              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+              padding: '16px 20px', textAlign: 'left', fontSize: 13, color: '#334155',
+              display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <Maximize size={16} color="#dc2626" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <strong>Fullscreen Required:</strong> The examination must remain in fullscreen mode throughout the test.
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <AlertTriangle size={16} color="#dc2626" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <strong>Anti-Tab Switching Detection:</strong> Leaving or minimizing this window is prohibited. Every infraction is recorded and reported to your teacher.
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                <Clock size={16} color="#dc2626" style={{ marginTop: 2, flexShrink: 0 }} />
+                <div>
+                  <strong>Automatic Finish & AI Grading:</strong> When the {targetTimeMins}-minute timer runs out, answers are automatically locked and sent to AI evaluation and your teacher.
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={enterExamFullscreen}
+              style={{
+                width: '100%', padding: '14px 24px', borderRadius: 10,
+                background: 'var(--color-primary, #244A3A)', color: '#ffffff',
+                border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 12px rgba(36, 74, 58, 0.3)'
+              }}
+            >
+              <Maximize size={18} /> Enter Fullscreen & Begin Exam
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 9. Strict Exam Fullscreen Required Warning ── */}
+      {isExamMode && examStarted && showFullscreenRequiredModal && (
+        <div className="cd-ielts-modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.92)', zIndex: 1200 }}>
+          <div style={{
+            background: '#ffffff', borderRadius: 16, padding: '32px 36px',
+            maxWidth: 480, width: '90%', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 52, height: 52, borderRadius: '50%', background: '#fee2e2',
+              color: '#dc2626', margin: '0 auto 14px'
+            }}>
+              <AlertTriangle size={26} />
+            </div>
+            <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 8px', color: '#0f172a' }}>
+              Fullscreen Mode Required
+            </h2>
+            <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.5, margin: '0 0 20px' }}>
+              You have exited fullscreen mode. Strict Exam Mode requires continuous fullscreen to ensure test integrity.
+            </p>
+            <button
+              type="button"
+              onClick={enterExamFullscreen}
+              style={{
+                width: '100%', padding: '12px 20px', borderRadius: 8,
+                background: 'var(--color-primary, #244A3A)', color: '#ffffff',
+                border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8
+              }}
+            >
+              <Maximize size={16} /> Return to Fullscreen & Resume Exam
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 10. Strict Exam Anti-Cheat Tab Switching Warning ── */}
+      {isExamMode && showTabSwitchWarning && (
+        <div className="cd-ielts-modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.88)', zIndex: 1200 }}>
+          <div style={{
+            background: '#ffffff', borderRadius: 16, padding: '30px 34px',
+            maxWidth: 460, width: '90%', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 52, height: 52, borderRadius: '50%', background: '#fef3c7',
+              color: '#d97706', margin: '0 auto 12px'
+            }}>
+              <AlertTriangle size={26} />
+            </div>
+            <h2 style={{ fontSize: 19, fontWeight: 800, margin: '0 0 6px', color: '#0f172a' }}>
+              Tab Switching Detected!
+            </h2>
+            <div style={{
+              display: 'inline-block', background: '#fee2e2', color: '#dc2626',
+              padding: '3px 10px', borderRadius: 12, fontSize: 12, fontWeight: 700, marginBottom: 12
+            }}>
+              Infraction #{tabSwitchCount} Recorded
+            </div>
+            <p style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.5, margin: '0 0 20px' }}>
+              Leaving or minimizing the exam window is strictly prohibited in Exam Mode. This infraction has been logged and will be forwarded to your teacher with your final score.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowTabSwitchWarning(false)}
+              style={{
+                width: '100%', padding: '12px 20px', borderRadius: 8,
+                background: '#dc2626', color: '#ffffff',
+                border: 'none', fontSize: 14, fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              I Understand & Resume Exam
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── 11. Strict Exam Time Expired Auto-Finish Modal ── */}
+      {isExamMode && isTimeExpiredModalOpen && (
+        <div className="cd-ielts-modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.94)', zIndex: 1200 }}>
+          <div style={{
+            background: '#ffffff', borderRadius: 16, padding: '34px 38px',
+            maxWidth: 500, width: '92%', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              width: 56, height: 56, borderRadius: '50%', background: '#fee2e2',
+              color: '#dc2626', margin: '0 auto 14px'
+            }}>
+              <Clock size={28} />
+            </div>
+            <h2 style={{ fontSize: 21, fontWeight: 800, margin: '0 0 8px', color: '#0f172a' }}>
+              Time Has Expired!
+            </h2>
+            <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, margin: '0 0 16px' }}>
+              Your teacher-assigned <strong>{targetTimeMins} minutes</strong> have concluded in Strict Exam Mode. All questions are now locked. Please send your answers now to AI evaluation and your teacher.
+            </p>
+
+            <div style={{
+              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10,
+              padding: '14px 18px', marginBottom: 20, display: 'flex', justifyContent: 'space-around'
+            }}>
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Answered</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a' }}>
+                  {answeredCount} / {allQuestions.length}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Infractions</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: tabSwitchCount > 0 ? '#ef4444' : '#16a34a' }}>
+                  {tabSwitchCount}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>Auto-Send In</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#dc2626' }}>
+                  {autoSubmitCountdown}s
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSubmitExam}
+              style={{
+                width: '100%', padding: '14px 22px', borderRadius: 10,
+                background: 'var(--color-primary, #244A3A)', color: '#ffffff',
+                border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                boxShadow: '0 4px 12px rgba(36, 74, 58, 0.3)'
+              }}
+            >
+              <Send size={16} /> Send Answers to AI & Teacher Now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1208,7 +1610,7 @@ function renderSectionInstructions(section, passageIdx) {
 }
 
 // ── Helper: Render Section Questions Content ─────────────
-function renderSectionContent(section, { answers, handleAnswerChange, activeQuestionId, setActiveQuestionId }) {
+function renderSectionContent(section, { answers, handleAnswerChange, activeQuestionId, setActiveQuestionId, isLocked }) {
   // 1. Completion / Notes / Sentence completion
   if (section.family === 'completion') {
     let lastCategory = null;
@@ -1266,6 +1668,7 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                     type="text"
                     className="ielts-reading-input"
                     value={currentAnswer}
+                    disabled={isLocked}
                     onChange={e => handleAnswerChange(q.id, e.target.value)}
                     onFocus={() => setActiveQuestionId(q.id)}
                     aria-label={`Question ${qNum}`}
@@ -1332,6 +1735,7 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                       className={`ielts-reading-option ${isSelected ? 'selected' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (isLocked) return;
                         handleAnswerChange(q.id, opt);
                         setActiveQuestionId(q.id);
                       }}
@@ -1345,7 +1749,9 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                         id={`opt-${q.id}-${letter}`}
                         value={opt}
                         checked={isSelected}
+                        disabled={isLocked}
                         onChange={() => {
+                          if (isLocked) return;
                           handleAnswerChange(q.id, opt);
                           setActiveQuestionId(q.id);
                         }}
@@ -1411,6 +1817,7 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                       className={`ielts-reading-option ${isSelected ? 'selected' : ''}`}
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (isLocked) return;
                         handleAnswerChange(q.id, letter);
                         setActiveQuestionId(q.id);
                       }}
@@ -1424,7 +1831,9 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                         id={`opt-${q.id}-${letter}`}
                         value={letter}
                         checked={isSelected}
+                        disabled={isLocked}
                         onChange={() => {
+                          if (isLocked) return;
                           handleAnswerChange(q.id, letter);
                           setActiveQuestionId(q.id);
                         }}
@@ -1490,7 +1899,9 @@ function renderSectionContent(section, { answers, handleAnswerChange, activeQues
                       name={`match-q-${q.id}`}
                       value={col}
                       checked={currentAnswer === col}
+                      disabled={isLocked}
                       onChange={() => {
+                        if (isLocked) return;
                         handleAnswerChange(q.id, col);
                         setActiveQuestionId(q.id);
                       }}
