@@ -59,9 +59,42 @@ export async function updatePassword(newPassword) {
 }
 
 // ── Update email ─────────────────────────────────────────
-export async function updateEmail(newEmail) {
+export async function updateEmail(newEmail, currentPassword) {
+  const trimmed = (newEmail || '').trim().toLowerCase();
+
+  // If current password provided, execute instant update via RPC (avoids SMTP rate limits & email delivery issues)
+  if (currentPassword) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('update_teacher_email', {
+      p_new_email: trimmed,
+      p_current_password: currentPassword,
+    });
+
+    if (rpcError) {
+      const msg = rpcError.message || '';
+      if (!msg.includes('function public.update_teacher_email') && !msg.includes('does not exist')) {
+        throw new Error(msg);
+      }
+    } else if (rpcData?.success) {
+      // Re-sign in with the new email and password to update the Supabase client auth token / session
+      try {
+        const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: trimmed,
+          password: currentPassword,
+        });
+        if (!signInError && authData?.user) {
+          return authData;
+        }
+      } catch (signInErr) {
+        console.warn('Re-authentication after email update warning:', signInErr);
+      }
+
+      return { user: { email: trimmed } };
+    }
+  }
+
+  // Fallback to standard Supabase auth updateUser if RPC not used or not available
   const { data, error } = await supabase.auth.updateUser({
-    email: newEmail,
+    email: trimmed,
   });
   if (error) throw error;
 
@@ -71,7 +104,7 @@ export async function updateEmail(newEmail) {
       await supabase
         .from('profiles')
         .update({
-          email: newEmail,
+          email: trimmed,
           updated_at: new Date().toISOString(),
         })
         .eq('id', data.user.id);

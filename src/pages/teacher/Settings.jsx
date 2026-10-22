@@ -91,7 +91,7 @@ export default function TeacherSettings() {
     setEmailError('');
     setEmailSuccess('');
 
-    const trimmedEmail = newEmail.trim().toLowerCase();
+    const currentEmail = (profile?.email || user?.email || '').toLowerCase();
 
     if (!trimmedEmail) {
       return setEmailError('Please enter a new email address.');
@@ -99,7 +99,7 @@ export default function TeacherSettings() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       return setEmailError('Please enter a valid email address.');
     }
-    if (trimmedEmail === (user?.email || '').toLowerCase()) {
+    if (trimmedEmail === currentEmail) {
       return setEmailError('The new email must be different from your current email.');
     }
     if (!emailCurrentPassword) {
@@ -109,22 +109,23 @@ export default function TeacherSettings() {
     setEmailSaving(true);
     try {
       // 1. Verify current password
-      await verifyPassword(user.email, emailCurrentPassword);
+      await verifyPassword(currentEmail, emailCurrentPassword);
 
-      // 2. Request email update in Supabase
-      const res = await updateEmail(trimmedEmail);
+      // 2. Request email update in Supabase (immediate verified RPC update)
+      const res = await updateEmail(trimmedEmail, emailCurrentPassword);
       if (refreshProfile) await refreshProfile();
+
+      try {
+        localStorage.setItem('hw_remembered_teacher_email', trimmedEmail);
+      } catch (storageErr) {
+        // Non-critical local storage fallback
+      }
 
       setNewEmail('');
       setEmailCurrentPassword('');
 
-      if (res?.user?.email === trimmedEmail) {
-        setEmailSuccess('Email updated successfully!');
-        toast('Email updated successfully!');
-      } else {
-        setEmailSuccess('Confirmation link sent! Please check both your current and new email inbox to confirm.');
-        toast('Confirmation email sent.');
-      }
+      setEmailSuccess('Email updated successfully!');
+      toast('Email updated successfully!');
     } catch (err) {
       console.error('Update email error:', err);
       setEmailError(err.message || 'Failed to update email. Please check your current password.');
@@ -155,15 +156,16 @@ export default function TeacherSettings() {
 
     setPwSaving(true);
     try {
+      const currentEmail = profile?.email || user?.email;
       // 1. Verify current password (this also re-authenticates the session)
-      await verifyPassword(user.email, currentPassword);
+      await verifyPassword(currentEmail, currentPassword);
 
       // 2. Update password
       await updatePassword(newPassword);
 
       // 3. Re-authenticate with the NEW password to keep the session valid
       try {
-        await verifyPassword(user.email, newPassword);
+        await verifyPassword(currentEmail, newPassword);
       } catch (_) {
         // Non-critical — session may still be valid from the updatePassword call
       }
@@ -217,7 +219,7 @@ export default function TeacherSettings() {
             </div>
             <div className="ts-profile-email">
               <Mail size={13} style={{ opacity: 0.6 }} />
-              <span>{user?.email}</span>
+              <span>{profile?.email || user?.email}</span>
             </div>
           </div>
         </div>
@@ -290,7 +292,7 @@ export default function TeacherSettings() {
               border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
               fontSize: 13.5, color: 'var(--color-text)', fontWeight: 500
             }}>
-              <span>{user?.email}</span>
+              <span>{profile?.email || user?.email}</span>
               <span className="ts-verified-badge" style={{ margin: 0 }}>✓ Verified</span>
             </div>
           </div>
@@ -549,7 +551,7 @@ export default function TeacherSettings() {
 
                 <div className="ts-form-footer">
                   <span className="ts-form-footer-hint">
-                    A confirmation email will be sent to verify your new email.
+                    Enter your current password to verify and immediately update your login email.
                   </span>
                   <button
                     type="submit"

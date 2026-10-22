@@ -397,6 +397,10 @@ export const DataProvider = ({ children }) => {
   // ── Refresh user profile & session helper ──
   const refreshProfile = useCallback(async () => {
     try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession) {
+        setSession(currentSession);
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const prof = await getProfile(user.id);
